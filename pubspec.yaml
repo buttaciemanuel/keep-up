@@ -38,6 +38,7 @@ dependencies:
   email_validator: ^2.0.1
   animated_splash_screen: ^1.1.0
   dropdown_search: ^2.0.1
+  parse_server_sdk_flutter: ^3.1.0
 
 dev_dependencies:
   flutter_test:
