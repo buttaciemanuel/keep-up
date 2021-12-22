@@ -6,7 +6,27 @@ import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:intl/intl.dart';
 
-class PolitoAPI {
+class PolitoRequestParams {
+  static const String tokenParam = 'token';
+  static const registeredIDParam = 'regID';
+  static const fileCodeParam = 'code';
+  static const incaricoParam = 'incarico';
+  static const inserimentoParam = 'cod_ins';
+  static const refDateParam = 'data_rif';
+  static const usernameParam = 'username';
+  static const passwordParam = 'password';
+  static const roomTypeParam = 'local_type';
+  static const dayParam = 'giorno';
+  static const timeParam = 'ora';
+  static const booksPerPageParam = 'numrec';
+  static const deviceUUIDParam = 'uuid';
+  static const devicePlatformParam = 'device_platform';
+  static const deviceVersionParam = 'device_version';
+  static const deviceModelParam = 'device_model';
+  static const deviceManufacturerParam = 'device_manufacturer';
+}
+
+class PolitoRequestEndpoint {
   static const String registerDeviceEndpoint =
       "https://app.didattica.polito.it/register.php";
   static const String loginEndpoint =
@@ -15,7 +35,9 @@ class PolitoAPI {
       "https://app.didattica.polito.it/logout.php";
   static const String scheduleEndpoint =
       "https://app.didattica.polito.it/orari_lezioni.php";
+}
 
+class PolitoAPI {
   final PolitoUserSession _session = PolitoUserSession();
 
   static Future<Map<String, dynamic>> _getDeviceInfo() async {
@@ -23,22 +45,25 @@ class PolitoAPI {
     if (Platform.isIOS) {
       final iosDeviceInfo = await deviceInfo.iosInfo;
       return {
-        'regID': iosDeviceInfo.identifierForVendor,
-        'uuid': iosDeviceInfo.identifierForVendor,
-        'device_platform': 'iOS',
-        'device_version': iosDeviceInfo.systemVersion,
-        'device_model': iosDeviceInfo.model,
-        'device_manufacturer': 'Apple'
+        PolitoRequestParams.registeredIDParam:
+            iosDeviceInfo.identifierForVendor,
+        PolitoRequestParams.deviceUUIDParam: iosDeviceInfo.identifierForVendor,
+        PolitoRequestParams.devicePlatformParam: 'iOS',
+        PolitoRequestParams.deviceVersionParam: iosDeviceInfo.systemVersion,
+        PolitoRequestParams.deviceModelParam: iosDeviceInfo.model,
+        PolitoRequestParams.deviceManufacturerParam: 'Apple'
       };
     } else {
       final androidDeviceInfo = await deviceInfo.androidInfo;
       return {
-        'regID': androidDeviceInfo.androidId,
-        'uuid': androidDeviceInfo.androidId,
-        'device_platform': 'Android',
-        'device_version': androidDeviceInfo.version.baseOS,
-        'device_model': androidDeviceInfo.model,
-        'device_manufacturer': androidDeviceInfo.manufacturer
+        PolitoRequestParams.registeredIDParam: androidDeviceInfo.androidId,
+        PolitoRequestParams.deviceUUIDParam: androidDeviceInfo.androidId,
+        PolitoRequestParams.devicePlatformParam: 'Android',
+        PolitoRequestParams.deviceVersionParam:
+            androidDeviceInfo.version.baseOS,
+        PolitoRequestParams.deviceModelParam: androidDeviceInfo.model,
+        PolitoRequestParams.deviceManufacturerParam:
+            androidDeviceInfo.manufacturer
       };
     }
   }
@@ -65,10 +90,11 @@ class PolitoAPI {
 
   Future<PolitoUserSession> init() async {
     final deviceInfo = await _getDeviceInfo();
-    final response = await _makeRequest(registerDeviceEndpoint, deviceInfo);
+    final response = await _makeRequest(
+        PolitoRequestEndpoint.registerDeviceEndpoint, deviceInfo);
 
     print(deviceInfo);
-    _session.registeredId = deviceInfo['regID'];
+    _session.registeredId = deviceInfo[PolitoRequestParams.registeredIDParam];
 
     print("[device-reg ${response.statusCode} ${response.reasonPhrase}]");
     print("${response.body}");
@@ -77,10 +103,10 @@ class PolitoAPI {
   }
 
   Future<void> loginUser(String username, String password) async {
-    final response = await _makeRequest(loginEndpoint, {
-      'regID': _session.registeredId,
-      'username': username,
-      'password': password
+    final response = await _makeRequest(PolitoRequestEndpoint.loginEndpoint, {
+      PolitoRequestParams.registeredIDParam: _session.registeredId,
+      PolitoRequestParams.usernameParam: username,
+      PolitoRequestParams.passwordParam: password
     });
 
     _session.token =
@@ -91,8 +117,10 @@ class PolitoAPI {
   }
 
   Future<void> logoutUser() async {
-    final response = await _makeRequest(logoutEndpoint,
-        {'regID': _session.registeredId, 'token': _session.token});
+    final response = await _makeRequest(PolitoRequestEndpoint.logoutEndpoint, {
+      PolitoRequestParams.registeredIDParam: _session.registeredId,
+      PolitoRequestParams.tokenParam: _session.token
+    });
 
     print("[logout ${response.statusCode} ${response.reasonPhrase}]");
     print("${response.body}");
@@ -100,19 +128,21 @@ class PolitoAPI {
 
   Future<void> getSchedule() async {
     final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
-    final response = await _makeRequest(scheduleEndpoint, {
-      'regID': _session.registeredId,
-      'token': _session.token,
-      'data_rif': now
+    final response =
+        await _makeRequest(PolitoRequestEndpoint.scheduleEndpoint, {
+      PolitoRequestParams.registeredIDParam: _session.registeredId,
+      PolitoRequestParams.tokenParam: _session.token,
+      PolitoRequestParams.refDateParam: now
     });
 
-    final xmlUrl = jsonDecode(response.body)['data']['url_orari']
-        ['v_original_url'] as String;
-    final xmlResponse = await http.post(Uri.parse(xmlUrl));
+    final lectures = jsonDecode(response.body)['data']['orari'];
 
-    print("[schedule ${response.statusCode} ${response.reasonPhrase}]");
-    print("${response.body}");
-    log(xmlResponse.body);
+    print('[schedule ${response.statusCode} ${response.reasonPhrase}]');
+    print('${response.body}');
+
+    for (final lecture in lectures) {
+      log('${lecture['TITOLO_MATERIA']}: ${lecture['ORA_INIZIO']} - ${lecture['ORA_FINE']}');
+    }
   }
 }
 
