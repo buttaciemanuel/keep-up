@@ -43,7 +43,7 @@ dependencies:
   device_info_plus: ^3.2.0
   parse_server_sdk_flutter: ^3.1.0
   intl: ^0.17.0
-  xml: ^5.3.1
+  flutter_secure_storage: ^5.0.2
 
 dev_dependencies:
   flutter_test:

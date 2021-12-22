@@ -1,19 +1,19 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
-import 'package:xml/xml.dart';
 import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:intl/intl.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class PolitoRequestParams {
-  static const String tokenParam = 'token';
-  static const registeredIDParam = 'regID';
+  static const tokenParam = 'token';
+  static const registeredIdParam = 'regID';
   static const fileCodeParam = 'code';
   static const incaricoParam = 'incarico';
   static const inserimentoParam = 'cod_ins';
   static const refDateParam = 'data_rif';
-  static const usernameParam = 'username';
+  static const userIdParam = 'username';
   static const passwordParam = 'password';
   static const roomTypeParam = 'local_type';
   static const dayParam = 'giorno';
@@ -27,25 +27,37 @@ class PolitoRequestParams {
 }
 
 class PolitoRequestEndpoint {
-  static const String registerDeviceEndpoint =
-      "https://app.didattica.polito.it/register.php";
-  static const String loginEndpoint =
-      "https://app.didattica.polito.it/login.php";
-  static const String logoutEndpoint =
-      "https://app.didattica.polito.it/logout.php";
-  static const String scheduleEndpoint =
-      "https://app.didattica.polito.it/orari_lezioni.php";
+  static const registerDeviceEndpoint =
+      'https://app.didattica.polito.it/register.php';
+  static const loginEndpoint = 'https://app.didattica.polito.it/login.php';
+  static const logoutEndpoint = 'https://app.didattica.polito.it/logout.php';
+  static const scheduleEndpoint =
+      'https://app.didattica.polito.it/orari_lezioni.php';
 }
 
-class PolitoAPI {
-  final PolitoUserSession _session = PolitoUserSession();
+class PolitoSavedKey {
+  static const user = 'polito.user';
+  static const password = 'polito.password';
+  static const token = 'polito.token';
+}
+
+class PolitoClient {
+  late String _registeredId;
+  PolitoUserSession? _session;
+  final _keychain = new FlutterSecureStorage();
+
+  static PolitoClient _instance = PolitoClient._();
+
+  PolitoClient._();
+
+  static PolitoClient get instance => _instance;
 
   static Future<Map<String, dynamic>> _getDeviceInfo() async {
     var deviceInfo = DeviceInfoPlugin();
     if (Platform.isIOS) {
       final iosDeviceInfo = await deviceInfo.iosInfo;
       return {
-        PolitoRequestParams.registeredIDParam:
+        PolitoRequestParams.registeredIdParam:
             iosDeviceInfo.identifierForVendor,
         PolitoRequestParams.deviceUUIDParam: iosDeviceInfo.identifierForVendor,
         PolitoRequestParams.devicePlatformParam: 'iOS',
@@ -56,7 +68,7 @@ class PolitoAPI {
     } else {
       final androidDeviceInfo = await deviceInfo.androidInfo;
       return {
-        PolitoRequestParams.registeredIDParam: androidDeviceInfo.androidId,
+        PolitoRequestParams.registeredIdParam: androidDeviceInfo.androidId,
         PolitoRequestParams.deviceUUIDParam: androidDeviceInfo.androidId,
         PolitoRequestParams.devicePlatformParam: 'Android',
         PolitoRequestParams.deviceVersionParam:
@@ -73,7 +85,7 @@ class PolitoAPI {
     var index = 0;
     params.forEach((key, value) {
       if (index > 0) result += ',';
-      result += "\"$key\":\"$value\"";
+      result += '"$key":"$value"';
       ++index;
     });
     result += '}';
@@ -88,57 +100,110 @@ class PolitoAPI {
     return response;
   }
 
-  Future<PolitoUserSession> init() async {
+  static bool _didRequestFailed(http.Response response) =>
+      response.statusCode != 200 ||
+      jsonDecode(response.body)['esito']['generale']['stato'] != 0;
+
+  Future<void> init() async {
     final deviceInfo = await _getDeviceInfo();
-    final response = await _makeRequest(
-        PolitoRequestEndpoint.registerDeviceEndpoint, deviceInfo);
+    final sessionToken = await _keychain.read(key: PolitoSavedKey.token);
+    final sessionUser = await _keychain.read(key: PolitoSavedKey.user);
 
-    print(deviceInfo);
-    _session.registeredId = deviceInfo[PolitoRequestParams.registeredIDParam];
+    _registeredId = deviceInfo[PolitoRequestParams.registeredIdParam];
 
-    print("[device-reg ${response.statusCode} ${response.reasonPhrase}]");
-    print("${response.body}");
+    if (sessionToken != null && sessionUser != null) {
+      _session = PolitoUserSession();
+      _session!.token = sessionToken;
+      _session!.user = PolitoUser(sessionUser);
+    } else {
+      final response = await _makeRequest(
+          PolitoRequestEndpoint.registerDeviceEndpoint, deviceInfo);
+      final jsonBody = jsonDecode(response.body);
 
-    return _session;
+      print(deviceInfo);
+      print('[device-reg ${response.statusCode} ${response.reasonPhrase}]');
+      print('${response.body}');
+
+      if (_didRequestFailed(response)) {
+        return Future.error(
+            'PolitoClient: unable to register device. ${jsonBody['esito']['generale']['error']}');
+      }
+    }
   }
 
-  Future<void> loginUser(String username, String password) async {
+  PolitoUser? get user => _session?.user;
+
+  Future<void> loginUser(String userId, String password) async {
     final response = await _makeRequest(PolitoRequestEndpoint.loginEndpoint, {
-      PolitoRequestParams.registeredIDParam: _session.registeredId,
-      PolitoRequestParams.usernameParam: username,
+      PolitoRequestParams.registeredIdParam: _registeredId,
+      PolitoRequestParams.userIdParam: userId,
       PolitoRequestParams.passwordParam: password
     });
+    final jsonBody = jsonDecode(response.body);
 
-    _session.token =
-        jsonDecode(response.body)['data']['login']['token'] as String;
+    print('[login ${response.statusCode} ${response.reasonPhrase}]');
+    print('${response.body}');
 
-    print("[login ${response.statusCode} ${response.reasonPhrase}]");
-    print("${response.body}");
+    if (_didRequestFailed(response)) {
+      return Future.error(
+          'PolitoClient: unable to login user. ${jsonBody['esito']['generale']['error']}');
+    } else {
+      _session = PolitoUserSession();
+      _session!.token = jsonBody['data']['login']['token'] as String;
+      _session!.user = PolitoUser(userId);
+      _keychain.write(key: PolitoSavedKey.user, value: userId);
+      _keychain.write(key: PolitoSavedKey.password, value: password);
+      _keychain.write(key: PolitoSavedKey.token, value: _session!.token);
+    }
   }
 
   Future<void> logoutUser() async {
-    final response = await _makeRequest(PolitoRequestEndpoint.logoutEndpoint, {
-      PolitoRequestParams.registeredIDParam: _session.registeredId,
-      PolitoRequestParams.tokenParam: _session.token
-    });
+    if (_session == null) {
+      return Future.error('PolitoClient: no session is established');
+    }
 
-    print("[logout ${response.statusCode} ${response.reasonPhrase}]");
-    print("${response.body}");
+    final response = await _makeRequest(PolitoRequestEndpoint.logoutEndpoint, {
+      PolitoRequestParams.registeredIdParam: _registeredId,
+      PolitoRequestParams.tokenParam: _session!.token
+    });
+    final jsonBody = jsonDecode(response.body);
+
+    print('[logout ${response.statusCode} ${response.reasonPhrase}]');
+    print('${response.body}');
+
+    if (_didRequestFailed(response)) {
+      return Future.error(
+          'PolitoClient: unable to logout user. ${jsonBody['esito']['generale']['error']}');
+    } else {
+      _session = null;
+      _keychain.delete(key: PolitoSavedKey.user);
+      _keychain.delete(key: PolitoSavedKey.password);
+      _keychain.delete(key: PolitoSavedKey.token);
+    }
   }
 
   Future<void> getSchedule() async {
+    if (_session == null) {
+      return Future.error('PolitoClient: no session is established');
+    }
+
     final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
     final response =
         await _makeRequest(PolitoRequestEndpoint.scheduleEndpoint, {
-      PolitoRequestParams.registeredIDParam: _session.registeredId,
-      PolitoRequestParams.tokenParam: _session.token,
+      PolitoRequestParams.registeredIdParam: _registeredId,
+      PolitoRequestParams.tokenParam: _session!.token,
       PolitoRequestParams.refDateParam: now
     });
-
-    final lectures = jsonDecode(response.body)['data']['orari'];
+    final jsonBody = jsonDecode(response.body);
+    final lectures = jsonBody['data']['orari'];
 
     print('[schedule ${response.statusCode} ${response.reasonPhrase}]');
     print('${response.body}');
+
+    if (_didRequestFailed(response)) {
+      return Future.error(
+          'PolitoClient: unable get user schedule. ${jsonBody['esito']['generale']['error']}');
+    }
 
     for (final lecture in lectures) {
       log('${lecture['TITOLO_MATERIA']}: ${lecture['ORA_INIZIO']} - ${lecture['ORA_FINE']}');
@@ -147,6 +212,12 @@ class PolitoAPI {
 }
 
 class PolitoUserSession {
-  late String registeredId;
   late String token;
+  late PolitoUser user;
+}
+
+class PolitoUser {
+  final String id;
+
+  PolitoUser(this.id);
 }
