@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:keep_up/utils/polito_api.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
@@ -7,14 +8,20 @@ import 'package:keep_up/screens/welcome.dart';
 import 'package:keep_up/constants.dart';
 
 void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-
   const keyApplicationId = '7lriFNc0muHJqnpBYmDJjkCdBP4ptEXEYaSiIZKR';
   const keyClientKey = 'Hboaa5QGH79mvRQQfEXCUcjXnZlrXSlZk0axzQri';
   const keyParseServerUrl = 'https://parseapi.back4app.com';
 
+  WidgetsFlutterBinding.ensureInitialized();
+
   await Parse().initialize(keyApplicationId, keyParseServerUrl,
       clientKey: keyClientKey, autoSendSessionId: true, debug: true);
+
+  var polito = PolitoAPI();
+  await polito.init();
+  await polito.loginUser('s268620', 'luc22ele04');
+  await polito.getSchedule();
+  await polito.logoutUser();
 
   runApp(const MyApp());
 }
