@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:keep_up/utils/polito_api.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
@@ -19,18 +17,18 @@ void main() async {
   await Parse().initialize(keyApplicationId, keyParseServerUrl,
       clientKey: keyClientKey, autoSendSessionId: true, debug: true);
 
-  var polito = PolitoClient.instance;
+  /*var polito = PolitoClient.instance;
   await polito.init();
 
   if (polito.user != null) {
-    log('user already in ${polito.user!.id}');
+    print('user already in ${polito.user!.id}');
   } else {
-    log('user is not logged');
+    print('user is not logged');
     await polito.loginUser('s268620', 'luc22ele04');
     await polito.getSchedule();
   }
 
-  await polito.logoutUser();
+  await polito.logoutUser();*/
 
   runApp(const MyApp());
 }

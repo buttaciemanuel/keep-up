@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:email_validator/email_validator.dart';
@@ -17,14 +18,6 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   final TextEditingController _fullnameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-
-  @override
-  void dispose() {
-    _fullnameController.dispose();
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
 
   String? _fullnameValidator(String? text) {
     if (text == null || text.isEmpty) {
@@ -56,6 +49,14 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
   }
 
   @override
+  void dispose() {
+    _fullnameController.dispose();
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     return Scaffold(
@@ -73,7 +74,30 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                 child: Text('Benvenuto!',
                     style:
                         TextStyle(fontWeight: FontWeight.w900, fontSize: 36))),
-            SizedBox(height: 0.03 * size.height),
+            SizedBox(height: 0.02 * size.height),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: RichText(
+                textAlign: TextAlign.left,
+                text: TextSpan(children: [
+                  const TextSpan(
+                      text: "Hai già un account? ",
+                      style: TextStyle(color: Colors.black, fontSize: 20)),
+                  TextSpan(
+                    text: "Accedi",
+                    recognizer: TapGestureRecognizer()
+                      ..onTap = () {
+                        print('OPEN LOGIN PAGE');
+                      },
+                    style: const TextStyle(
+                        color: kPrimaryColor,
+                        fontSize: 20,
+                        fontWeight: FontWeight.normal),
+                  )
+                ]),
+              ),
+            ),
+            SizedBox(height: 0.04 * size.height),
             Form(
                 key: _formKey,
                 child: Column(children: [
@@ -95,7 +119,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       icon: Icons.lock,
                       isPassword: true,
                       controller: _passwordController),
-                  SizedBox(height: 0.03 * size.height),
+                  SizedBox(height: 0.04 * size.height),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(
@@ -107,8 +131,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                                       userName: _fullnameController.text)));
                         }
                       },
-                      child:
-                          const Text('Avanti', style: TextStyle(fontSize: 20)),
+                      child: const Text('Registrati',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.normal)),
                       style: TextButton.styleFrom(primary: kPrimaryColor),
                     ),
                   )
@@ -130,9 +155,24 @@ class HelloScreen extends StatefulWidget {
 
 class _HelloScreenState extends State<HelloScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _universityController = TextEditingController();
-  final TextEditingController _courseController = TextEditingController();
-  final TextEditingController _yearController = TextEditingController();
+  final TextEditingController _studentIdController = TextEditingController();
+  final TextEditingController _studentPasswordController =
+      TextEditingController();
+  String? _selectedUniversity;
+
+  String? _studentIdValidator(String? text) {
+    if (text == null || text.isEmpty) {
+      return 'Inserisci la tua matricola studente';
+    }
+    return null;
+  }
+
+  String? _studentPasswordValidator(String? text) {
+    if (text == null || text.isEmpty) {
+      return 'Inserisci la tua password studente';
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -144,42 +184,55 @@ class _HelloScreenState extends State<HelloScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: () {},
+                child: const Text('Salta', style: TextStyle(fontSize: 20)),
+                style: TextButton.styleFrom(primary: kGreyColor),
+              ),
+            ),
             SvgPicture.asset('assets/images/students.svg',
                 height: size.height * 0.25),
-            SizedBox(height: 0.05 * size.height),
+            SizedBox(height: 0.03 * size.height),
             Align(
                 alignment: Alignment.centerLeft,
                 child: Text("Ciao, ${widget.userName.split(' ')[0]}",
                     style: const TextStyle(
                         fontWeight: FontWeight.w900, fontSize: 36))),
-            SizedBox(height: 0.01 * size.height),
+            SizedBox(height: 0.02 * size.height),
             const Align(
                 alignment: Alignment.centerLeft,
-                child: Text('Aiutami a recuperare i tuoi orari.',
+                child: Text('Collegati al tuo account studente!',
                     style:
-                        TextStyle(fontWeight: FontWeight.w300, fontSize: 22))),
-            SizedBox(height: 0.03 * size.height),
+                        TextStyle(fontWeight: FontWeight.w300, fontSize: 20))),
+            SizedBox(height: 0.04 * size.height),
             Form(
                 key: _formKey,
                 child: Column(children: [
-                  const AppDropDownTextField(
+                  AppDropDownTextField(
                       showSearchBox: true,
-                      items: ["Politecnico di Torino", "Università di Torino"],
+                      onChanged: (university) {
+                        setState(() => _selectedUniversity = university);
+                      },
+                      items: ["Politecnico di Torino"],
                       hint: "La tua università"),
                   SizedBox(height: 0.02 * size.height),
-                  const AppDropDownTextField(
-                      showSearchBox: true,
-                      items: [
-                        "Architettura",
-                        "Ingegneria Informatica",
-                        "Design"
-                      ],
-                      hint: "Il tuo corso di studi"),
-                  SizedBox(height: 0.02 * size.height),
-                  const AppDropDownTextField(
-                      items: ["Primo anno", "Secondo anno", "Terzo anno"],
-                      hint: "Il tuo anno"),
-                  SizedBox(height: 0.03 * size.height),
+                  if (_selectedUniversity != null) ...[
+                    AppTextField(
+                        validator: _studentIdValidator,
+                        hint: 'La tua matricola studente',
+                        icon: Icons.person,
+                        controller: _studentIdController),
+                    SizedBox(height: 0.02 * size.height),
+                    AppTextField(
+                        validator: _studentPasswordValidator,
+                        hint: 'La tua password studente',
+                        icon: Icons.lock,
+                        isPassword: true,
+                        controller: _studentPasswordController)
+                  ],
+                  SizedBox(height: 0.04 * size.height),
                   Align(
                     alignment: Alignment.centerRight,
                     child: TextButton(

@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:keep_up/constants.dart';
 import 'package:dropdown_search/dropdown_search.dart';
@@ -68,10 +70,15 @@ class _AppTextFieldState extends State<AppTextField> {
 class AppDropDownTextField extends StatefulWidget {
   final List<String> items;
   final String hint;
+  final Function(String?)? onChanged;
   final bool? showSearchBox;
 
   const AppDropDownTextField(
-      {Key? key, required this.items, required this.hint, this.showSearchBox})
+      {Key? key,
+      required this.items,
+      required this.hint,
+      this.showSearchBox,
+      this.onChanged})
       : super(key: key);
 
   @override
@@ -93,6 +100,7 @@ class _AppDropDownTextFieldState extends State<AppDropDownTextField> {
             showSelectedItems: false,
             showSearchBox: widget.showSearchBox ?? false,
             mode: Mode.BOTTOM_SHEET,
+            onChanged: widget.onChanged,
             searchFieldProps: TextFieldProps(
                 cursorColor: kPrimaryColor,
                 decoration: InputDecoration(
@@ -106,7 +114,6 @@ class _AppDropDownTextFieldState extends State<AppDropDownTextField> {
             dropdownSearchDecoration: InputDecoration(
               hintText: widget.hint,
               border: InputBorder.none,
-            ),
-            onChanged: (text) {}));
+            )));
   }
 }

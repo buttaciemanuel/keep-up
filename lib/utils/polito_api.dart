@@ -1,3 +1,6 @@
+/// Questo file contiene l'API per interfacciarsi con l'account istituzionale
+/// del Politecnico di Torino per scaricare gli orari delle lezioni dello
+/// studente
 import 'dart:convert';
 import 'dart:io';
 import 'dart:developer';
@@ -6,6 +9,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:intl/intl.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
+/// I parametri utilizzati nelle richieste HTTP inviate al server del Politecnico
 class PolitoRequestParams {
   static const tokenParam = 'token';
   static const registeredIdParam = 'regID';
@@ -26,6 +30,7 @@ class PolitoRequestParams {
   static const deviceManufacturerParam = 'device_manufacturer';
 }
 
+/// Gli indirizzi di destinazione dell'API per le singole operazioni
 class PolitoRequestEndpoint {
   static const registerDeviceEndpoint =
       'https://app.didattica.polito.it/register.php';
@@ -35,18 +40,30 @@ class PolitoRequestEndpoint {
       'https://app.didattica.polito.it/orari_lezioni.php';
 }
 
+/// Le chiavi utilizzate per salvare matricola, password e token della sessione
+/// all'interno del portachiavi
 class PolitoSavedKey {
   static const user = 'polito.user';
   static const password = 'polito.password';
   static const token = 'polito.token';
 }
 
+/// La classe principale utilizzata per le principali operazioni dell'API:
+/// [+] registrazione dispositivo (operazione implicita)
+/// [+] login con matricola e password
+/// [+] logout
+/// [+] scaricamento orari delle lezioni
 class PolitoClient {
+  /// id univoco con cui il dispositivo è registrato sul server del Politecnico
   late String _registeredId;
-  PolitoUserSession? _session;
-  final _keychain = new FlutterSecureStorage();
 
-  static PolitoClient _instance = PolitoClient._();
+  /// stringa che identifica la sessione stabilita dopo il login
+  PolitoUserSession? _session;
+
+  /// portachiavi utilizzato per salvare info della sessione corrente
+  final _keychain = const FlutterSecureStorage();
+
+  static final PolitoClient _instance = PolitoClient._();
 
   PolitoClient._();
 
@@ -80,6 +97,8 @@ class PolitoClient {
     }
   }
 
+  /// codifica i parametri nel modo preciso affinchè la richiesta sia accetata
+  /// ed elaborata corretamente
   static String _encodeParams(Map<String, dynamic> params) {
     String result = 'data={';
     var index = 0;
@@ -92,6 +111,7 @@ class PolitoClient {
     return result;
   }
 
+  /// ogni richiesta HTTP è trattata con il metodo POST
   static Future<http.Response> _makeRequest(
       String endpoint, Map<String, dynamic> params) async {
     final response = await http.post(Uri.parse(endpoint),
@@ -104,6 +124,11 @@ class PolitoClient {
       response.statusCode != 200 ||
       jsonDecode(response.body)['esito']['generale']['stato'] != 0;
 
+  /// Questa funzione è utilizzata per inizializzare l'API e deve essere chiamata
+  /// per prima.
+  /// Verifica inizialmente se l'utente è loggato e quindi esiste una sessione
+  /// in corso. Nel qual caso in cui non ci sia nessuna sessione, allora si procede
+  /// con la registrazione del dispositivo
   Future<void> init() async {
     final deviceInfo = await _getDeviceInfo();
     final sessionToken = await _keychain.read(key: PolitoSavedKey.token);
@@ -131,8 +156,13 @@ class PolitoClient {
     }
   }
 
+  /// Restituisce l'utente dell'attuale sessione o null se nessun utente è loggato
+  /// attualmente
   PolitoUser? get user => _session?.user;
 
+  /// Questa funzione è utilizzata per autenticare l'utente con matricola e password
+  /// del Politecnico. Se tutto va correttamente, al termine la sessione è stabilita
+  /// e le informazioni sono preservate nel portachiavi fino al prossimo logout.
   Future<void> loginUser(String userId, String password) async {
     final response = await _makeRequest(PolitoRequestEndpoint.loginEndpoint, {
       PolitoRequestParams.registeredIdParam: _registeredId,
@@ -157,6 +187,8 @@ class PolitoClient {
     }
   }
 
+  /// Quando l'utente esegue il logout, la sessione è chiusa e tutte le informazioni
+  /// nel portachiavi sono eliminate.
   Future<void> logoutUser() async {
     if (_session == null) {
       return Future.error('PolitoClient: no session is established');
@@ -182,6 +214,8 @@ class PolitoClient {
     }
   }
 
+  /// Questa funzione è utile allo scopo dell'app poichè restituisce la lista
+  /// degli orari delle lezioni dello studente loggato.
   Future<void> getSchedule() async {
     if (_session == null) {
       return Future.error('PolitoClient: no session is established');
@@ -211,12 +245,18 @@ class PolitoClient {
   }
 }
 
+/// Questa classe contiene le informazioni della sessione
 class PolitoUserSession {
+  /// Il token identifica la sessione attuale
   late String token;
+
+  /// Lo user è l'utente autenticato nella sessione attuale
   late PolitoUser user;
 }
 
+/// Questa classe definisce l'utente loggato
 class PolitoUser {
+  // matricola univoca dello studente
   final String id;
 
   PolitoUser(this.id);
