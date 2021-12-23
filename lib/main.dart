@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:keep_up/utils/polito_api.dart';
+import 'package:keep_up/screens/login_screen.dart';
+import 'package:keep_up/screens/student_timetable_screen.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:page_transition/page_transition.dart';
-import 'package:keep_up/screens/welcome.dart';
-import 'package:keep_up/constants.dart';
+import 'package:keep_up/style.dart';
+import 'package:keep_up/utils/polito_api.dart';
+import 'package:keep_up/screens/student_sync_screen.dart';
 
 void main() async {
   const keyApplicationId = '7lriFNc0muHJqnpBYmDJjkCdBP4ptEXEYaSiIZKR';
@@ -41,16 +43,15 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
         debugShowCheckedModeBanner: false,
         title: 'My first app',
-        theme: ThemeData(
-            primaryColor: kPrimaryColor, scaffoldBackgroundColor: Colors.white),
+        theme: AppThemes.lightTheme,
         home: AnimatedSplashScreen.withScreenFunction(
             duration: 1500,
             splashTransition: SplashTransition.fadeTransition,
             pageTransitionType: PageTransitionType.fade,
             splash: SvgPicture.asset('assets/icons/logo.svg'),
-            backgroundColor: kPrimaryColor,
+            backgroundColor: AppColors.primaryColor,
             screenFunction: () async {
-              return const /*WelcomeScreen()*/ HelloScreen(userName: "Ema");
+              return const StudentTimetableScreen();
             }));
   }
 }

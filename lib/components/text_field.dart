@@ -1,7 +1,5 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:keep_up/constants.dart';
+import 'package:keep_up/style.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
 class AppTextField extends StatefulWidget {
@@ -39,17 +37,19 @@ class _AppTextFieldState extends State<AppTextField> {
         padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
         width: size.width,
         decoration: BoxDecoration(
-            color: kTextFieldColor, borderRadius: BorderRadius.circular(10)),
+            color: AppColors.fieldBackgroundColor,
+            borderRadius: BorderRadius.circular(10)),
         child: TextFormField(
+            style: Theme.of(context).textTheme.bodyText1,
             validator: widget.validator,
             controller: widget.controller,
             obscureText: _obscureText,
-            cursorColor: kPrimaryColor,
+            cursorColor: AppColors.primaryColor,
             decoration: InputDecoration(
                 hintText: widget.hint,
                 border: InputBorder.none,
                 icon: widget.icon != null
-                    ? Icon(widget.icon, color: kTextFieldTextColor)
+                    ? Icon(widget.icon, color: AppColors.fieldTextColor)
                     : null,
                 suffixIcon: widget.isPassword ?? false
                     ? IconButton(
@@ -62,7 +62,7 @@ class _AppTextFieldState extends State<AppTextField> {
                             _obscureText
                                 ? Icons.visibility
                                 : Icons.visibility_off,
-                            color: kTextFieldTextColor))
+                            color: AppColors.fieldTextColor))
                     : null)));
   }
 }
@@ -89,12 +89,34 @@ class _AppDropDownTextFieldState extends State<AppDropDownTextField> {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final hintStyle = TextStyle(
+        color: Theme.of(context).hintColor,
+        fontSize: Theme.of(context).textTheme.bodyText1?.fontSize);
+    final itemStyle = TextStyle(
+        fontSize: Theme.of(context).textTheme.bodyText1?.fontSize,
+        fontWeight: Theme.of(context).textTheme.subtitle1?.fontWeight);
     return Container(
         padding: const EdgeInsets.symmetric(horizontal: 15),
         width: size.width,
         decoration: BoxDecoration(
-            color: kTextFieldColor, borderRadius: BorderRadius.circular(10)),
+            color: AppColors.fieldBackgroundColor,
+            borderRadius: BorderRadius.circular(10)),
         child: DropdownSearch<String>(
+            popupItemBuilder: (context, item, isSelected) {
+              return Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 10),
+                child: Text(item, style: itemStyle),
+              );
+            },
+            dropdownSearchBaseStyle: Theme.of(context).textTheme.bodyText1,
+            dropdownBuilder: (context, selectedItem) {
+              if (selectedItem == null) {
+                return Text(widget.hint, style: hintStyle);
+              }
+              return Text(selectedItem,
+                  style: Theme.of(context).textTheme.bodyText1);
+            },
             emptyBuilder: (context, searchEntry) =>
                 const Center(child: Text('Nessun risultato trovato')),
             showSelectedItems: false,
@@ -102,12 +124,15 @@ class _AppDropDownTextFieldState extends State<AppDropDownTextField> {
             mode: Mode.BOTTOM_SHEET,
             onChanged: widget.onChanged,
             searchFieldProps: TextFieldProps(
-                cursorColor: kPrimaryColor,
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 20),
+                style: Theme.of(context).textTheme.bodyText1,
+                cursorColor: AppColors.primaryColor,
                 decoration: InputDecoration(
                     hintText: widget.hint,
                     border: InputBorder.none,
                     filled: true,
-                    fillColor: kTextFieldColor,
+                    fillColor: AppColors.fieldBackgroundColor,
                     contentPadding: const EdgeInsets.symmetric(
                         vertical: 5, horizontal: 15))),
             items: widget.items,
