@@ -6,6 +6,7 @@ import 'package:keep_up/style.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/screens/login_screen.dart';
 import 'package:keep_up/screens/student_sync_screen.dart';
+import 'package:keep_up/services/keep_up_api.dart';
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({Key? key}) : super(key: key);
@@ -16,9 +17,9 @@ class RegisterScreen extends StatefulWidget {
 
 class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
-  final TextEditingController _fullnameController = TextEditingController();
-  final TextEditingController _emailController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
+  final _fullnameController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   String? _fullnameValidator(String? text) {
     if (text == null || text.isEmpty) {
@@ -60,84 +61,89 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    return AppBackground(
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            SvgPicture.asset('assets/images/schedule.svg',
-                height: size.height * 0.25),
-            SizedBox(height: 0.05 * size.height),
-            Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Benvenuto!',
-                    style: Theme.of(context).textTheme.headline1)),
-            SizedBox(height: 0.02 * size.height),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: RichText(
-                textAlign: TextAlign.left,
-                text: TextSpan(children: [
-                  TextSpan(
-                      text: "Hai già un account? ",
-                      style: Theme.of(context).textTheme.subtitle1),
-                  TextSpan(
-                    text: "Accedi",
-                    recognizer: TapGestureRecognizer()
-                      ..onTap = () {
-                        Navigator.of(context).pushReplacement(MaterialPageRoute(
-                            fullscreenDialog: true,
-                            builder: (context) => const LoginScreen()));
-                      },
-                    style: Theme.of(context).textTheme.button,
-                  )
-                ]),
-              ),
-            ),
-            SizedBox(height: 0.04 * size.height),
-            Form(
-                key: _formKey,
-                child: Column(children: [
-                  AppTextField(
-                      validator: _fullnameValidator,
-                      hint: 'Il tuo nome',
-                      icon: Icons.person,
-                      controller: _fullnameController),
-                  SizedBox(height: 0.02 * size.height),
-                  AppTextField(
-                      validator: _emailValidator,
-                      hint: 'La tua email',
-                      icon: Icons.email,
-                      controller: _emailController),
-                  SizedBox(height: 0.02 * size.height),
-                  AppTextField(
-                      validator: _passwordValidator,
-                      hint: 'La tua password',
-                      icon: Icons.lock,
-                      isPassword: true,
-                      controller: _passwordController),
-                  SizedBox(height: 0.04 * size.height),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () {
-                        if (_formKey.currentState!.validate()) {
-                          Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                  builder: (context) => StudentSyncScreen(
-                                      userName: _fullnameController.text)));
-                        }
-                      },
-                      child: const Text('Registrati'),
-                      style:
-                          TextButton.styleFrom(primary: AppColors.primaryColor),
-                    ),
-                  )
-                ]))
-          ],
+    const snackBar = SnackBar(
+        padding: EdgeInsets.all(20),
+        content: Text('Non riesco a registrare il tuo account'));
+    return AppLayout(
+      children: [
+        SizedBox(height: 0.05 * size.height),
+        Expanded(child: SvgPicture.asset('assets/images/schedule.svg')),
+        SizedBox(height: 0.05 * size.height),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Benvenuto!',
+                style: Theme.of(context).textTheme.headline1)),
+        SizedBox(height: 0.02 * size.height),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: RichText(
+            textAlign: TextAlign.left,
+            text: TextSpan(children: [
+              TextSpan(
+                  text: "Hai già un account? ",
+                  style: Theme.of(context).textTheme.subtitle1),
+              TextSpan(
+                text: "Accedi",
+                recognizer: TapGestureRecognizer()
+                  ..onTap = () {
+                    Navigator.of(context).pushReplacement(MaterialPageRoute(
+                        fullscreenDialog: true,
+                        builder: (context) => const LoginScreen()));
+                  },
+                style: Theme.of(context).textTheme.button,
+              )
+            ]),
+          ),
         ),
-      ),
+        SizedBox(height: 0.04 * size.height),
+        Form(
+            key: _formKey,
+            child: Column(children: [
+              AppTextField(
+                  validator: _fullnameValidator,
+                  hint: 'Il tuo nome',
+                  icon: Icons.person,
+                  controller: _fullnameController),
+              SizedBox(height: 0.02 * size.height),
+              AppTextField(
+                  validator: _emailValidator,
+                  hint: 'La tua email',
+                  icon: Icons.email,
+                  controller: _emailController),
+              SizedBox(height: 0.02 * size.height),
+              AppTextField(
+                  validator: _passwordValidator,
+                  hint: 'La tua password',
+                  icon: Icons.lock,
+                  isPassword: true,
+                  controller: _passwordController),
+              SizedBox(height: 0.04 * size.height),
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    if (_formKey.currentState!.validate()) {
+                      KeepUp.instance
+                          .register(
+                              _fullnameController.text.trim(),
+                              _emailController.text.trim(),
+                              _passwordController.text.trim())
+                          .then((value) {
+                        Navigator.of(context).pushReplacement(MaterialPageRoute(
+                            builder: (context) => StudentSyncScreen(
+                                username: _fullnameController.text)));
+                      }).onError((error, stackTrace) {
+                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      });
+                    }
+                  },
+                  child: const Text('Registrati'),
+                  style: TextButton.styleFrom(primary: AppColors.primaryColor),
+                ),
+              ),
+              SizedBox(height: 0.05 * size.height)
+            ]))
+      ],
     );
   }
 }

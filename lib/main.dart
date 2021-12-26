@@ -1,23 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:keep_up/screens/login_screen.dart';
+import 'package:keep_up/screens/register_screen.dart';
 import 'package:keep_up/screens/student_timetable_screen.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:keep_up/style.dart';
-import 'package:keep_up/utils/polito_api.dart';
+import 'package:keep_up/services/keep_up_api.dart';
+import 'package:keep_up/services/polito_api.dart';
 import 'package:keep_up/screens/student_sync_screen.dart';
 
 void main() async {
-  const keyApplicationId = '7lriFNc0muHJqnpBYmDJjkCdBP4ptEXEYaSiIZKR';
-  const keyClientKey = 'Hboaa5QGH79mvRQQfEXCUcjXnZlrXSlZk0axzQri';
-  const keyParseServerUrl = 'https://parseapi.back4app.com';
-
   WidgetsFlutterBinding.ensureInitialized();
-
-  await Parse().initialize(keyApplicationId, keyParseServerUrl,
-      clientKey: keyClientKey, autoSendSessionId: true, debug: true);
 
   /*var polito = PolitoClient.instance;
   await polito.init();
@@ -31,6 +25,8 @@ void main() async {
   }
 
   await polito.logoutUser();*/
+
+  KeepUp.instance.init();
 
   runApp(const MyApp());
 }
@@ -51,7 +47,13 @@ class MyApp extends StatelessWidget {
             splash: SvgPicture.asset('assets/icons/logo.svg'),
             backgroundColor: AppColors.primaryColor,
             screenFunction: () async {
-              return const StudentTimetableScreen();
+              final currentUser = await KeepUp.instance.getUser();
+              if (currentUser != null) {
+                return StudentSyncScreen(username: currentUser.fullname);
+              } else {
+                // home screen
+                return const LoginScreen();
+              }
             }));
   }
 }

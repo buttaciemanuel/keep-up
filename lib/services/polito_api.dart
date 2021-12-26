@@ -216,12 +216,12 @@ class PolitoClient {
 
   /// Questa funzione è utile allo scopo dell'app poichè restituisce la lista
   /// degli orari delle lezioni dello studente loggato.
-  Future<void> getSchedule() async {
+  Future<List<PolitoLecture>?> getWeekSchedule({DateTime? inDate}) async {
     if (_session == null) {
       return Future.error('PolitoClient: no session is established');
     }
 
-    final now = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    final now = DateFormat('dd/MM/yyyy').format(inDate ?? DateTime.now());
     final response =
         await _makeRequest(PolitoRequestEndpoint.scheduleEndpoint, {
       PolitoRequestParams.registeredIdParam: _registeredId,
@@ -229,7 +229,7 @@ class PolitoClient {
       PolitoRequestParams.refDateParam: now
     });
     final jsonBody = jsonDecode(response.body);
-    final lectures = jsonBody['data']['orari'];
+    final jsonLectures = jsonBody['data']['orari'];
 
     print('[schedule ${response.statusCode} ${response.reasonPhrase}]');
     print('${response.body}');
@@ -239,9 +239,14 @@ class PolitoClient {
           'PolitoClient: unable get user schedule. ${jsonBody['esito']['generale']['error']}');
     }
 
-    for (final lecture in lectures) {
-      log('${lecture['TITOLO_MATERIA']}: ${lecture['ORA_INIZIO']} - ${lecture['ORA_FINE']}');
+    List<PolitoLecture> lectures = [];
+
+    for (final jsonLecture in jsonLectures) {
+      log('${jsonLecture['TITOLO_MATERIA']}: ${jsonLecture['ORA_INIZIO']} - ${jsonLecture['ORA_FINE']}');
+      lectures.add(PolitoLecture.fromJson(jsonLecture));
     }
+
+    return lectures;
   }
 }
 
@@ -260,4 +265,57 @@ class PolitoUser {
   final String id;
 
   PolitoUser(this.id);
+}
+
+/// Questa classe rappresenta l'istanza di evento di una lezione settimanale
+class PolitoLecture {
+  // nome della materia
+  final String subject;
+  // data e orario di inizio
+  final DateTime startDateTime;
+  // data e orario di fine
+  final DateTime endDateTime;
+  // insegnante
+  final String? lecturer;
+  // nome aula
+  final String? room;
+  // tipologia di evento
+  final String? eventType;
+  // identificativo del corso a cui appartiene la lezione
+  final String? courseId;
+  // identificativo della lezione
+  final String? lectureId;
+  // inizio coorte
+  final String? cohortFrom;
+  // fine coorte
+  final String? cohortTo;
+
+  PolitoLecture(
+      {required this.subject,
+      this.lecturer,
+      this.room,
+      this.eventType,
+      this.courseId,
+      this.lectureId,
+      this.cohortFrom,
+      this.cohortTo,
+      required this.startDateTime,
+      required this.endDateTime});
+
+  /// Estrapola una lezione dell'oggetto json ricevuto in risposta dal server
+  /// del Politecnico
+  static PolitoLecture fromJson(dynamic json) {
+    final format = DateFormat('dd/MM/yyyy HH:mm:ss');
+    return PolitoLecture(
+        subject: json['TITOLO_MATERIA'],
+        startDateTime: format.parse(json['ORA_INIZIO']),
+        endDateTime: format.parse(json['ORA_FINE']),
+        lecturer: json['NOMINATIVO_AULA'],
+        room: json['AULA'],
+        eventType: json['TIPOLOGIA_EVENTO'],
+        courseId: json['NUMCOR'],
+        lectureId: json['ID_EVENTO'],
+        cohortFrom: json['ALFA_INI'],
+        cohortTo: json['ALFA_FIN']);
+  }
 }

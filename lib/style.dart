@@ -1,66 +1,76 @@
 import 'package:flutter/material.dart';
 
 abstract class AppColors {
-  static Color get primaryColor => const Color(0xFFFF7F00);
-  static Color get grey => const Color.fromRGBO(0, 0, 0, 0.5);
-  static Color get fieldBackgroundColor => const Color(0xFFF5F4F4);
-  static Color get fieldTextColor => const Color.fromRGBO(0, 0, 0, 0.5);
+  static const primaryColor = Color(0xFFFF7F00);
+  static const grey = Color.fromRGBO(0, 0, 0, 0.5);
+  static const lightGrey = Color.fromRGBO(0, 0, 0, 0.3);
+  static const fieldBackgroundColor = Color(0xFFF5F4F4);
+  static const fieldTextColor = Color.fromRGBO(0, 0, 0, 0.5);
 }
 
 abstract class AppThemes {
   static ThemeData get lightTheme => ThemeData(
-        primaryColor: AppColors.primaryColor,
-        backgroundColor: Colors.white,
-        scaffoldBackgroundColor: Colors.white,
-        textButtonTheme: TextButtonThemeData(
-            style: TextButton.styleFrom(primary: AppColors.primaryColor)),
-        textTheme: TextTheme(
-            headline1: const TextStyle(
-                color: Colors.black, fontWeight: FontWeight.w900, fontSize: 36),
-            subtitle1: const TextStyle(
-                color: Colors.black, fontWeight: FontWeight.w300, fontSize: 20),
-            bodyText1: const TextStyle(color: Colors.black, fontSize: 16),
-            button: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w600,
-                color: AppColors.primaryColor)),
-      );
+      primaryColor: AppColors.primaryColor,
+      backgroundColor: Colors.white,
+      scaffoldBackgroundColor: Colors.white,
+      textButtonTheme: TextButtonThemeData(
+          style: TextButton.styleFrom(primary: AppColors.primaryColor)),
+      textTheme: const TextTheme(
+          headline1: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w900, fontSize: 36),
+          headline2: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w900, fontSize: 32),
+          headline3: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w900, fontSize: 24),
+          subtitle1: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w300, fontSize: 20),
+          bodyText1: TextStyle(color: Colors.black, fontSize: 16),
+          button: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primaryColor)),
+      cardTheme: const CardTheme(
+        elevation: 0,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+        ),
+      ),
+      checkboxTheme: CheckboxThemeData(
+          checkColor: MaterialStateProperty.all(Colors.white),
+          fillColor: MaterialStateProperty.all(AppColors.lightGrey),
+          shape: const CircleBorder(),
+          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
+      snackBarTheme: const SnackBarThemeData(
+          contentTextStyle: TextStyle(color: Colors.white, fontSize: 16),
+          behavior: SnackBarBehavior.floating,
+          actionTextColor: AppColors.primaryColor,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.all(Radius.circular(10.0)),
+          )));
 }
 
-class AppBackground extends StatelessWidget {
-  final Widget child;
-
-  const AppBackground({
-    Key? key,
-    required this.child,
-  }) : super(key: key);
+class AppLayout extends StatelessWidget {
+  final List<Widget> children;
+  const AppLayout({Key? key, required this.children}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
-    return Scaffold(
-        body: SafeArea(
-            child: SizedBox(
-      height: size.height,
-      width: double.infinity,
-      child: Stack(
-        alignment: Alignment.center,
-        children: <Widget>[
-          /*Positioned(
-              top: 0,
-              left: 0,
-              child: Image.asset('assets/images/blob_top.png',
-                  width: size.width * 0.25)),
-          Positioned(
-              bottom: 0,
-              right: 0,
-              child: Image.asset('assets/images/blob_bottom.png',
-                  width: size.width * 0.25)),*/
-          Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32.0),
-              child: child)
-        ],
-      ),
-    )));
+    return Scaffold(body: SafeArea(
+      child: LayoutBuilder(builder: (context, constraint) {
+        return SingleChildScrollView(
+          child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: constraint.maxHeight),
+              child: IntrinsicHeight(
+                  child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        children: children,
+                      )))),
+        );
+      }),
+    ));
   }
 }
