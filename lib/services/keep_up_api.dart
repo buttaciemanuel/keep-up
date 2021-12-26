@@ -1,6 +1,8 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'package:keep_up/main.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
 class KeepUp {
@@ -85,7 +87,7 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.title, event.title)
       ..set(KeepUpEventDataModelKey.startDate, event.startDate)
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
-      ..set(KeepUpEventDataModelKey.creatorId, currentUser!.objectId);
+      ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
 
@@ -94,23 +96,26 @@ class KeepUp {
           'KeepUp: event creation failure: ${response.error!.message}');
     }
 
-    log('KeepUp: event creation success');
+    log('KeepUp: event creation success ${eventObject.objectId}');
 
     for (final recurrence in event._recurrences) {
       final recurrenceObject = ParseObject(
           KeepUpRecurrenceDataModelKey.className)
-        ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.objectId)
+        ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.toPointer())
         ..set(KeepUpRecurrenceDataModelKey.description, recurrence.description)
         ..set(KeepUpRecurrenceDataModelKey.startTime, recurrence.startTime)
-        ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime);
+        ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime)
+        ..set(KeepUpRecurrenceDataModelKey.type, recurrence.type.index);
 
       switch (recurrence.type) {
         case KeepUpRecurrenceType.none:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day)
-            ..set(KeepUpRecurrenceDataModelKey.month, recurrence.month)
-            ..set(KeepUpRecurrenceDataModelKey.year, recurrence.year)
-            ..set(KeepUpRecurrenceDataModelKey.weekDay, recurrence.weekDay);
+            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
+            ..set(
+                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModelKey.year, recurrence.year.toString())
+            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+                recurrence.weekDay.toString());
           break;
         case KeepUpRecurrenceType.daily:
           recurrenceObject
@@ -124,12 +129,14 @@ class KeepUp {
             ..set(KeepUpRecurrenceDataModelKey.day, null)
             ..set(KeepUpRecurrenceDataModelKey.month, '*')
             ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay, recurrence.weekDay);
+            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+                recurrence.weekDay.toString());
           break;
         case KeepUpRecurrenceType.monthly:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day)
-            ..set(KeepUpRecurrenceDataModelKey.month, recurrence.month)
+            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
+            ..set(
+                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
             ..set(KeepUpRecurrenceDataModelKey.year, '*')
             ..set(KeepUpRecurrenceDataModelKey.weekDay, null);
           break;
@@ -146,12 +153,12 @@ class KeepUp {
       log('KeepUp: recurrence creation success');
 
       for (final exception in recurrence._exceptions) {
-        final exceptionObject =
-            ParseObject(KeepUpExceptionDataModelKey.className)
-              ..set(KeepUpExceptionDataModelKey.eventId, eventObject.objectId)
-              ..set(KeepUpExceptionDataModelKey.recurrenceId,
-                  recurrenceObject.objectId)
-              ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
+        final exceptionObject = ParseObject(
+            KeepUpExceptionDataModelKey.className)
+          ..set(KeepUpExceptionDataModelKey.eventId, eventObject.toPointer())
+          ..set(KeepUpExceptionDataModelKey.recurrenceId,
+              recurrenceObject.toPointer())
+          ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
 
         final response = await exceptionObject.save();
 
@@ -164,6 +171,110 @@ class KeepUp {
       }
     }
   }
+
+  Future<List<KeepUpTask>> getTasks({required DateTime inDate}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+    // costruisce la lista di eventi appartenenti all'utente
+    final isUserEventQuery =
+        QueryBuilder.name(KeepUpEventDataModelKey.className)
+          ..whereEqualTo(KeepUpEventDataModelKey.creatorId,
+              KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!));
+    // questa query restituisce le eccezioni in tale data da escludere
+    final exceptionsQuery =
+        QueryBuilder.name(KeepUpExceptionDataModelKey.className)
+          ..keysToReturn([KeepUpExceptionDataModelKey.recurrenceId])
+          ..whereEqualTo(KeepUpExceptionDataModelKey.onDate, inDate)
+          // seleziona solo le eccezioni di ricorrenze del'utente loggato
+          ..whereMatchesQuery(
+              KeepUpExceptionDataModelKey.eventId, isUserEventQuery);
+    // effettua le query
+    final exceptionObjects = await exceptionsQuery.find();
+    // questa query restituisce gli eventi dell'utente in data
+    final eventsQuery = QueryBuilder.name(KeepUpEventDataModelKey.className)
+      // seleziona solo le eccezioni di ricorrenze del'utente loggato
+      ..whereEqualTo(KeepUpEventDataModelKey.creatorId,
+          KeepUpUserDataModelKey.pointerTo(currentUser.objectId!))
+      // filtra le date
+      ..whereLessThanOrEqualTo(KeepUpEventDataModelKey.startDate, inDate);
+    // effettua la query
+    final eventsObjects = await eventsQuery.find();
+    // costruisce la query principale
+    final mainQuery = QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
+      // seleziona le colonne relative al nome evento, ora fine e ora inizio
+      ..includeObject([
+        KeepUpEventDataModelKey.className,
+        KeepUpExceptionDataModelKey.className
+      ])
+      // seleziona le ricorrenze degli eventi dell'utente loggato
+      ..whereContainedIn(KeepUpRecurrenceDataModelKey.eventId,
+          eventsObjects.map((e) => e[KeepUpEventDataModelKey.id]).toList())
+      // scarta le eccezioni in quella data
+      ..whereNotContainedIn(
+          KeepUpRecurrenceDataModelKey.id,
+          exceptionObjects
+              .map((e) => e[KeepUpExceptionDataModelKey.recurrenceId])
+              .toList());
+
+    // effettua la query principale
+    final recurrenceObjects = await mainQuery.find();
+
+    if (recurrenceObjects.isEmpty) return [];
+
+    // filtra le occorrenze
+    final tasks = recurrenceObjects
+        .where((recurrenceObject) {
+          final endEventDate = eventsObjects.firstWhere((eventObject) {
+            return eventObject[KeepUpEventDataModelKey.id] ==
+                recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
+                    [KeepUpEventDataModelKey.id];
+          })[KeepUpEventDataModelKey.endDate];
+
+          return (endEventDate != null
+                  ? inDate.compareTo(endEventDate as DateTime) <= 0
+                  : true) &&
+              (recurrenceObject[KeepUpRecurrenceDataModelKey.day] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.day] ==
+                      inDate.day.toString() ||
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.weekDay] ==
+                      '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.weekDay] ==
+                      inDate.weekday.toString()) &&
+              (recurrenceObject[KeepUpRecurrenceDataModelKey.month] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.month] ==
+                      inDate.month.toString()) &&
+              (recurrenceObject[KeepUpRecurrenceDataModelKey.year] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.year] ==
+                      inDate.year.toString());
+        })
+        .map((recurrenceObject) {
+          return KeepUpTask(
+              title: eventsObjects.firstWhere((eventObject) {
+                return eventObject[KeepUpEventDataModelKey.id] ==
+                    recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
+                        [KeepUpEventDataModelKey.id];
+              })[KeepUpEventDataModelKey.title],
+              startTime: KeepUpDayTime.fromJson(
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]),
+              endTime: KeepUpDayTime.fromJson(
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]));
+        })
+        .toSet()
+        .toList();
+
+    tasks.sort((a, b) => a.startTime.compareTo(b.startTime));
+
+    return tasks;
+
+    /*final response = await mainQuery.query();
+
+    if (response.success && response.results != null) {
+      for (var o in response.results!) {
+        log((o as ParseObject).toString());
+      }
+    } else {
+      log('query failed: ${response.error!.message}');
+    }*/
+  }
 }
 
 class KeepUpUser {
@@ -175,7 +286,7 @@ class KeepUpUser {
 }
 
 class KeepUpEvent {
-  int? id;
+  String? id;
   final String title;
   final DateTime startDate;
   final DateTime? endDate;
@@ -184,7 +295,8 @@ class KeepUpEvent {
   KeepUpEvent(
       {this.id, required this.title, required this.startDate, this.endDate});
 
-  void addDailySchedule({required TimeOfDay startTime, TimeOfDay? endTime}) {
+  void addDailySchedule(
+      {required KeepUpDayTime startTime, KeepUpDayTime? endTime}) {
     _recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.daily,
         startTime: startTime,
@@ -193,8 +305,8 @@ class KeepUpEvent {
 
   void addWeeklySchedule(
       {required int weekDay,
-      required TimeOfDay startTime,
-      TimeOfDay? endTime}) {
+      required KeepUpDayTime startTime,
+      KeepUpDayTime? endTime}) {
     _recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.weekly,
         weekDay: weekDay,
@@ -203,7 +315,9 @@ class KeepUpEvent {
   }
 
   void addMonthlySchedule(
-      {required int day, required TimeOfDay startTime, TimeOfDay? endTime}) {
+      {required int day,
+      required KeepUpDayTime startTime,
+      KeepUpDayTime? endTime}) {
     _recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.monthly,
         day: day,
@@ -215,8 +329,8 @@ class KeepUpEvent {
       {required int day,
       required int month,
       required int year,
-      required TimeOfDay startTime,
-      TimeOfDay? endTime}) {
+      required KeepUpDayTime startTime,
+      KeepUpDayTime? endTime}) {
     final date = DateTime(year, month, day);
     _recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.none,
@@ -229,19 +343,19 @@ class KeepUpEvent {
   }
 }
 
-enum KeepUpRecurrenceType { none, daily, weekly, monthly }
+enum KeepUpRecurrenceType { daily, weekly, monthly, none }
 
 class KeepUpRecurrence {
-  int? id;
-  int? eventId;
-  final KeepUpRecurrenceType type;
-  final String? description;
-  final TimeOfDay startTime;
-  final TimeOfDay? endTime;
-  final int? day;
-  final int? month;
-  final int? year;
-  final int? weekDay;
+  String? id;
+  String? eventId;
+  KeepUpRecurrenceType type;
+  String? description;
+  KeepUpDayTime startTime;
+  KeepUpDayTime? endTime;
+  int? day;
+  int? month;
+  int? year;
+  int? weekDay;
   final List<KeepUpRecurrenceException> _exceptions = [];
 
   KeepUpRecurrence(
@@ -256,16 +370,50 @@ class KeepUpRecurrence {
       this.year,
       this.weekDay});
 
+  factory KeepUpRecurrence.fromJson(dynamic json) {
+    final result = KeepUpRecurrence(
+        id: json[KeepUpRecurrenceDataModelKey.id],
+        eventId: json[KeepUpRecurrenceDataModelKey.eventId]
+            [KeepUpEventDataModelKey.id],
+        startTime: KeepUpDayTime.fromJson(
+            json[KeepUpRecurrenceDataModelKey.startTime]),
+        endTime:
+            KeepUpDayTime.fromJson(json[KeepUpRecurrenceDataModelKey.endTime]),
+        type: KeepUpRecurrenceType
+            .values[json[KeepUpRecurrenceDataModelKey.type]]);
+
+    switch (result.type) {
+      case KeepUpRecurrenceType.none:
+        result.day = int.parse(json[KeepUpRecurrenceDataModelKey.day]);
+        result.month = int.parse(json[KeepUpRecurrenceDataModelKey.month]);
+        result.year = int.parse(json[KeepUpRecurrenceDataModelKey.year]);
+        result.weekDay = int.parse(json[KeepUpRecurrenceDataModelKey.weekDay]);
+        break;
+      case KeepUpRecurrenceType.daily:
+        break;
+      case KeepUpRecurrenceType.weekly:
+        result.weekDay = int.parse(json[KeepUpRecurrenceDataModelKey.weekDay]);
+        break;
+      case KeepUpRecurrenceType.monthly:
+        result.day = int.parse(json[KeepUpRecurrenceDataModelKey.day]);
+        result.month = int.parse(json[KeepUpRecurrenceDataModelKey.month]);
+        break;
+      default:
+    }
+
+    return result;
+  }
+
   void addException(
-      {int? eventId, int? recurrenceId, required DateTime onDate}) {
+      {String? eventId, String? recurrenceId, required DateTime onDate}) {
     _exceptions.add(KeepUpRecurrenceException(
         eventId: eventId, recurrenceId: recurrenceId, onDate: onDate));
   }
 }
 
 class KeepUpRecurrenceException {
-  final int? eventId;
-  final int? recurrenceId;
+  final String? eventId;
+  final String? recurrenceId;
   final DateTime onDate;
 
   KeepUpRecurrenceException(
@@ -279,34 +427,103 @@ abstract class KeepUpUserDataModelKey {
   static const email = 'email';
   static const password = 'password';
   static const fullName = 'fullName';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': '_User', 'objectId': objectId};
+  }
 }
 
 abstract class KeepUpEventDataModelKey {
   static const className = 'Event';
-  static const id = 'id';
+  static const id = 'objectId';
   static const title = 'title';
   static const startDate = 'startDate';
   static const endDate = 'endDate';
   static const creatorId = 'creatorId';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
 }
 
 abstract class KeepUpRecurrenceDataModelKey {
   static const className = 'Recurrence';
-  static const id = 'id';
+  static const id = 'objectId';
   static const eventId = 'eventId';
   static const description = 'description';
   static const startTime = 'startTime';
   static const endTime = 'endTime';
-  //static const interval = 'interval';
+  static const type = 'type';
   static const day = 'day';
   static const month = 'month';
   static const year = 'year';
   static const weekDay = 'weekDay';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
 }
 
 abstract class KeepUpExceptionDataModelKey {
   static const className = 'Exception';
+  static const id = 'objectId';
   static const eventId = 'eventId';
   static const recurrenceId = 'recurrenceId';
   static const onDate = 'onDate';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+class KeepUpDayTime {
+  final int hour, minute;
+
+  KeepUpDayTime({required this.hour, required this.minute});
+
+  KeepUpDayTime.fromDateTime(DateTime dateTime)
+      : hour = dateTime.hour,
+        minute = dateTime.minute;
+
+  KeepUpDayTime.fromJson(Map<String, dynamic> json)
+      : hour = json['hour'],
+        minute = json['minute'];
+
+  Map<String, dynamic> toJson() {
+    return {'hour': hour, 'minute': minute};
+  }
+
+  TimeOfDay toTimeOfDay() => TimeOfDay(hour: hour, minute: minute);
+
+  int compareTo(KeepUpDayTime other) {
+    if (hour < other.hour) return -1;
+    if (hour > other.hour) return 1;
+    if (minute < other.minute) return -1;
+    if (minute > other.minute) return 1;
+    return 0;
+  }
+
+  @override
+  int get hashCode => Object.hash(hour, minute);
+
+  @override
+  bool operator ==(Object other) {
+    return (other as KeepUpDayTime).hour == hour && other.minute == minute;
+  }
+}
+
+class KeepUpTask {
+  String title;
+  KeepUpDayTime startTime, endTime;
+
+  KeepUpTask(
+      {required this.title, required this.startTime, required this.endTime});
+
+  @override
+  int get hashCode => Object.hash(title, startTime.hour, startTime.minute);
+
+  @override
+  bool operator ==(Object other) {
+    return (other as KeepUpTask).title == title && other.startTime == startTime;
+  }
 }

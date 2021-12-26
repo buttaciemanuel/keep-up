@@ -15,9 +15,9 @@ select event.name, recurrence.start_time, recurrence.end_time
 from event, recurrence
 where event.creator_user_id = user and event.id = recurrence.event_id and (
         (date.timestamp - event.start_date.timestamp) % recurrence.interval.timestamp = 0 or (
-		    (recurrence.year = date.year or recurrence.year = '*' ) and 
-		    (recurrence.month = date.month or recurrence.month = '*' ) and 
-		    (recurrence.day = date.day or recurrence.weekday = '*' or recurrence.day = date.weekday or recurrence.weekday = '*' ) and
+		    (recurrence.year = date.year or recurrence.year = '*') and 
+		    (recurrence.month = date.month or recurrence.month = '*') and 
+		    (recurrence.day = date.day or recurrence.weekday = '*' or recurrence.day = date.weekday or recurrence.weekday = '*') and
 		    date >= event.start_date and date <= event.end_date
 	    )
 	) and (recurrence.event_id, recurrence.id) not in (

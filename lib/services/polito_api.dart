@@ -215,7 +215,7 @@ class PolitoClient {
   }
 
   /// Questa funzione è utile allo scopo dell'app poichè restituisce la lista
-  /// degli orari delle lezioni dello studente loggato.
+  /// degli orari ordinati delle lezioni dello studente loggato.
   Future<List<PolitoLecture>?> getWeekSchedule({DateTime? inDate}) async {
     if (_session == null) {
       return Future.error('PolitoClient: no session is established');
@@ -245,6 +245,8 @@ class PolitoClient {
       log('${jsonLecture['TITOLO_MATERIA']}: ${jsonLecture['ORA_INIZIO']} - ${jsonLecture['ORA_FINE']}');
       lectures.add(PolitoLecture.fromJson(jsonLecture));
     }
+
+    lectures.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
     return lectures;
   }
@@ -304,7 +306,7 @@ class PolitoLecture {
 
   /// Estrapola una lezione dell'oggetto json ricevuto in risposta dal server
   /// del Politecnico
-  static PolitoLecture fromJson(dynamic json) {
+  factory PolitoLecture.fromJson(dynamic json) {
     final format = DateFormat('dd/MM/yyyy HH:mm:ss');
     return PolitoLecture(
         subject: json['TITOLO_MATERIA'],

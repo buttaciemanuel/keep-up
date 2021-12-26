@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return StudentSyncScreen(username: currentUser.fullname);
+                return const RegisterScreen();
               } else {
                 // home screen
                 return const LoginScreen();

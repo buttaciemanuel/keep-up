@@ -14,7 +14,10 @@ class AppTaskCard extends StatelessWidget {
     AppColors.primaryColor,
     Colors.green,
     Colors.blue,
-    Colors.amber
+    Colors.amber,
+    Colors.cyan,
+    Colors.indigo,
+    Colors.purple
   ];
 
   const AppTaskCard(
@@ -31,7 +34,7 @@ class AppTaskCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     final cardColor =
-        color ?? _defaultColors[Random().nextInt(_defaultColors.length)];
+        color ?? _defaultColors[title.hashCode % _defaultColors.length];
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,

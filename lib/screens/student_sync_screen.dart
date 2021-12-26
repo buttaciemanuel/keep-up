@@ -1,8 +1,9 @@
 import 'dart:developer';
-
+import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:keep_up/screens/student_timetable_screen.dart';
+import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/services/polito_api.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/components/text_field.dart';
@@ -47,16 +48,20 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
     super.dispose();
   }
 
-  Future<void> _downloadUniversitySchedule() async {
+  Future<void> _downloadUniversitySchedule(
+      {required Function onComplete}) async {
     const unsupportedUniversitySnackBar = SnackBar(
         padding: EdgeInsets.all(20),
         content: Text('L\'università scelta non è supportata'));
     const unauthorizedUniversitySnackBar = SnackBar(
         padding: EdgeInsets.all(20),
         content: Text('La matricola o la password non corrisponde'));
-    const errorUniversitySnackBar = SnackBar(
+    const downloadUniversitySnackBar = SnackBar(
         padding: EdgeInsets.all(20),
         content: Text('Non riesco a scaricare i tuoi orari'));
+    const uploadUniversitySnackBar = SnackBar(
+        padding: EdgeInsets.all(20),
+        content: Text('Non riesco a caricare i tuoi orari sull\'app'));
     switch (_selectedUniversity) {
       case UniversityItem.polito:
         // avvia il client di connessione all'università
@@ -69,16 +74,51 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
           ScaffoldMessenger.of(context)
               .showSnackBar(unauthorizedUniversitySnackBar);
         });
-        // scaricamento degli orari dall'account dell'università
+        // scaricamento degli orari ordinati dall'account dell'università
         final lectures = await PolitoClient.instance
             .getWeekSchedule(inDate: DateTime(2021, 12, 1))
             .onError((error, stackTrace) {
-          ScaffoldMessenger.of(context).showSnackBar(errorUniversitySnackBar);
+          ScaffoldMessenger.of(context)
+              .showSnackBar(downloadUniversitySnackBar);
         });
         // scrittura delle lezioni su server
-
+        if (lectures != null) {
+          final events = HashMap<String, KeepUpEvent>();
+          // creazione di eventi settimanali a partire dalle lezioni
+          for (final lecture in lectures) {
+            if (events.containsKey(lecture.subject)) {
+              events.update(lecture.subject, (event) {
+                event.addWeeklySchedule(
+                    weekDay: lecture.startDateTime.weekday,
+                    startTime:
+                        KeepUpDayTime.fromDateTime(lecture.startDateTime),
+                    endTime: KeepUpDayTime.fromDateTime(lecture.endDateTime));
+                return event;
+              });
+            } else {
+              final event = KeepUpEvent(
+                  title: lecture.subject, startDate: lecture.startDateTime);
+              event.addWeeklySchedule(
+                  weekDay: lecture.startDateTime.weekday,
+                  startTime: KeepUpDayTime.fromDateTime(lecture.startDateTime),
+                  endTime: KeepUpDayTime.fromDateTime(lecture.endDateTime));
+              events.putIfAbsent(lecture.subject, () => event);
+            }
+          }
+          // scrittura degli eventi sul database
+          for (final event in events.values) {
+            await KeepUp.instance
+                .createEvent(event)
+                .onError((error, stackTrace) {
+              ScaffoldMessenger.of(context)
+                  .showSnackBar(uploadUniversitySnackBar);
+            });
+          }
+        }
         // logout da account istituzionale
         await PolitoClient.instance.logoutUser();
+        // prosegue alla prossima schemata
+        onComplete();
         break;
       default:
         ScaffoldMessenger.of(context)
@@ -143,11 +183,12 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                 child: TextButton(
                     onPressed: () {
                       if (_formKey.currentState!.validate()) {
-                        _downloadUniversitySchedule();
-
-                        /*Navigator.of(context).pushReplacement(MaterialPageRoute(
-                            builder: (context) =>
-                                const StudentTimetableScreen()));*/
+                        _downloadUniversitySchedule(onComplete: () {
+                          Navigator.of(context).pushReplacement(
+                              MaterialPageRoute(
+                                  builder: (context) =>
+                                      const StudentTimetableScreen()));
+                        });
                       }
                     },
                     child: const Text('Avanti')),
