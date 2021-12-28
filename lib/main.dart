@@ -38,7 +38,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
         debugShowCheckedModeBanner: false,
-        title: 'My first app',
+        title: 'KeepUp',
         theme: AppThemes.lightTheme,
         home: AnimatedSplashScreen.withScreenFunction(
             duration: 1500,
@@ -49,7 +49,7 @@ class MyApp extends StatelessWidget {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return const RegisterScreen();
+                return const StudentTimetableScreen();
               } else {
                 // home screen
                 return const LoginScreen();

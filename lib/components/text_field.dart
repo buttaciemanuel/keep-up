@@ -8,13 +8,17 @@ class AppTextField extends StatefulWidget {
   final IconData? icon;
   final bool? isPassword;
   final TextEditingController? controller;
+  final TextInputType? inputType;
+  final bool? isTextArea;
   const AppTextField(
       {Key? key,
       this.icon,
       this.isPassword,
       required this.hint,
       this.validator,
-      this.controller})
+      this.controller,
+      this.inputType,
+      this.isTextArea})
       : super(key: key);
 
   @override
@@ -40,6 +44,12 @@ class _AppTextFieldState extends State<AppTextField> {
             color: AppColors.fieldBackgroundColor,
             borderRadius: BorderRadius.circular(10)),
         child: TextFormField(
+            maxLines: (widget.isTextArea ?? false) ? 6 : 1,
+            minLines: (widget.isTextArea ?? false) ? 6 : 1,
+            keyboardType: widget.inputType ??
+                ((widget.isTextArea ?? false)
+                    ? TextInputType.multiline
+                    : TextInputType.text),
             style: Theme.of(context).textTheme.bodyText1,
             validator: widget.validator,
             controller: widget.controller,

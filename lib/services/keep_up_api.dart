@@ -9,7 +9,7 @@ class KeepUp {
   static const _keyApplicationId = '7lriFNc0muHJqnpBYmDJjkCdBP4ptEXEYaSiIZKR';
   static const _keyClientKey = 'Hboaa5QGH79mvRQQfEXCUcjXnZlrXSlZk0axzQri';
   static const _keyParseServerUrl = 'https://parseapi.back4app.com';
-  static const _keyParseLocalServerUrl = 'http://localhost:1337/parse/';
+  static const _keyParseLocalServerUrl = 'http://192.168.1.227:1337/parse/';
 
   static final KeepUp _instance = KeepUp._();
 
@@ -23,7 +23,8 @@ class KeepUp {
     return this;
   }
 
-  Future<void> register(String fullName, String email, String password) async {
+  Future<KeepUpResponse> register(
+      String fullName, String email, String password) async {
     final user = ParseUser.createUser(email, password, email);
 
     user.set(KeepUpUserDataModelKey.fullName, fullName);
@@ -32,32 +33,35 @@ class KeepUp {
 
     if (response.success) {
       log('KeepUp: user registration success');
+      return KeepUpResponse();
     } else {
-      return Future.error(
+      return KeepUpResponse.error(
           'KeepUp: user registration failure: ${response.error!.message}');
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<KeepUpResponse> login(String email, String password) async {
     final user = ParseUser(email, password, email);
     final response = await user.login();
 
     if (response.success) {
       log('KeepUp: user login success');
+      return KeepUpResponse();
     } else {
-      return Future.error(
+      return KeepUpResponse.error(
           'KeepUp: user registration failure: ${response.error!.message}');
     }
   }
 
-  Future<void> logout(String email, String password) async {
+  Future<KeepUpResponse> logout(String email, String password) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     final response = await currentUser!.logout();
 
     if (response.success) {
       log('KeepUp: user logout success');
+      return KeepUpResponse();
     } else {
-      return Future.error(
+      return KeepUpResponse.error(
           'KeepUp: user logout failure: ${response.error!.message}');
     }
   }
@@ -80,7 +84,8 @@ class KeepUp {
     }
   }
 
-  Future<void> createEvent(KeepUpEvent event) async {
+  /// crea un nuovo evento da zero
+  Future<KeepUpResponse> createEvent(KeepUpEvent event) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
 
     final eventObject = ParseObject(KeepUpEventDataModelKey.className)
@@ -92,7 +97,7 @@ class KeepUp {
     final response = await eventObject.save();
 
     if (!response.success) {
-      return Future.error(
+      return KeepUpResponse.error(
           'KeepUp: event creation failure: ${response.error!.message}');
     }
 
@@ -146,7 +151,7 @@ class KeepUp {
       final response = await recurrenceObject.save();
 
       if (!response.success) {
-        return Future.error(
+        return KeepUpResponse.error(
             'KeepUp: recurrence creation failure: ${response.error!.message}');
       }
 
@@ -163,16 +168,27 @@ class KeepUp {
         final response = await exceptionObject.save();
 
         if (!response.success) {
-          return Future.error(
+          return KeepUpResponse.error(
               'KeepUp: exception creation failure: ${response.error!.message}');
         } else {
           log('KeepUp: exception creation success');
         }
       }
     }
+
+    return KeepUpResponse();
   }
 
-  Future<List<KeepUpTask>> getTasks({required DateTime inDate}) async {
+  /// legge un evento con tutte le occorrenze dal database
+  Future<KeepUpResponse<KeepUpEvent>> getEvent(
+      {required String eventId}) async {
+    return KeepUpResponse();
+  }
+
+  /// il risultato è restituito come List<KeepUpTask> all'interno del campo
+  /// 'response' della KeepUpResponse
+  Future<KeepUpResponse<List<KeepUpTask>>> getTasks(
+      {required DateTime inDate}) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     // costruisce la lista di eventi appartenenti all'utente
     final isUserEventQuery =
@@ -218,7 +234,9 @@ class KeepUp {
     // effettua la query principale
     final recurrenceObjects = await mainQuery.find();
 
-    if (recurrenceObjects.isEmpty) return [];
+    if (recurrenceObjects.isEmpty) {
+      KeepUpResponse.result(List<KeepUpTask>.empty());
+    }
 
     // filtra le occorrenze
     final tasks = recurrenceObjects
@@ -248,11 +266,15 @@ class KeepUp {
         })
         .map((recurrenceObject) {
           return KeepUpTask(
+              eventId: recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
+                  [KeepUpEventDataModelKey.id],
+              recurrenceId: recurrenceObject[KeepUpRecurrenceDataModelKey.id],
               title: eventsObjects.firstWhere((eventObject) {
                 return eventObject[KeepUpEventDataModelKey.id] ==
                     recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
                         [KeepUpEventDataModelKey.id];
               })[KeepUpEventDataModelKey.title],
+              date: inDate,
               startTime: KeepUpDayTime.fromJson(
                   recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]),
               endTime: KeepUpDayTime.fromJson(
@@ -263,7 +285,7 @@ class KeepUp {
 
     tasks.sort((a, b) => a.startTime.compareTo(b.startTime));
 
-    return tasks;
+    return KeepUpResponse.result(tasks);
 
     /*final response = await mainQuery.query();
 
@@ -274,6 +296,30 @@ class KeepUp {
     } else {
       log('query failed: ${response.error!.message}');
     }*/
+  }
+}
+
+/// Questa classe è utilizzata per ricevere una risposta attraverso una
+/// future in seguito ad una richiesta http
+class KeepUpResponse<T> {
+  // conferma la presenza di un errore nella richesta
+  bool error = false;
+  // contiene il messaggio di errore eventualmente
+  String? message;
+  // contiene il risultato della richiesta (e.g. i task di un certo giorno)
+  T? result;
+
+  /// costruisce una risposta errata
+  KeepUpResponse.error(this.message) {
+    error = true;
+  }
+
+  /// costruisce una risposta corretta con risultato
+  KeepUpResponse.result(this.result);
+
+  /// costruisce una risposta corretta priva di risultato
+  KeepUpResponse() {
+    result = null;
   }
 }
 
@@ -513,17 +559,28 @@ class KeepUpDayTime {
 }
 
 class KeepUpTask {
+  String eventId;
+  String recurrenceId;
   String title;
+  DateTime date;
   KeepUpDayTime startTime, endTime;
 
   KeepUpTask(
-      {required this.title, required this.startTime, required this.endTime});
+      {required this.eventId,
+      required this.recurrenceId,
+      required this.title,
+      required this.date,
+      required this.startTime,
+      required this.endTime});
 
   @override
-  int get hashCode => Object.hash(title, startTime.hour, startTime.minute);
+  int get hashCode =>
+      Object.hash(title, startTime.hour, startTime.minute, date);
 
   @override
   bool operator ==(Object other) {
-    return (other as KeepUpTask).title == title && other.startTime == startTime;
+    return (other as KeepUpTask).title == title &&
+        other.startTime == startTime &&
+        other.date == date;
   }
 }

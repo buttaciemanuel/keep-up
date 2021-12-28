@@ -45,6 +45,7 @@ dependencies:
   intl: ^0.17.0
   flutter_secure_storage: ^5.0.2
   dots_indicator: ^2.0.0
+  shimmer: ^2.0.0
 
 dev_dependencies:
   flutter_test:

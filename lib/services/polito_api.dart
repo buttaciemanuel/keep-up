@@ -48,6 +48,30 @@ class PolitoSavedKey {
   static const token = 'polito.token';
 }
 
+/// Questa classe è utilizzata per ricevere una risposta attraverso una
+/// future in seguito ad una richiesta http
+class PolitoResponse<T> {
+  // conferma la presenza di un errore nella richesta
+  bool error = false;
+  // contiene il messaggio di errore eventualmente
+  String? message;
+  // contiene il risultato della richiesta (e.g. la timetable delle lezioni)
+  T? result;
+
+  /// costruisce una risposta errata
+  PolitoResponse.error(this.message) {
+    error = true;
+  }
+
+  /// costruisce una risposta corretta con risultato
+  PolitoResponse.result(this.result);
+
+  /// costruisce una risposta corretta priva di risultato
+  PolitoResponse() {
+    result = null;
+  }
+}
+
 /// La classe principale utilizzata per le principali operazioni dell'API:
 /// [+] registrazione dispositivo (operazione implicita)
 /// [+] login con matricola e password
@@ -129,7 +153,7 @@ class PolitoClient {
   /// Verifica inizialmente se l'utente è loggato e quindi esiste una sessione
   /// in corso. Nel qual caso in cui non ci sia nessuna sessione, allora si procede
   /// con la registrazione del dispositivo
-  Future<void> init() async {
+  Future<PolitoResponse> init() async {
     final deviceInfo = await _getDeviceInfo();
     final sessionToken = await _keychain.read(key: PolitoSavedKey.token);
     final sessionUser = await _keychain.read(key: PolitoSavedKey.user);
@@ -150,10 +174,12 @@ class PolitoClient {
       print('${response.body}');
 
       if (_didRequestFailed(response)) {
-        return Future.error(
+        return PolitoResponse.error(
             'PolitoClient: unable to register device. ${jsonBody['esito']['generale']['error']}');
       }
     }
+
+    return PolitoResponse();
   }
 
   /// Restituisce l'utente dell'attuale sessione o null se nessun utente è loggato
@@ -163,7 +189,7 @@ class PolitoClient {
   /// Questa funzione è utilizzata per autenticare l'utente con matricola e password
   /// del Politecnico. Se tutto va correttamente, al termine la sessione è stabilita
   /// e le informazioni sono preservate nel portachiavi fino al prossimo logout.
-  Future<void> loginUser(String userId, String password) async {
+  Future<PolitoResponse> loginUser(String userId, String password) async {
     final response = await _makeRequest(PolitoRequestEndpoint.loginEndpoint, {
       PolitoRequestParams.registeredIdParam: _registeredId,
       PolitoRequestParams.userIdParam: userId,
@@ -175,7 +201,7 @@ class PolitoClient {
     print('${response.body}');
 
     if (_didRequestFailed(response)) {
-      return Future.error(
+      return PolitoResponse.error(
           'PolitoClient: unable to login user. ${jsonBody['esito']['generale']['error']}');
     } else {
       _session = PolitoUserSession();
@@ -185,13 +211,15 @@ class PolitoClient {
       _keychain.write(key: PolitoSavedKey.password, value: password);
       _keychain.write(key: PolitoSavedKey.token, value: _session!.token);
     }
+
+    return PolitoResponse();
   }
 
   /// Quando l'utente esegue il logout, la sessione è chiusa e tutte le informazioni
   /// nel portachiavi sono eliminate.
-  Future<void> logoutUser() async {
+  Future<PolitoResponse> logoutUser() async {
     if (_session == null) {
-      return Future.error('PolitoClient: no session is established');
+      return PolitoResponse.error('PolitoClient: no session is established');
     }
 
     final response = await _makeRequest(PolitoRequestEndpoint.logoutEndpoint, {
@@ -204,7 +232,7 @@ class PolitoClient {
     print('${response.body}');
 
     if (_didRequestFailed(response)) {
-      return Future.error(
+      return PolitoResponse.error(
           'PolitoClient: unable to logout user. ${jsonBody['esito']['generale']['error']}');
     } else {
       _session = null;
@@ -212,13 +240,17 @@ class PolitoClient {
       _keychain.delete(key: PolitoSavedKey.password);
       _keychain.delete(key: PolitoSavedKey.token);
     }
+
+    return PolitoResponse();
   }
 
   /// Questa funzione è utile allo scopo dell'app poichè restituisce la lista
   /// degli orari ordinati delle lezioni dello studente loggato.
-  Future<List<PolitoLecture>?> getWeekSchedule({DateTime? inDate}) async {
+  /// Nota: il risultato è restituito come List<PolitoLecture>
+  Future<PolitoResponse<List<PolitoLecture>>> getWeekSchedule(
+      {DateTime? inDate}) async {
     if (_session == null) {
-      return Future.error('PolitoClient: no session is established');
+      return PolitoResponse.error('PolitoClient: no session is established');
     }
 
     final now = DateFormat('dd/MM/yyyy').format(inDate ?? DateTime.now());
@@ -235,7 +267,7 @@ class PolitoClient {
     print('${response.body}');
 
     if (_didRequestFailed(response)) {
-      return Future.error(
+      return PolitoResponse.error(
           'PolitoClient: unable get user schedule. ${jsonBody['esito']['generale']['error']}');
     }
 
@@ -248,7 +280,7 @@ class PolitoClient {
 
     lectures.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
-    return lectures;
+    return PolitoResponse.result(lectures);
   }
 }
 

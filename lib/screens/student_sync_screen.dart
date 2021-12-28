@@ -2,15 +2,12 @@ import 'dart:developer';
 import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:keep_up/constant.dart';
 import 'package:keep_up/screens/student_timetable_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/services/polito_api.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/components/text_field.dart';
-
-abstract class UniversityItem {
-  static const polito = 'Politenico di Torino';
-}
 
 class StudentSyncScreen extends StatefulWidget {
   final String username;
@@ -67,56 +64,58 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
         // avvia il client di connessione all'università
         await PolitoClient.instance.init();
         // accesso all'account istituzionale
-        await PolitoClient.instance
-            .loginUser(_studentIdController.text.trim(),
-                _studentPasswordController.text.trim())
-            .onError((error, stackTrace) {
+        var response = await PolitoClient.instance.loginUser(
+            _studentIdController.text.trim(),
+            _studentPasswordController.text.trim());
+        // controlla che non siano avvenuti errori
+        if (response.error) {
           ScaffoldMessenger.of(context)
               .showSnackBar(unauthorizedUniversitySnackBar);
-        });
+          return;
+        }
         // scaricamento degli orari ordinati dall'account dell'università
-        final lectures = await PolitoClient.instance
-            .getWeekSchedule(inDate: DateTime(2021, 12, 1))
-            .onError((error, stackTrace) {
+        response = await PolitoClient.instance
+            .getWeekSchedule(inDate: DateTime(2021, 12, 1));
+        // logout da account istituzionale
+        await PolitoClient.instance.logoutUser();
+        // controlla che non siano avvenuti errori
+        if (response.error) {
           ScaffoldMessenger.of(context)
               .showSnackBar(downloadUniversitySnackBar);
-        });
+          return;
+        }
         // scrittura delle lezioni su server
-        if (lectures != null) {
-          final events = HashMap<String, KeepUpEvent>();
-          // creazione di eventi settimanali a partire dalle lezioni
-          for (final lecture in lectures) {
-            if (events.containsKey(lecture.subject)) {
-              events.update(lecture.subject, (event) {
-                event.addWeeklySchedule(
-                    weekDay: lecture.startDateTime.weekday,
-                    startTime:
-                        KeepUpDayTime.fromDateTime(lecture.startDateTime),
-                    endTime: KeepUpDayTime.fromDateTime(lecture.endDateTime));
-                return event;
-              });
-            } else {
-              final event = KeepUpEvent(
-                  title: lecture.subject, startDate: lecture.startDateTime);
+        final events = HashMap<String, KeepUpEvent>();
+        final lectures = response.result as List<PolitoLecture>;
+        // creazione di eventi settimanali a partire dalle lezioni
+        for (final lecture in lectures) {
+          if (events.containsKey(lecture.subject)) {
+            events.update(lecture.subject, (event) {
               event.addWeeklySchedule(
                   weekDay: lecture.startDateTime.weekday,
                   startTime: KeepUpDayTime.fromDateTime(lecture.startDateTime),
                   endTime: KeepUpDayTime.fromDateTime(lecture.endDateTime));
-              events.putIfAbsent(lecture.subject, () => event);
-            }
-          }
-          // scrittura degli eventi sul database
-          for (final event in events.values) {
-            await KeepUp.instance
-                .createEvent(event)
-                .onError((error, stackTrace) {
-              ScaffoldMessenger.of(context)
-                  .showSnackBar(uploadUniversitySnackBar);
+              return event;
             });
+          } else {
+            final event = KeepUpEvent(
+                title: lecture.subject, startDate: lecture.startDateTime);
+            event.addWeeklySchedule(
+                weekDay: lecture.startDateTime.weekday,
+                startTime: KeepUpDayTime.fromDateTime(lecture.startDateTime),
+                endTime: KeepUpDayTime.fromDateTime(lecture.endDateTime));
+            events.putIfAbsent(lecture.subject, () => event);
           }
         }
-        // logout da account istituzionale
-        await PolitoClient.instance.logoutUser();
+        // scrittura degli eventi sul database
+        for (final event in events.values) {
+          KeepUpResponse response = await KeepUp.instance.createEvent(event);
+          // controlla se sono avvenuti errori
+          if (response.error) {
+            ScaffoldMessenger.of(context)
+                .showSnackBar(uploadUniversitySnackBar);
+          }
+        }
         // prosegue alla prossima schemata
         onComplete();
         break;
@@ -140,7 +139,9 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
             style: TextButton.styleFrom(primary: AppColors.grey),
           ),
         ),
-        Expanded(child: SvgPicture.asset('assets/images/students.svg')),
+        Expanded(
+            child: Image.asset('assets/images/students.png',
+                height: 0.25 * size.height, width: 0.9 * size.width)),
         SizedBox(height: 0.05 * size.height),
         Align(
             alignment: Alignment.centerLeft,

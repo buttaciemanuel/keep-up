@@ -47,7 +47,9 @@ class _LoginScreenState extends State<LoginScreen> {
         content: Text('L\'email e la password non corrispondono'));
     return AppLayout(children: [
       SizedBox(height: 0.05 * size.height),
-      Expanded(child: SvgPicture.asset('assets/images/schedule.svg')),
+      Expanded(
+          child: Image.asset('assets/images/schedule.png',
+              height: 0.25 * size.height, width: 0.7 * size.width)),
       SizedBox(height: 0.05 * size.height),
       Align(
           alignment: Alignment.centerLeft,
@@ -82,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AppTextField(
                 validator: _emailValidator,
                 hint: 'La tua email',
+                inputType: TextInputType.emailAddress,
                 icon: Icons.email,
                 controller: _emailController),
             SizedBox(height: 0.02 * size.height),
