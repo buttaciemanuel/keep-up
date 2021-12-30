@@ -114,6 +114,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
           if (response.error) {
             ScaffoldMessenger.of(context)
                 .showSnackBar(uploadUniversitySnackBar);
+            return;
           }
         }
         // prosegue alla prossima schemata

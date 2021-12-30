@@ -280,7 +280,21 @@ class PolitoClient {
 
     lectures.sort((a, b) => a.startDateTime.compareTo(b.startDateTime));
 
-    return PolitoResponse.result(lectures);
+    List<PolitoLecture> reduced = [];
+
+    for (int i = 0; i < lectures.length;) {
+      reduced.add(lectures[i++]);
+      for (; i < lectures.length; ++i) {
+        if (lectures[i].subject == reduced.last.subject &&
+            lectures[i].startDateTime == reduced.last.endDateTime) {
+          reduced.last.endDateTime = lectures[i].endDateTime;
+        } else {
+          break;
+        }
+      }
+    }
+
+    return PolitoResponse.result(reduced);
   }
 }
 
@@ -304,25 +318,25 @@ class PolitoUser {
 /// Questa classe rappresenta l'istanza di evento di una lezione settimanale
 class PolitoLecture {
   // nome della materia
-  final String subject;
+  String subject;
   // data e orario di inizio
-  final DateTime startDateTime;
+  DateTime startDateTime;
   // data e orario di fine
-  final DateTime endDateTime;
+  DateTime endDateTime;
   // insegnante
-  final String? lecturer;
+  String? lecturer;
   // nome aula
-  final String? room;
+  String? room;
   // tipologia di evento
-  final String? eventType;
+  String? eventType;
   // identificativo del corso a cui appartiene la lezione
-  final String? courseId;
+  String? courseId;
   // identificativo della lezione
-  final String? lectureId;
+  String? lectureId;
   // inizio coorte
-  final String? cohortFrom;
+  String? cohortFrom;
   // fine coorte
-  final String? cohortTo;
+  String? cohortTo;
 
   PolitoLecture(
       {required this.subject,

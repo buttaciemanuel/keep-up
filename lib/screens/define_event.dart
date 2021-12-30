@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/components/text_field.dart';
@@ -73,7 +75,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   final _eventDescriptionController = TextEditingController();
   final _startTimePickerController = TextEditingController();
   final _endTimePickerController = TextEditingController();
-  int _selectedDay = 0;
+  int _selectedDayIndex = 0;
 
   String? _eventNameValidator(String? text) {
     if (text == null || text.isEmpty) {
@@ -85,6 +87,11 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   @override
   void initState() {
     _event = KeepUpEvent(title: '', startDate: DateTime.now());
+
+    if (widget.fromTask != null) {
+      _selectedDayIndex = widget.fromTask!.date.weekday - 1;
+    }
+
     super.initState();
   }
 
@@ -104,7 +111,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
   Widget createNewEventScreen(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    final dayRecurrence = _scheduleInWeekDay(_selectedDay);
+    final dayRecurrence = _scheduleInWeekDay(_selectedDayIndex);
 
     if (dayRecurrence != null) {
       _startTimePickerController.text =
@@ -144,7 +151,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                         width: size.width / 8.5,
                         child: TextButton(
                             style: TextButton.styleFrom(
-                                side: _selectedDay == index
+                                side: _selectedDayIndex == index
                                     ? const BorderSide(
                                         width: 3.0, color: AppColors.lightGrey)
                                     : BorderSide.none,
@@ -154,7 +161,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                                         ? AppColors.primaryColor
                                         : Colors.black.withOpacity(0.15)),
                             onPressed: () =>
-                                setState(() => _selectedDay = index),
+                                setState(() => _selectedDayIndex = index),
                             child: Text(weekDays[index][0].toUpperCase(),
                                 style: const TextStyle(color: Colors.white))));
                   }))),
@@ -213,7 +220,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
                       setState(() {
                         _event.addWeeklySchedule(
-                            weekDay: _selectedDay,
+                            weekDay: _selectedDayIndex + 1,
                             startTime: startTime,
                             endTime: endTime);
                       });
@@ -260,7 +267,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
                       setState(() {
                         _event.addWeeklySchedule(
-                            weekDay: _selectedDay,
+                            weekDay: _selectedDayIndex + 1,
                             startTime: startTime,
                             endTime: endTime);
                       });
@@ -317,9 +324,9 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     );
   }
 
-  KeepUpRecurrence? _scheduleInWeekDay(int weekDay) {
+  KeepUpRecurrence? _scheduleInWeekDay(int index) {
     for (final recurrence in _event.recurrences) {
-      if (recurrence.weekDay == weekDay) {
+      if (recurrence.weekDay == index + 1) {
         return recurrence;
       }
     }
@@ -327,32 +334,47 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     return null;
   }
 
+  // scarica l'evento dal database solo al primo caricamento di schermata,
+  // ovvero lazy loading, e dopo lo riutilizza per un merge
+  Future<bool> _getExistingEvent(String eventId) async {
+    if (_event.id != null) return true;
+
+    final response = await KeepUp.instance.getEvent(eventId: eventId);
+
+    if (response.error) return false;
+
+    _event = response.result as KeepUpEvent;
+
+    return true;
+  }
+
   Widget editExistingEvent(BuildContext context) {
     Size size = MediaQuery.of(context).size;
-    final dayRecurrence = _scheduleInWeekDay(_selectedDay);
 
-    if (dayRecurrence != null) {
-      _startTimePickerController.text =
-          dayRecurrence.startTime.toTimeOfDay().format(context);
-      if (dayRecurrence.endTime == null) {
-        _endTimePickerController.clear();
-      } else {
-        _endTimePickerController.text =
-            dayRecurrence.endTime!.toTimeOfDay().format(context);
-      }
-    } else {
-      _startTimePickerController.clear();
-      _endTimePickerController.clear();
-    }
-
-    return FutureBuilder<KeepUpResponse>(
-        future: KeepUp.instance.getEvent(eventId: widget.fromTask!.eventId),
+    return FutureBuilder<bool>(
+        future: _getExistingEvent(widget.fromTask!.eventId),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            _event = snapshot.data!.result as KeepUpEvent;
             _eventNameController.text = _event.title;
+
             if (_event.description != null) {
               _eventDescriptionController.text = _event.description!;
+            }
+
+            final dayRecurrence = _scheduleInWeekDay(_selectedDayIndex);
+
+            if (dayRecurrence != null) {
+              _startTimePickerController.text =
+                  dayRecurrence.startTime.toTimeOfDay().format(context);
+              if (dayRecurrence.endTime == null) {
+                _endTimePickerController.clear();
+              } else {
+                _endTimePickerController.text =
+                    dayRecurrence.endTime!.toTimeOfDay().format(context);
+              }
+            } else {
+              _startTimePickerController.clear();
+              _endTimePickerController.clear();
             }
 
             return AppLayout(
@@ -379,7 +401,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                                 width: size.width / 8.5,
                                 child: TextButton(
                                     style: TextButton.styleFrom(
-                                        side: _selectedDay == index
+                                        side: _selectedDayIndex == index
                                             ? const BorderSide(
                                                 width: 3.0,
                                                 color: AppColors.lightGrey)
@@ -390,8 +412,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                                                 ? AppColors.primaryColor
                                                 : Colors.black
                                                     .withOpacity(0.15)),
-                                    onPressed: () =>
-                                        setState(() => _selectedDay = index),
+                                    onPressed: () => setState(
+                                        () => _selectedDayIndex = index),
                                     child: Text(
                                         weekDays[index][0].toUpperCase(),
                                         style: const TextStyle(
@@ -456,7 +478,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
                               setState(() {
                                 _event.addWeeklySchedule(
-                                    weekDay: _selectedDay,
+                                    weekDay: _selectedDayIndex + 1,
                                     startTime: startTime,
                                     endTime: endTime);
                               });
@@ -506,7 +528,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
                               setState(() {
                                 _event.addWeeklySchedule(
-                                    weekDay: _selectedDay,
+                                    weekDay: _selectedDayIndex + 1,
                                     startTime: startTime,
                                     endTime: endTime);
                               });
@@ -544,8 +566,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                         if (_formKey.currentState!.validate()) {
                           _event.title = _eventNameController.text;
                           _event.description = _eventDescriptionController.text;
-                          final response = await KeepUp.instance
-                              .createEvent(_event, update: true);
+                          final response =
+                              await KeepUp.instance.updateEvent(_event);
                           if (response.error) {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(_eventCreationSnackbar);

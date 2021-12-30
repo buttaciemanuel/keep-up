@@ -4,12 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:keep_up/style.dart';
 
 class AppTaskCard extends StatelessWidget {
-  final String title;
-  final TimeOfDay time;
-  final Color? color;
-  final int? completedTasksCount;
-  final int? totalTaskCount;
-  final bool? active;
+  String title;
+  TimeOfDay time;
+  TimeOfDay? endTime;
+  Color? color;
+  int? completedTasksCount;
+  int? totalTaskCount;
+  bool? active;
   static final _defaultColors = [
     AppColors.primaryColor,
     Colors.green,
@@ -20,10 +21,11 @@ class AppTaskCard extends StatelessWidget {
     Colors.purple
   ];
 
-  const AppTaskCard(
+  AppTaskCard(
       {Key? key,
       required this.title,
       required this.time,
+      this.endTime,
       this.color,
       this.completedTasksCount,
       this.totalTaskCount,
@@ -77,7 +79,12 @@ class AppTaskCard extends StatelessWidget {
                   SizedBox(height: 0.005 * size.height),
                   Align(
                       alignment: Alignment.centerLeft,
-                      child: Text(time.format(context), style: timeStyle)),
+                      child: Text(
+                          time.format(context) +
+                              (endTime != null
+                                  ? ' → ${endTime!.format(context)}'
+                                  : ''),
+                          style: timeStyle)),
                   if (completedTasksCount != null &&
                       totalTaskCount != null) ...[
                     SizedBox(height: 0.01 * size.height),

@@ -92,10 +92,8 @@ class KeepUp {
     return response.count > 0;
   }
 
-  /// crea un nuovo evento da zero, o lo aggiorna interamente se il flag
-  /// 'update' è settato
-  Future<KeepUpResponse> createEvent(KeepUpEvent event,
-      {bool update = false}) async {
+  /// crea un nuovo evento da zero
+  Future<KeepUpResponse> createEvent(KeepUpEvent event) async {
     final isDuplicated = await _eventAlreadyExists(event.title);
 
     if (isDuplicated) {
@@ -111,8 +109,6 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
       ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
-
-    if (update) eventObject.objectId = event.id;
 
     final response = await eventObject.save();
 
@@ -167,10 +163,6 @@ class KeepUp {
         default:
       }
 
-      if (update && recurrence.id != null) {
-        recurrenceObject.objectId = recurrence.id;
-      }
-
       final response = await recurrenceObject.save();
 
       if (!response.success) {
@@ -188,9 +180,105 @@ class KeepUp {
               recurrenceObject.toPointer())
           ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
 
-        if (update && exception.id != null) {
-          exceptionObject.objectId = exception.id;
+        final response = await exceptionObject.save();
+
+        if (!response.success) {
+          return KeepUpResponse.error(
+              'KeepUp: exception creation failure: ${response.error!.message}');
+        } else {
+          log('KeepUp: exception creation success');
         }
+      }
+    }
+
+    return KeepUpResponse();
+  }
+
+  /// aggiorna un evento nel database
+  Future<KeepUpResponse> updateEvent(KeepUpEvent event) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+
+    final eventObject = ParseObject(KeepUpEventDataModelKey.className)
+      ..objectId = event.id
+      ..set(KeepUpEventDataModelKey.title, event.title)
+      ..set(KeepUpEventDataModelKey.startDate, event.startDate)
+      ..set(KeepUpEventDataModelKey.endDate, event.endDate)
+      ..set(KeepUpEventDataModelKey.description, event.description)
+      ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
+
+    final response = await eventObject.save();
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: event updaye failure: ${response.error!.message}');
+    }
+
+    log('KeepUp: event update success ${eventObject.objectId}');
+
+    for (final recurrence in event.recurrences) {
+      final recurrenceObject =
+          ParseObject(KeepUpRecurrenceDataModelKey.className)
+            ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.toPointer())
+            ..set(KeepUpRecurrenceDataModelKey.startTime, recurrence.startTime)
+            ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime)
+            ..set(KeepUpRecurrenceDataModelKey.type, recurrence.type.index);
+
+      if (recurrence.id != null) recurrenceObject.objectId = recurrence.id;
+
+      switch (recurrence.type) {
+        case KeepUpRecurrenceType.none:
+          recurrenceObject
+            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
+            ..set(
+                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModelKey.year, recurrence.year.toString())
+            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+                recurrence.weekDay.toString());
+          break;
+        case KeepUpRecurrenceType.daily:
+          recurrenceObject
+            ..set(KeepUpRecurrenceDataModelKey.day, '*')
+            ..set(KeepUpRecurrenceDataModelKey.month, '*')
+            ..set(KeepUpRecurrenceDataModelKey.year, '*')
+            ..set(KeepUpRecurrenceDataModelKey.weekDay, '*');
+          break;
+        case KeepUpRecurrenceType.weekly:
+          recurrenceObject
+            ..set(KeepUpRecurrenceDataModelKey.day, null)
+            ..set(KeepUpRecurrenceDataModelKey.month, '*')
+            ..set(KeepUpRecurrenceDataModelKey.year, '*')
+            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+                recurrence.weekDay.toString());
+          break;
+        case KeepUpRecurrenceType.monthly:
+          recurrenceObject
+            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
+            ..set(
+                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModelKey.year, '*')
+            ..set(KeepUpRecurrenceDataModelKey.weekDay, null);
+          break;
+        default:
+      }
+
+      final response = await recurrenceObject.save();
+
+      if (!response.success) {
+        return KeepUpResponse.error(
+            'KeepUp: recurrence update failure: ${response.error!.message}');
+      }
+
+      log('KeepUp: recurrence update success');
+
+      for (final exception in recurrence.exceptions) {
+        final exceptionObject = ParseObject(
+            KeepUpExceptionDataModelKey.className)
+          ..set(KeepUpExceptionDataModelKey.eventId, eventObject.toPointer())
+          ..set(KeepUpExceptionDataModelKey.recurrenceId,
+              recurrenceObject.toPointer())
+          ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
+
+        if (exception.id != null) exceptionObject.objectId = exception.id;
 
         final response = await exceptionObject.save();
 
@@ -348,7 +436,7 @@ class KeepUp {
               startTime: KeepUpDayTime.fromJson(
                   recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]),
               endTime: KeepUpDayTime.fromJson(
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]));
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.endTime]));
         })
         .toSet()
         .toList();
@@ -417,6 +505,8 @@ class KeepUpEvent {
 
   void addDailySchedule(
       {required KeepUpDayTime startTime, KeepUpDayTime? endTime}) {
+    recurrences
+        .removeWhere((element) => element.type == KeepUpRecurrenceType.daily);
     recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.daily,
         startTime: startTime,
@@ -427,6 +517,9 @@ class KeepUpEvent {
       {required int weekDay,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
+    recurrences.removeWhere((element) =>
+        element.type == KeepUpRecurrenceType.weekly &&
+        element.weekDay == weekDay);
     recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.weekly,
         weekDay: weekDay,
@@ -438,6 +531,8 @@ class KeepUpEvent {
       {required int day,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
+    recurrences.removeWhere((element) =>
+        element.type == KeepUpRecurrenceType.monthly && element.day == day);
     recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.monthly,
         day: day,
@@ -452,6 +547,11 @@ class KeepUpEvent {
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
     final date = DateTime(year, month, day);
+    recurrences.removeWhere((element) =>
+        element.type == KeepUpRecurrenceType.none &&
+        element.day == day &&
+        element.month == month &&
+        element.year == year);
     recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.none,
         day: day,

@@ -68,14 +68,16 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                               },
                               child: AppTaskCard(
                                   title: task.title,
-                                  time: task.startTime.toTimeOfDay())))
+                                  time: task.startTime.toTimeOfDay(),
+                                  endTime: task.endTime.toTimeOfDay())))
                           .toList());
                 } else {
                   return ListView(
-                    children: const [
+                    children: [
                       SkeletonLoader(
                           child: AppTaskCard(
-                              title: '', time: TimeOfDay(hour: 0, minute: 0)))
+                              title: '',
+                              time: const TimeOfDay(hour: 0, minute: 0)))
                     ],
                   );
                 }
