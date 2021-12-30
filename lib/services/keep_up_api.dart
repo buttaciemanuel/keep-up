@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
@@ -91,8 +92,10 @@ class KeepUp {
     return response.count > 0;
   }
 
-  /// crea un nuovo evento da zero
-  Future<KeepUpResponse> createEvent(KeepUpEvent event) async {
+  /// crea un nuovo evento da zero, o lo aggiorna interamente se il flag
+  /// 'update' è settato
+  Future<KeepUpResponse> createEvent(KeepUpEvent event,
+      {bool update = false}) async {
     final isDuplicated = await _eventAlreadyExists(event.title);
 
     if (isDuplicated) {
@@ -108,6 +111,8 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
       ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
+
+    if (update) eventObject.objectId = event.id;
 
     final response = await eventObject.save();
 
@@ -162,6 +167,10 @@ class KeepUp {
         default:
       }
 
+      if (update && recurrence.id != null) {
+        recurrenceObject.objectId = recurrence.id;
+      }
+
       final response = await recurrenceObject.save();
 
       if (!response.success) {
@@ -171,13 +180,17 @@ class KeepUp {
 
       log('KeepUp: recurrence creation success');
 
-      for (final exception in recurrence._exceptions) {
+      for (final exception in recurrence.exceptions) {
         final exceptionObject = ParseObject(
             KeepUpExceptionDataModelKey.className)
           ..set(KeepUpExceptionDataModelKey.eventId, eventObject.toPointer())
           ..set(KeepUpExceptionDataModelKey.recurrenceId,
               recurrenceObject.toPointer())
           ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
+
+        if (update && exception.id != null) {
+          exceptionObject.objectId = exception.id;
+        }
 
         final response = await exceptionObject.save();
 
@@ -193,10 +206,53 @@ class KeepUp {
     return KeepUpResponse();
   }
 
-  /// legge un evento con tutte le occorrenze dal database
+  /// legge un evento con tutte le ricorrenze relative dal database
   Future<KeepUpResponse<KeepUpEvent>> getEvent(
       {required String eventId}) async {
-    return KeepUpResponse();
+    // costruisce la query per ottenere l'evento
+    final mainQuery = QueryBuilder.name(KeepUpEventDataModelKey.className)
+      ..whereEqualTo(KeepUpEventDataModelKey.id, eventId);
+    // costruisce la lista delle ricorrenze
+    final recurrencesQuery =
+        QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
+          ..whereEqualTo(KeepUpRecurrenceDataModelKey.eventId,
+              KeepUpEventDataModelKey.pointerTo(eventId));
+    // costruisce la lista delle eccezioni alle ricorrenze
+    final exceptionsQuery =
+        QueryBuilder.name(KeepUpExceptionDataModelKey.className)
+          ..whereEqualTo(KeepUpExceptionDataModelKey.eventId,
+              KeepUpEventDataModelKey.pointerTo(eventId));
+
+    // effettua le query
+    final eventObjects = await mainQuery.find();
+    final recurrenceObjects = await recurrencesQuery.find();
+    final exceptionObjects = await exceptionsQuery.find();
+
+    if (eventObjects.isEmpty) {
+      return KeepUpResponse.error('KeepUp: no event found with such id');
+    }
+
+    final event = KeepUpEvent.fromJson(eventObjects.first);
+    final recurrencesMap = HashMap<String, KeepUpRecurrence>();
+
+    for (final recurrenceObject in recurrenceObjects) {
+      final recurrence = KeepUpRecurrence.fromJson(recurrenceObject);
+      recurrencesMap.putIfAbsent(recurrence.id!, () => recurrence);
+    }
+
+    for (final exceptionObject in exceptionObjects) {
+      final exception = KeepUpRecurrenceException.fromJson(exceptionObject);
+      recurrencesMap.update(exception.recurrenceId!, (value) {
+        value.exceptions.add(exception);
+        return value;
+      });
+    }
+
+    for (final recurrence in recurrencesMap.values) {
+      event.recurrences.add(recurrence);
+    }
+
+    return KeepUpResponse.result(event);
   }
 
   /// il risultato è restituito come List<KeepUpTask> all'interno del campo
@@ -300,16 +356,6 @@ class KeepUp {
     tasks.sort((a, b) => a.startTime.compareTo(b.startTime));
 
     return KeepUpResponse.result(tasks);
-
-    /*final response = await mainQuery.query();
-
-    if (response.success && response.results != null) {
-      for (var o in response.results!) {
-        log((o as ParseObject).toString());
-      }
-    } else {
-      log('query failed: ${response.error!.message}');
-    }*/
   }
 }
 
@@ -359,6 +405,15 @@ class KeepUpEvent {
       required this.startDate,
       this.endDate,
       this.description});
+
+  factory KeepUpEvent.fromJson(dynamic json) {
+    return KeepUpEvent(
+        id: json[KeepUpEventDataModelKey.id],
+        title: json[KeepUpEventDataModelKey.title],
+        startDate: json[KeepUpEventDataModelKey.startDate],
+        endDate: json[KeepUpEventDataModelKey.endDate],
+        description: json[KeepUpEventDataModelKey.description]);
+  }
 
   void addDailySchedule(
       {required KeepUpDayTime startTime, KeepUpDayTime? endTime}) {
@@ -420,7 +475,7 @@ class KeepUpRecurrence {
   int? month;
   int? year;
   int? weekDay;
-  final List<KeepUpRecurrenceException> _exceptions = [];
+  final List<KeepUpRecurrenceException> exceptions = [];
 
   KeepUpRecurrence(
       {this.id,
@@ -469,18 +524,29 @@ class KeepUpRecurrence {
 
   void addException(
       {String? eventId, String? recurrenceId, required DateTime onDate}) {
-    _exceptions.add(KeepUpRecurrenceException(
+    exceptions.add(KeepUpRecurrenceException(
         eventId: eventId, recurrenceId: recurrenceId, onDate: onDate));
   }
 }
 
 class KeepUpRecurrenceException {
+  final String? id;
   final String? eventId;
   final String? recurrenceId;
   final DateTime onDate;
 
   KeepUpRecurrenceException(
-      {this.eventId, this.recurrenceId, required this.onDate});
+      {this.id, this.eventId, this.recurrenceId, required this.onDate});
+
+  factory KeepUpRecurrenceException.fromJson(dynamic json) {
+    return KeepUpRecurrenceException(
+        id: json[KeepUpExceptionDataModelKey.id],
+        eventId: json[KeepUpExceptionDataModelKey.eventId]
+            [KeepUpEventDataModelKey.id],
+        recurrenceId: json[KeepUpExceptionDataModelKey.recurrenceId]
+            [KeepUpEventDataModelKey.id],
+        onDate: json[KeepUpExceptionDataModelKey.onDate]);
+  }
 }
 
 abstract class KeepUpUserDataModelKey {

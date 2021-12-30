@@ -38,7 +38,9 @@ class AppTimeTextField extends StatelessWidget {
                 filled: true,
                 fillColor: AppColors.fieldBackgroundColor,
                 hintText: hint,
-                labelText: hint,
+                labelText: controller != null && controller!.text.isEmpty
+                    ? null
+                    : hint,
                 floatingLabelStyle:
                     const TextStyle(color: AppColors.primaryColor),
                 border: UnderlineInputBorder(
@@ -69,7 +71,6 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   final _formKey = GlobalKey<FormState>();
   final _eventNameController = TextEditingController();
   final _eventDescriptionController = TextEditingController();
-  final _timePickerController = TextEditingController();
   final _startTimePickerController = TextEditingController();
   final _endTimePickerController = TextEditingController();
   int _selectedDay = 0;
@@ -90,7 +91,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   @override
   void dispose() {
     _eventNameController.dispose();
-    _timePickerController.dispose();
+    _startTimePickerController.dispose();
+    _endTimePickerController.dispose();
     super.dispose();
   }
 
@@ -101,7 +103,218 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   }
 
   Widget createNewEventScreen(BuildContext context) {
-    return Text('NOT YET IMPLEMENTED');
+    Size size = MediaQuery.of(context).size;
+    final dayRecurrence = _scheduleInWeekDay(_selectedDay);
+
+    if (dayRecurrence != null) {
+      _startTimePickerController.text =
+          dayRecurrence.startTime.toTimeOfDay().format(context);
+      if (dayRecurrence.endTime == null) {
+        _endTimePickerController.clear();
+      } else {
+        _endTimePickerController.text =
+            dayRecurrence.endTime!.toTimeOfDay().format(context);
+      }
+    } else {
+      _startTimePickerController.clear();
+      _endTimePickerController.clear();
+    }
+
+    return AppLayout(
+      children: [
+        SizedBox(height: 0.05 * size.height),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Crea l\'attività',
+                style: Theme.of(context).textTheme.headline2)),
+        SizedBox(height: 0.02 * size.height),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Pianifica l\'attività durante la settimana.',
+                style: Theme.of(context).textTheme.subtitle1)),
+        SizedBox(height: 0.03 * size.height),
+        Form(
+            key: _formKey,
+            child: Column(children: [
+              SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                      children: List.generate(weekDays.length, (index) {
+                    return SizedBox(
+                        width: size.width / 8.5,
+                        child: TextButton(
+                            style: TextButton.styleFrom(
+                                side: _selectedDay == index
+                                    ? const BorderSide(
+                                        width: 3.0, color: AppColors.lightGrey)
+                                    : BorderSide.none,
+                                shape: const CircleBorder(),
+                                backgroundColor:
+                                    _scheduleInWeekDay(index) != null
+                                        ? AppColors.primaryColor
+                                        : Colors.black.withOpacity(0.15)),
+                            onPressed: () =>
+                                setState(() => _selectedDay = index),
+                            child: Text(weekDays[index][0].toUpperCase(),
+                                style: const TextStyle(color: Colors.white))));
+                  }))),
+              SizedBox(height: 0.03 * size.height),
+              Row(children: [
+                AppTimeTextField(
+                    hint: 'Inizio',
+                    controller: _startTimePickerController,
+                    width: size.width / 2.5,
+                    onTap: () async {
+                      final _startTime = await showTimePicker(
+                          context: context,
+                          initialTime: dayRecurrence != null
+                              ? dayRecurrence.startTime.toTimeOfDay()
+                              : TimeOfDay.now(),
+                          initialEntryMode: TimePickerEntryMode.input,
+                          helpText: 'Inizio',
+                          errorInvalidText: 'L\'orario non è valido',
+                          hourLabelText: 'Ora',
+                          minuteLabelText: 'Minuto',
+                          confirmText: 'Continua',
+                          cancelText: 'Annulla');
+
+                      if (_startTime == null) return;
+
+                      _startTimePickerController.text =
+                          _startTime.format(context);
+
+                      final _endTime = await showTimePicker(
+                          context: context,
+                          initialTime: dayRecurrence != null
+                              ? (dayRecurrence.endTime != null
+                                  ? dayRecurrence.endTime!.toTimeOfDay()
+                                  : dayRecurrence.startTime.toTimeOfDay())
+                              : TimeOfDay.now(),
+                          initialEntryMode: TimePickerEntryMode.input,
+                          helpText: 'Fine',
+                          errorInvalidText: 'L\'orario non è valido',
+                          hourLabelText: 'Ora',
+                          minuteLabelText: 'Minuto',
+                          confirmText: 'Salva',
+                          cancelText: 'Annulla');
+
+                      if (_endTime == null) return;
+
+                      _endTimePickerController.text = _endTime.format(context);
+
+                      final startTime = KeepUpDayTime.fromTimeOfDay(_startTime);
+                      final endTime = KeepUpDayTime.fromTimeOfDay(_endTime);
+
+                      if (startTime.compareTo(endTime) >= 0) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(_timeMismatchSnackbar);
+                        return;
+                      }
+
+                      setState(() {
+                        _event.addWeeklySchedule(
+                            weekDay: _selectedDay,
+                            startTime: startTime,
+                            endTime: endTime);
+                      });
+                    }),
+                const Expanded(child: SizedBox()),
+                AppTimeTextField(
+                    hint: 'Fine',
+                    controller: _endTimePickerController,
+                    width: size.width / 2.5,
+                    onTap: () async {
+                      final _endTime = await showTimePicker(
+                          context: context,
+                          initialTime: dayRecurrence != null
+                              ? (dayRecurrence.endTime != null
+                                  ? dayRecurrence.endTime!.toTimeOfDay()
+                                  : dayRecurrence.startTime.toTimeOfDay())
+                              : TimeOfDay.now(),
+                          initialEntryMode: TimePickerEntryMode.input,
+                          helpText: 'Fine',
+                          errorInvalidText: 'L\'orario non è valido',
+                          hourLabelText: 'Ora',
+                          minuteLabelText: 'Minuto',
+                          confirmText: 'Salva',
+                          cancelText: 'Annulla');
+
+                      if (_endTime == null) return;
+
+                      _endTimePickerController.text = _endTime.format(context);
+
+                      if (_startTimePickerController.text.isEmpty) {
+                        return;
+                      }
+
+                      final startTime = KeepUpDayTime.fromDateTime(
+                          DateFormat("h:mm")
+                              .parse(_startTimePickerController.text));
+                      final endTime = KeepUpDayTime.fromTimeOfDay(_endTime);
+
+                      if (startTime.compareTo(endTime) >= 0) {
+                        ScaffoldMessenger.of(context)
+                            .showSnackBar(_timeMismatchSnackbar);
+                        return;
+                      }
+
+                      setState(() {
+                        _event.addWeeklySchedule(
+                            weekDay: _selectedDay,
+                            startTime: startTime,
+                            endTime: endTime);
+                      });
+                    })
+              ]),
+              SizedBox(height: 0.03 * size.height),
+              AppTextField(
+                  validator: _eventNameValidator,
+                  hint: 'Il nome dell\'attività',
+                  label: 'Attività',
+                  inputType: TextInputType.name,
+                  controller: _eventNameController),
+              SizedBox(height: 0.02 * size.height),
+              AppTextField(
+                  controller: _eventDescriptionController,
+                  isTextArea: true,
+                  label: 'Descrizione',
+                  hint: 'La descrizione dell\'attività'),
+            ])),
+        const Expanded(child: SizedBox()),
+        Row(children: [
+          Expanded(
+              child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annulla'),
+              style: TextButton.styleFrom(primary: AppColors.grey),
+            ),
+          )),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  _event.title = _eventNameController.text;
+                  _event.description = _eventDescriptionController.text;
+                  final response = await KeepUp.instance.createEvent(_event);
+                  if (response.error) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(_eventCreationSnackbar);
+                  } else {
+                    Navigator.of(context).pop();
+                  }
+                }
+              },
+              child: const Text('Salva'),
+              style: TextButton.styleFrom(primary: AppColors.primaryColor),
+            ),
+          ),
+        ]),
+        SizedBox(height: 0.05 * size.height)
+      ],
+    );
   }
 
   KeepUpRecurrence? _scheduleInWeekDay(int weekDay) {
@@ -117,28 +330,189 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   Widget editExistingEvent(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     final dayRecurrence = _scheduleInWeekDay(_selectedDay);
+
     if (dayRecurrence != null) {
-      _timePickerController.text =
-          '${dayRecurrence.startTime.toTimeOfDay().format(context)} - ${dayRecurrence.endTime!.toTimeOfDay().format(context)}';
+      _startTimePickerController.text =
+          dayRecurrence.startTime.toTimeOfDay().format(context);
+      if (dayRecurrence.endTime == null) {
+        _endTimePickerController.clear();
+      } else {
+        _endTimePickerController.text =
+            dayRecurrence.endTime!.toTimeOfDay().format(context);
+      }
     } else {
-      _timePickerController.clear();
+      _startTimePickerController.clear();
+      _endTimePickerController.clear();
     }
 
     return FutureBuilder<KeepUpResponse>(
         future: KeepUp.instance.getEvent(eventId: widget.fromTask!.eventId),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
+            _event = snapshot.data!.result as KeepUpEvent;
+            _eventNameController.text = _event.title;
+            if (_event.description != null) {
+              _eventDescriptionController.text = _event.description!;
+            }
+
             return AppLayout(
               children: [
                 SizedBox(height: 0.05 * size.height),
                 Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Crea l\'attività',
+                    child: Text('Modifica l\'attività',
                         style: Theme.of(context).textTheme.headline2)),
-                SizedBox(height: 0.04 * size.height),
+                SizedBox(height: 0.02 * size.height),
+                Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Pianifica l\'attività durante la settimana.',
+                        style: Theme.of(context).textTheme.subtitle1)),
+                SizedBox(height: 0.03 * size.height),
                 Form(
                     key: _formKey,
                     child: Column(children: [
+                      SingleChildScrollView(
+                          scrollDirection: Axis.horizontal,
+                          child: Row(
+                              children: List.generate(weekDays.length, (index) {
+                            return SizedBox(
+                                width: size.width / 8.5,
+                                child: TextButton(
+                                    style: TextButton.styleFrom(
+                                        side: _selectedDay == index
+                                            ? const BorderSide(
+                                                width: 3.0,
+                                                color: AppColors.lightGrey)
+                                            : BorderSide.none,
+                                        shape: const CircleBorder(),
+                                        backgroundColor:
+                                            _scheduleInWeekDay(index) != null
+                                                ? AppColors.primaryColor
+                                                : Colors.black
+                                                    .withOpacity(0.15)),
+                                    onPressed: () =>
+                                        setState(() => _selectedDay = index),
+                                    child: Text(
+                                        weekDays[index][0].toUpperCase(),
+                                        style: const TextStyle(
+                                            color: Colors.white))));
+                          }))),
+                      SizedBox(height: 0.03 * size.height),
+                      Row(children: [
+                        AppTimeTextField(
+                            hint: 'Inizio',
+                            controller: _startTimePickerController,
+                            width: size.width / 2.5,
+                            onTap: () async {
+                              final _startTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: dayRecurrence != null
+                                      ? dayRecurrence.startTime.toTimeOfDay()
+                                      : TimeOfDay.now(),
+                                  initialEntryMode: TimePickerEntryMode.input,
+                                  helpText: 'Inizio',
+                                  errorInvalidText: 'L\'orario non è valido',
+                                  hourLabelText: 'Ora',
+                                  minuteLabelText: 'Minuto',
+                                  confirmText: 'Continua',
+                                  cancelText: 'Annulla');
+
+                              if (_startTime == null) return;
+
+                              _startTimePickerController.text =
+                                  _startTime.format(context);
+
+                              final _endTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: dayRecurrence != null
+                                      ? (dayRecurrence.endTime != null
+                                          ? dayRecurrence.endTime!.toTimeOfDay()
+                                          : dayRecurrence.startTime
+                                              .toTimeOfDay())
+                                      : TimeOfDay.now(),
+                                  initialEntryMode: TimePickerEntryMode.input,
+                                  helpText: 'Fine',
+                                  errorInvalidText: 'L\'orario non è valido',
+                                  hourLabelText: 'Ora',
+                                  minuteLabelText: 'Minuto',
+                                  confirmText: 'Salva',
+                                  cancelText: 'Annulla');
+
+                              if (_endTime == null) return;
+
+                              _endTimePickerController.text =
+                                  _endTime.format(context);
+
+                              final startTime =
+                                  KeepUpDayTime.fromTimeOfDay(_startTime);
+                              final endTime =
+                                  KeepUpDayTime.fromTimeOfDay(_endTime);
+
+                              if (startTime.compareTo(endTime) >= 0) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(_timeMismatchSnackbar);
+                                return;
+                              }
+
+                              setState(() {
+                                _event.addWeeklySchedule(
+                                    weekDay: _selectedDay,
+                                    startTime: startTime,
+                                    endTime: endTime);
+                              });
+                            }),
+                        const Expanded(child: SizedBox()),
+                        AppTimeTextField(
+                            hint: 'Fine',
+                            controller: _endTimePickerController,
+                            width: size.width / 2.5,
+                            onTap: () async {
+                              final _endTime = await showTimePicker(
+                                  context: context,
+                                  initialTime: dayRecurrence != null
+                                      ? (dayRecurrence.endTime != null
+                                          ? dayRecurrence.endTime!.toTimeOfDay()
+                                          : dayRecurrence.startTime
+                                              .toTimeOfDay())
+                                      : TimeOfDay.now(),
+                                  initialEntryMode: TimePickerEntryMode.input,
+                                  helpText: 'Fine',
+                                  errorInvalidText: 'L\'orario non è valido',
+                                  hourLabelText: 'Ora',
+                                  minuteLabelText: 'Minuto',
+                                  confirmText: 'Salva',
+                                  cancelText: 'Annulla');
+
+                              if (_endTime == null) return;
+
+                              _endTimePickerController.text =
+                                  _endTime.format(context);
+
+                              if (_startTimePickerController.text.isEmpty) {
+                                return;
+                              }
+
+                              final startTime = KeepUpDayTime.fromDateTime(
+                                  DateFormat("h:mm")
+                                      .parse(_startTimePickerController.text));
+                              final endTime =
+                                  KeepUpDayTime.fromTimeOfDay(_endTime);
+
+                              if (startTime.compareTo(endTime) >= 0) {
+                                ScaffoldMessenger.of(context)
+                                    .showSnackBar(_timeMismatchSnackbar);
+                                return;
+                              }
+
+                              setState(() {
+                                _event.addWeeklySchedule(
+                                    weekDay: _selectedDay,
+                                    startTime: startTime,
+                                    endTime: endTime);
+                              });
+                            })
+                      ]),
+                      SizedBox(height: 0.03 * size.height),
                       AppTextField(
                           validator: _eventNameValidator,
                           hint: 'Il nome dell\'attività',
@@ -151,203 +525,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                           isTextArea: true,
                           label: 'Descrizione',
                           hint: 'La descrizione dell\'attività'),
-                      SizedBox(height: 0.04 * size.height),
-                      Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                              'Pianifica l\'attività durante la settimana.',
-                              style: Theme.of(context).textTheme.subtitle1)),
-                      SizedBox(height: 0.03 * size.height),
-                      SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                              children: List.generate(weekDays.length, (index) {
-                            return TextButton(
-                                style: TextButton.styleFrom(
-                                    side: _selectedDay == index
-                                        ? const BorderSide(
-                                            width: 3.0,
-                                            color: AppColors.lightGrey)
-                                        : BorderSide.none,
-                                    shape: const CircleBorder(),
-                                    backgroundColor:
-                                        _scheduleInWeekDay(index) != null
-                                            ? AppColors.primaryColor
-                                            : Colors.black.withOpacity(0.15)),
-                                onPressed: () =>
-                                    setState(() => _selectedDay = index),
-                                child: Text(weekDays[index][0].toUpperCase(),
-                                    style:
-                                        const TextStyle(color: Colors.white)));
-                          }))),
-                      SizedBox(height: 0.03 * size.height),
-                      /*AppTimeTextField(
-                          controller: _timePickerController,
-                          hint: 'Scegli l\'orario',
-                          onTap: () async {
-                            final _startTime = await showTimePicker(
-                                context: context,
-                                initialTime: dayRecurrence != null
-                                    ? dayRecurrence.startTime.toTimeOfDay()
-                                    : TimeOfDay.now(),
-                                initialEntryMode: TimePickerEntryMode.input,
-                                helpText: 'Orario di inizio',
-                                errorInvalidText: 'L\'orario non è valido',
-                                hourLabelText: 'Ora',
-                                minuteLabelText: 'Minuto',
-                                confirmText: 'Continua',
-                                cancelText: 'Annulla');
-
-                            if (_startTime == null) return;
-
-                            final _endTime = await showTimePicker(
-                                context: context,
-                                initialTime: dayRecurrence != null
-                                    ? (dayRecurrence.endTime != null
-                                        ? dayRecurrence.endTime!.toTimeOfDay()
-                                        : dayRecurrence.startTime.toTimeOfDay())
-                                    : TimeOfDay.now(),
-                                initialEntryMode: TimePickerEntryMode.input,
-                                helpText: 'Orario di fine',
-                                errorInvalidText: 'L\'orario non è valido',
-                                hourLabelText: 'Ora',
-                                minuteLabelText: 'Minuto',
-                                confirmText: 'Salva',
-                                cancelText: 'Annulla');
-
-                            if (_endTime == null) return;
-
-                            final startTime =
-                                KeepUpDayTime.fromTimeOfDay(_startTime);
-                            final endTime =
-                                KeepUpDayTime.fromTimeOfDay(_endTime);
-
-                            if (startTime.compareTo(endTime) >= 0) {
-                              ScaffoldMessenger.of(context)
-                                  .showSnackBar(_timeMismatchSnackbar);
-                              return;
-                            }
-
-                            _timePickerController.text =
-                                '${_startTime.format(context)} - ${_endTime.format(context)}';
-
-                            setState(() {
-                              _event.addWeeklySchedule(
-                                  weekDay: _selectedDay,
-                                  startTime: startTime,
-                                  endTime: endTime);
-                            });
-                          })
-                    */
                     ])),
-                Row(children: [
-                  AppTimeTextField(
-                      hint: 'Inizio',
-                      controller: _startTimePickerController,
-                      width: 170,
-                      onTap: () async {
-                        final _startTime = await showTimePicker(
-                            context: context,
-                            initialTime: dayRecurrence != null
-                                ? dayRecurrence.startTime.toTimeOfDay()
-                                : TimeOfDay.now(),
-                            initialEntryMode: TimePickerEntryMode.input,
-                            helpText: 'Inizio',
-                            errorInvalidText: 'L\'orario non è valido',
-                            hourLabelText: 'Ora',
-                            minuteLabelText: 'Minuto',
-                            confirmText: 'Continua',
-                            cancelText: 'Annulla');
-
-                        if (_startTime == null) return;
-
-                        _startTimePickerController.text =
-                            _startTime.format(context);
-
-                        final _endTime = await showTimePicker(
-                            context: context,
-                            initialTime: dayRecurrence != null
-                                ? (dayRecurrence.endTime != null
-                                    ? dayRecurrence.endTime!.toTimeOfDay()
-                                    : dayRecurrence.startTime.toTimeOfDay())
-                                : TimeOfDay.now(),
-                            initialEntryMode: TimePickerEntryMode.input,
-                            helpText: 'Fine',
-                            errorInvalidText: 'L\'orario non è valido',
-                            hourLabelText: 'Ora',
-                            minuteLabelText: 'Minuto',
-                            confirmText: 'Salva',
-                            cancelText: 'Annulla');
-
-                        if (_endTime == null) return;
-
-                        _endTimePickerController.text =
-                            _endTime.format(context);
-
-                        final startTime =
-                            KeepUpDayTime.fromTimeOfDay(_startTime);
-                        final endTime = KeepUpDayTime.fromTimeOfDay(_endTime);
-
-                        if (startTime.compareTo(endTime) >= 0) {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(_timeMismatchSnackbar);
-                          return;
-                        }
-
-                        setState(() {
-                          _event.addWeeklySchedule(
-                              weekDay: _selectedDay,
-                              startTime: startTime,
-                              endTime: endTime);
-                        });
-                      }),
-                  const Expanded(child: SizedBox()),
-                  AppTimeTextField(
-                      hint: 'Fine',
-                      controller: _endTimePickerController,
-                      width: 170,
-                      onTap: () async {
-                        final _endTime = await showTimePicker(
-                            context: context,
-                            initialTime: dayRecurrence != null
-                                ? (dayRecurrence.endTime != null
-                                    ? dayRecurrence.endTime!.toTimeOfDay()
-                                    : dayRecurrence.startTime.toTimeOfDay())
-                                : TimeOfDay.now(),
-                            initialEntryMode: TimePickerEntryMode.input,
-                            helpText: 'Fine',
-                            errorInvalidText: 'L\'orario non è valido',
-                            hourLabelText: 'Ora',
-                            minuteLabelText: 'Minuto',
-                            confirmText: 'Salva',
-                            cancelText: 'Annulla');
-
-                        if (_endTime == null) return;
-
-                        _endTimePickerController.text =
-                            _endTime.format(context);
-
-                        if (_startTimePickerController.text.isEmpty) return;
-
-                        final startTime = KeepUpDayTime.fromDateTime(
-                            DateFormat("h:mm")
-                                .parse(_startTimePickerController.text));
-                        final endTime = KeepUpDayTime.fromTimeOfDay(_endTime);
-
-                        if (startTime.compareTo(endTime) >= 0) {
-                          ScaffoldMessenger.of(context)
-                              .showSnackBar(_timeMismatchSnackbar);
-                          return;
-                        }
-
-                        setState(() {
-                          _event.addWeeklySchedule(
-                              weekDay: _selectedDay,
-                              startTime: startTime,
-                              endTime: endTime);
-                        });
-                      })
-                ]),
                 const Expanded(child: SizedBox()),
                 Row(children: [
                   Expanded(
@@ -366,8 +544,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                         if (_formKey.currentState!.validate()) {
                           _event.title = _eventNameController.text;
                           _event.description = _eventDescriptionController.text;
-                          final response =
-                              await KeepUp.instance.createEvent(_event);
+                          final response = await KeepUp.instance
+                              .createEvent(_event, update: true);
                           if (response.error) {
                             ScaffoldMessenger.of(context)
                                 .showSnackBar(_eventCreationSnackbar);

@@ -33,12 +33,18 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                   alignment: Alignment.centerLeft,
                   child: Text(weekDays[_currentPageIndex],
                       style: Theme.of(context).textTheme.headline2))),
-          const IconButton(
+          IconButton(
               iconSize: 32.0,
               padding: EdgeInsets.zero,
               tooltip: 'Aggiungi',
-              onPressed: null,
-              icon: Icon(Icons.add, color: AppColors.primaryColor))
+              onPressed: () {
+                Navigator.of(context).push(MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (context) {
+                      return DefineEventScreen();
+                    }));
+              },
+              icon: const Icon(Icons.add, color: AppColors.primaryColor))
         ]),
         SizedBox(height: 0.03 * size.height),
         Expanded(
