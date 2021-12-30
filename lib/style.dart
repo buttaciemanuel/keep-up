@@ -46,7 +46,21 @@ abstract class AppThemes {
           actionTextColor: AppColors.primaryColor,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(10.0)),
-          )));
+          )),
+      timePickerTheme: const TimePickerThemeData(
+        hourMinuteTextColor: AppColors.fieldTextColor,
+        dayPeriodTextStyle:
+            TextStyle(fontWeight: FontWeight.w300, fontSize: 20),
+        dialHandColor: AppColors.primaryColor,
+        hourMinuteColor: AppColors.fieldBackgroundColor,
+        hourMinuteTextStyle:
+            TextStyle(fontWeight: FontWeight.w500, fontSize: 24),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(10.0)),
+        ),
+        /*helpTextStyle: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w900, fontSize: 24)*/
+      ));
 }
 
 class AppLayout extends StatelessWidget {

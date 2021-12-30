@@ -3,7 +3,9 @@ import 'package:keep_up/style.dart';
 import 'package:dropdown_search/dropdown_search.dart';
 
 class AppTextField extends StatefulWidget {
-  final String hint;
+  final String? hint;
+  final String? label;
+  final String? helper;
   final FormFieldValidator<String>? validator;
   final IconData? icon;
   final bool? isPassword;
@@ -14,7 +16,9 @@ class AppTextField extends StatefulWidget {
       {Key? key,
       this.icon,
       this.isPassword,
-      required this.hint,
+      this.hint,
+      this.label,
+      this.helper,
       this.validator,
       this.controller,
       this.inputType,
@@ -37,15 +41,11 @@ class _AppTextFieldState extends State<AppTextField> {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    return Container(
-        padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 15),
+    return SizedBox(
         width: size.width,
-        decoration: BoxDecoration(
-            color: AppColors.fieldBackgroundColor,
-            borderRadius: BorderRadius.circular(10)),
         child: TextFormField(
-            maxLines: (widget.isTextArea ?? false) ? 6 : 1,
-            minLines: (widget.isTextArea ?? false) ? 6 : 1,
+            maxLines: (widget.isTextArea ?? false) ? 4 : 1,
+            minLines: (widget.isTextArea ?? false) ? 4 : 1,
             keyboardType: widget.inputType ??
                 ((widget.isTextArea ?? false)
                     ? TextInputType.multiline
@@ -55,10 +55,22 @@ class _AppTextFieldState extends State<AppTextField> {
             controller: widget.controller,
             obscureText: _obscureText,
             cursorColor: AppColors.primaryColor,
+            textAlignVertical: TextAlignVertical.top,
             decoration: InputDecoration(
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                filled: true,
+                fillColor: AppColors.fieldBackgroundColor,
+                helperText: widget.helper,
+                labelText: widget.label,
+                alignLabelWithHint: (widget.isTextArea ?? false),
+                floatingLabelStyle:
+                    const TextStyle(color: AppColors.primaryColor),
                 hintText: widget.hint,
-                border: InputBorder.none,
-                icon: widget.icon != null
+                border: UnderlineInputBorder(
+                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(10)),
+                prefixIcon: widget.icon != null
                     ? Icon(widget.icon, color: AppColors.fieldTextColor)
                     : null,
                 suffixIcon: widget.isPassword ?? false
@@ -80,6 +92,7 @@ class _AppTextFieldState extends State<AppTextField> {
 class AppDropDownTextField extends StatefulWidget {
   final List<String> items;
   final String hint;
+  final String? label;
   final Function(String?)? onChanged;
   final bool? showSearchBox;
 
@@ -87,6 +100,7 @@ class AppDropDownTextField extends StatefulWidget {
       {Key? key,
       required this.items,
       required this.hint,
+      this.label,
       this.showSearchBox,
       this.onChanged})
       : super(key: key);
@@ -139,6 +153,9 @@ class _AppDropDownTextFieldState extends State<AppDropDownTextField> {
                 style: Theme.of(context).textTheme.bodyText1,
                 cursorColor: AppColors.primaryColor,
                 decoration: InputDecoration(
+                    floatingLabelStyle:
+                        const TextStyle(color: AppColors.primaryColor),
+                    labelText: widget.label,
                     hintText: widget.hint,
                     border: InputBorder.none,
                     filled: true,

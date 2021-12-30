@@ -84,6 +84,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AppTextField(
                 validator: _emailValidator,
                 hint: 'La tua email',
+                label: 'Email',
                 inputType: TextInputType.emailAddress,
                 icon: Icons.email,
                 controller: _emailController),
@@ -91,6 +92,7 @@ class _LoginScreenState extends State<LoginScreen> {
             AppTextField(
                 validator: _passwordValidator,
                 hint: 'La tua password',
+                label: 'Password',
                 icon: Icons.lock,
                 isPassword: true,
                 controller: _passwordController),

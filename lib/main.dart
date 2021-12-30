@@ -37,6 +37,9 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!),
         debugShowCheckedModeBanner: false,
         title: 'KeepUp',
         theme: AppThemes.lightTheme,
@@ -49,7 +52,7 @@ class MyApp extends StatelessWidget {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return const StudentTimetableScreen();
+                return StudentTimetableScreen();
               } else {
                 // home screen
                 return const LoginScreen();

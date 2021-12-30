@@ -84,14 +84,29 @@ class KeepUp {
     }
   }
 
+  Future<bool> _eventAlreadyExists(String eventName) async {
+    final query = QueryBuilder.name(KeepUpEventDataModelKey.className);
+    query.whereEqualTo(KeepUpEventDataModelKey.title, eventName);
+    final response = await query.count();
+    return response.count > 0;
+  }
+
   /// crea un nuovo evento da zero
   Future<KeepUpResponse> createEvent(KeepUpEvent event) async {
+    final isDuplicated = await _eventAlreadyExists(event.title);
+
+    if (isDuplicated) {
+      return KeepUpResponse.error(
+          'KeepUp: event creation failure: duplicated event name');
+    }
+
     final currentUser = await ParseUser.currentUser() as ParseUser?;
 
     final eventObject = ParseObject(KeepUpEventDataModelKey.className)
       ..set(KeepUpEventDataModelKey.title, event.title)
       ..set(KeepUpEventDataModelKey.startDate, event.startDate)
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
+      ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
@@ -103,14 +118,13 @@ class KeepUp {
 
     log('KeepUp: event creation success ${eventObject.objectId}');
 
-    for (final recurrence in event._recurrences) {
-      final recurrenceObject = ParseObject(
-          KeepUpRecurrenceDataModelKey.className)
-        ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.toPointer())
-        ..set(KeepUpRecurrenceDataModelKey.description, recurrence.description)
-        ..set(KeepUpRecurrenceDataModelKey.startTime, recurrence.startTime)
-        ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime)
-        ..set(KeepUpRecurrenceDataModelKey.type, recurrence.type.index);
+    for (final recurrence in event.recurrences) {
+      final recurrenceObject =
+          ParseObject(KeepUpRecurrenceDataModelKey.className)
+            ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.toPointer())
+            ..set(KeepUpRecurrenceDataModelKey.startTime, recurrence.startTime)
+            ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime)
+            ..set(KeepUpRecurrenceDataModelKey.type, recurrence.type.index);
 
       switch (recurrence.type) {
         case KeepUpRecurrenceType.none:
@@ -333,17 +347,22 @@ class KeepUpUser {
 
 class KeepUpEvent {
   String? id;
-  final String title;
-  final DateTime startDate;
-  final DateTime? endDate;
-  final List<KeepUpRecurrence> _recurrences = [];
+  String title;
+  DateTime startDate;
+  DateTime? endDate;
+  String? description;
+  final List<KeepUpRecurrence> recurrences = [];
 
   KeepUpEvent(
-      {this.id, required this.title, required this.startDate, this.endDate});
+      {this.id,
+      required this.title,
+      required this.startDate,
+      this.endDate,
+      this.description});
 
   void addDailySchedule(
       {required KeepUpDayTime startTime, KeepUpDayTime? endTime}) {
-    _recurrences.add(KeepUpRecurrence(
+    recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.daily,
         startTime: startTime,
         endTime: endTime));
@@ -353,7 +372,7 @@ class KeepUpEvent {
       {required int weekDay,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
-    _recurrences.add(KeepUpRecurrence(
+    recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.weekly,
         weekDay: weekDay,
         startTime: startTime,
@@ -364,7 +383,7 @@ class KeepUpEvent {
       {required int day,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
-    _recurrences.add(KeepUpRecurrence(
+    recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.monthly,
         day: day,
         startTime: startTime,
@@ -378,7 +397,7 @@ class KeepUpEvent {
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
     final date = DateTime(year, month, day);
-    _recurrences.add(KeepUpRecurrence(
+    recurrences.add(KeepUpRecurrence(
         type: KeepUpRecurrenceType.none,
         day: day,
         month: month,
@@ -395,7 +414,6 @@ class KeepUpRecurrence {
   String? id;
   String? eventId;
   KeepUpRecurrenceType type;
-  String? description;
   KeepUpDayTime startTime;
   KeepUpDayTime? endTime;
   int? day;
@@ -408,7 +426,6 @@ class KeepUpRecurrence {
       {this.id,
       this.eventId,
       required this.type,
-      this.description,
       required this.startTime,
       this.endTime,
       this.day,
@@ -486,6 +503,7 @@ abstract class KeepUpEventDataModelKey {
   static const startDate = 'startDate';
   static const endDate = 'endDate';
   static const creatorId = 'creatorId';
+  static const description = 'description';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
@@ -496,7 +514,6 @@ abstract class KeepUpRecurrenceDataModelKey {
   static const className = 'Recurrence';
   static const id = 'objectId';
   static const eventId = 'eventId';
-  static const description = 'description';
   static const startTime = 'startTime';
   static const endTime = 'endTime';
   static const type = 'type';
@@ -534,6 +551,10 @@ class KeepUpDayTime {
   KeepUpDayTime.fromJson(Map<String, dynamic> json)
       : hour = json['hour'],
         minute = json['minute'];
+
+  KeepUpDayTime.fromTimeOfDay(TimeOfDay time)
+      : hour = time.hour,
+        minute = time.minute;
 
   Map<String, dynamic> toJson() {
     return {'hour': hour, 'minute': minute};

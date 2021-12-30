@@ -162,18 +162,21 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                     setState(() => _selectedUniversity = university);
                   },
                   items: const [UniversityItem.polito],
+                  label: 'Università',
                   hint: "La tua università"),
               SizedBox(height: 0.02 * size.height),
               if (_selectedUniversity != null) ...[
                 AppTextField(
                     validator: _studentIdValidator,
                     hint: 'La tua matricola studente',
+                    label: 'Matricola studente',
                     icon: Icons.person,
                     controller: _studentIdController),
                 SizedBox(height: 0.02 * size.height),
                 AppTextField(
                     validator: _studentPasswordValidator,
                     hint: 'La tua password studente',
+                    label: 'Password studente',
                     icon: Icons.lock,
                     isPassword: true,
                     controller: _studentPasswordController)

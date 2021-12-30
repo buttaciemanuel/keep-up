@@ -33,7 +33,6 @@ Questo significa riprogrammare ad esempio tutte le occorrenze di un certo evento
 
 ~~~~sql
 update recurrence
-set recurrence.description = new_description
 set recurrence.interval = new_interval
 set recurrence.day = new_day
 set recurrence.month = new_month
@@ -57,9 +56,8 @@ insert into exception(event_id, recurrence_id, is_rescheduled, is_cancelled, on_
     exception_date
 );
 
-insert into recurrence(event_id, description, interval, start_time, end_time, weekday, day, month, year, id) values(
+insert into recurrence(event_id, interval, start_time, end_time, weekday, day, month, year, id) values(
     event_id,
-    new_description,
     null,
     new_start_time,
     new_end_time,

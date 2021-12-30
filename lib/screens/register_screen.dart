@@ -103,7 +103,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(children: [
               AppTextField(
                   validator: _fullnameValidator,
-                  hint: 'Il tuo nome',
+                  hint: 'Il tuo nome e cognome',
+                  label: 'Nome e cognome',
                   icon: Icons.person,
                   inputType: TextInputType.name,
                   controller: _fullnameController),
@@ -111,13 +112,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
               AppTextField(
                   validator: _emailValidator,
                   hint: 'La tua email',
+                  label: 'Email',
                   inputType: TextInputType.emailAddress,
                   icon: Icons.email,
                   controller: _emailController),
               SizedBox(height: 0.02 * size.height),
               AppTextField(
                   validator: _passwordValidator,
-                  hint: 'La tua password',
+                  hint: 'Almeno 8 caratteri',
+                  label: 'Password',
                   icon: Icons.lock,
                   isPassword: true,
                   controller: _passwordController),
