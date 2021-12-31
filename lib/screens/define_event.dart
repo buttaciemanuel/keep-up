@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
@@ -55,7 +56,7 @@ class AppTimeTextField extends StatelessWidget {
 
 class DefineEventScreen extends StatefulWidget {
   final KeepUpTask? fromTask;
-  DefineEventScreen({Key? key, this.fromTask}) : super(key: key);
+  const DefineEventScreen({Key? key, this.fromTask}) : super(key: key);
 
   @override
   _DefineEventScreenState createState() => _DefineEventScreenState();
@@ -107,6 +108,111 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   Widget build(BuildContext context) {
     if (widget.fromTask != null) return editExistingEvent(context);
     return createNewEventScreen(context);
+  }
+
+  // scarica l'evento dal database solo al primo caricamento di schermata,
+  // ovvero lazy loading, e dopo lo riutilizza per un merge
+  Future<bool> _getExistingEvent(String eventId) async {
+    if (_event.id != null) return true;
+
+    final response = await KeepUp.instance.getEvent(eventId: eventId);
+
+    if (response.error) return false;
+
+    _event = response.result as KeepUpEvent;
+
+    return true;
+  }
+
+  KeepUpRecurrence? _scheduleInWeekDay(int index) {
+    for (final recurrence in _event.recurrences) {
+      if (recurrence.weekDay == index + 1) {
+        return recurrence;
+      }
+    }
+
+    return null;
+  }
+
+  Widget _loadingSkeleton(BuildContext context, {required String screenTitle}) {
+    final size = MediaQuery.of(context).size;
+    return AppLayout(
+      children: [
+        SizedBox(height: 0.05 * size.height),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text(screenTitle,
+                style: Theme.of(context).textTheme.headline2)),
+        SizedBox(height: 0.02 * size.height),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Pianifica l\'attività durante la settimana.',
+                style: Theme.of(context).textTheme.subtitle1)),
+        SizedBox(height: 0.03 * size.height),
+        Form(
+            key: _formKey,
+            child: Column(children: [
+              SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                      children: List.generate(weekDays.length, (index) {
+                    return SizedBox(
+                        width: size.width / 8.5,
+                        child: TextButton(
+                            onPressed: () {},
+                            style: TextButton.styleFrom(
+                                side: BorderSide.none,
+                                shape: const CircleBorder(),
+                                backgroundColor:
+                                    Colors.black.withOpacity(0.15)),
+                            child: const Text('')));
+                  }))),
+              SizedBox(height: 0.03 * size.height),
+              Row(children: [
+                SkeletonLoader(
+                    child: AppTimeTextField(
+                        hint: 'Inizio', width: size.width / 2.5)),
+                const Expanded(child: SizedBox()),
+                SkeletonLoader(
+                    child:
+                        AppTimeTextField(hint: 'Fine', width: size.width / 2.5))
+              ]),
+              SizedBox(height: 0.03 * size.height),
+              const SkeletonLoader(
+                  child: AppTextField(
+                      hint: 'Il nome dell\'attività',
+                      label: 'Attività',
+                      inputType: TextInputType.name)),
+              SizedBox(height: 0.02 * size.height),
+              const SkeletonLoader(
+                  child: AppTextField(
+                      isTextArea: true,
+                      label: 'Descrizione',
+                      hint: 'La descrizione dell\'attività')),
+            ])),
+        const Expanded(child: SizedBox()),
+        Row(children: [
+          Expanded(
+              child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Annulla'),
+              style: TextButton.styleFrom(primary: AppColors.grey),
+            ),
+          )),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () {},
+              child: const Text('Salva'),
+              style: TextButton.styleFrom(primary: AppColors.primaryColor),
+            ),
+          ),
+        ]),
+        SizedBox(height: 0.05 * size.height)
+      ],
+    );
   }
 
   Widget createNewEventScreen(BuildContext context) {
@@ -324,32 +430,9 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     );
   }
 
-  KeepUpRecurrence? _scheduleInWeekDay(int index) {
-    for (final recurrence in _event.recurrences) {
-      if (recurrence.weekDay == index + 1) {
-        return recurrence;
-      }
-    }
-
-    return null;
-  }
-
-  // scarica l'evento dal database solo al primo caricamento di schermata,
-  // ovvero lazy loading, e dopo lo riutilizza per un merge
-  Future<bool> _getExistingEvent(String eventId) async {
-    if (_event.id != null) return true;
-
-    final response = await KeepUp.instance.getEvent(eventId: eventId);
-
-    if (response.error) return false;
-
-    _event = response.result as KeepUpEvent;
-
-    return true;
-  }
-
   Widget editExistingEvent(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
+    const screenTitle = 'Modifica l\'attività';
+    final size = MediaQuery.of(context).size;
 
     return FutureBuilder<bool>(
         future: _getExistingEvent(widget.fromTask!.eventId),
@@ -382,7 +465,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                 SizedBox(height: 0.05 * size.height),
                 Align(
                     alignment: Alignment.centerLeft,
-                    child: Text('Modifica l\'attività',
+                    child: Text(screenTitle,
                         style: Theme.of(context).textTheme.headline2)),
                 SizedBox(height: 0.02 * size.height),
                 Align(
@@ -586,7 +669,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
               ],
             );
           } else {
-            return Text('NOT YET IMPLEMENTED');
+            return _loadingSkeleton(context, screenTitle: screenTitle);
           }
         });
   }

@@ -24,6 +24,8 @@ abstract class AppThemes {
               color: Colors.black, fontWeight: FontWeight.w900, fontSize: 24),
           subtitle1: TextStyle(
               color: Colors.black, fontWeight: FontWeight.w300, fontSize: 20),
+          subtitle2: TextStyle(
+              color: Colors.black, fontWeight: FontWeight.w300, fontSize: 16),
           bodyText1: TextStyle(color: Colors.black, fontSize: 16),
           button: TextStyle(
               fontSize: 20,

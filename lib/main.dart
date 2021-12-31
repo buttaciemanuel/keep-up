@@ -13,19 +13,6 @@ import 'package:keep_up/screens/student_sync_screen.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  /*var polito = PolitoClient.instance;
-  await polito.init();
-
-  if (polito.user != null) {
-    print('user already in ${polito.user!.id}');
-  } else {
-    print('user is not logged');
-    await polito.loginUser('s268620', 'luc22ele04');
-    await polito.getSchedule();
-  }
-
-  await polito.logoutUser();*/
-
   KeepUp.instance.init();
 
   runApp(const MyApp());

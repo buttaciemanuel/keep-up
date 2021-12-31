@@ -23,9 +23,10 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
 
     return AppLayout(
       children: [
-        SizedBox(height: 0.05 * size.height),
+        /*SizedBox(height: 0.05 * size.height),
         Image.asset('assets/images/timetable.png',
             height: 0.25 * size.height, width: 0.7 * size.width),
+        */
         SizedBox(height: 0.05 * size.height),
         Row(children: [
           Expanded(
@@ -41,7 +42,7 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                 Navigator.of(context).push(MaterialPageRoute(
                     fullscreenDialog: true,
                     builder: (context) {
-                      return DefineEventScreen();
+                      return const DefineEventScreen();
                     }));
               },
               icon: const Icon(Icons.add, color: AppColors.primaryColor))
@@ -56,8 +57,27 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                       .add(Duration(days: _currentPageIndex))),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
+                  final tasks = snapshot.data!.result as List<KeepUpTask>;
+
+                  if (tasks.isEmpty) {
+                    return Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Image.asset('assets/images/no_tasks.png',
+                              height: 0.25 * size.height,
+                              width: 0.7 * size.width),
+                          SizedBox(height: 0.05 * size.height),
+                          Text('Giornata libera!',
+                              style: Theme.of(context).textTheme.headline3),
+                          SizedBox(height: 0.02 * size.height),
+                          Text('Aggiungi qualche evento in alto.',
+                              style: Theme.of(context).textTheme.subtitle2)
+                        ]);
+                  }
+
                   return ListView(
-                      children: (snapshot.data!.result as List<KeepUpTask>)
+                      children: tasks
                           .map((task) => GestureDetector(
                               onTap: () {
                                 Navigator.of(context).push(MaterialPageRoute(
