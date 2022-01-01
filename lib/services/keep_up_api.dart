@@ -10,7 +10,8 @@ class KeepUp {
   static const _keyApplicationId = '7lriFNc0muHJqnpBYmDJjkCdBP4ptEXEYaSiIZKR';
   static const _keyClientKey = 'Hboaa5QGH79mvRQQfEXCUcjXnZlrXSlZk0axzQri';
   static const _keyParseServerUrl = 'https://parseapi.back4app.com';
-  static const _keyParseLocalServerUrl = 'http://192.168.1.227:1337/parse/';
+  static const _keyParseLocalServerUrl =
+      'http://localhost:1337/parse/'; //'http://192.168.1.227:1337/parse/';
 
   static final KeepUp _instance = KeepUp._();
 
@@ -108,6 +109,7 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.startDate, event.startDate)
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
       ..set(KeepUpEventDataModelKey.description, event.description)
+      ..set(KeepUpEventDataModelKey.color, event.color.value)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
@@ -204,6 +206,7 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.startDate, event.startDate)
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
       ..set(KeepUpEventDataModelKey.description, event.description)
+      ..set(KeepUpEventDataModelKey.color, event.color.value)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
@@ -423,15 +426,17 @@ class KeepUp {
                       inDate.year.toString());
         })
         .map((recurrenceObject) {
+          final associatedEvent = eventsObjects.firstWhere((eventObject) {
+            return eventObject[KeepUpEventDataModelKey.id] ==
+                recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
+                    [KeepUpEventDataModelKey.id];
+          });
           return KeepUpTask(
               eventId: recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
                   [KeepUpEventDataModelKey.id],
               recurrenceId: recurrenceObject[KeepUpRecurrenceDataModelKey.id],
-              title: eventsObjects.firstWhere((eventObject) {
-                return eventObject[KeepUpEventDataModelKey.id] ==
-                    recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
-                        [KeepUpEventDataModelKey.id];
-              })[KeepUpEventDataModelKey.title],
+              color: Color(associatedEvent[KeepUpEventDataModelKey.color]),
+              title: associatedEvent[KeepUpEventDataModelKey.title],
               date: inDate,
               startTime: KeepUpDayTime.fromJson(
                   recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]),
@@ -485,6 +490,7 @@ class KeepUpEvent {
   DateTime startDate;
   DateTime? endDate;
   String? description;
+  Color color;
   final List<KeepUpRecurrence> recurrences = [];
 
   KeepUpEvent(
@@ -492,7 +498,8 @@ class KeepUpEvent {
       required this.title,
       required this.startDate,
       this.endDate,
-      this.description});
+      this.description,
+      required this.color});
 
   factory KeepUpEvent.fromJson(dynamic json) {
     return KeepUpEvent(
@@ -500,7 +507,8 @@ class KeepUpEvent {
         title: json[KeepUpEventDataModelKey.title],
         startDate: json[KeepUpEventDataModelKey.startDate],
         endDate: json[KeepUpEventDataModelKey.endDate],
-        description: json[KeepUpEventDataModelKey.description]);
+        description: json[KeepUpEventDataModelKey.description],
+        color: Color(json[KeepUpEventDataModelKey.color]));
   }
 
   void addDailySchedule(
@@ -670,6 +678,7 @@ abstract class KeepUpEventDataModelKey {
   static const endDate = 'endDate';
   static const creatorId = 'creatorId';
   static const description = 'description';
+  static const color = 'color';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
@@ -751,6 +760,7 @@ class KeepUpTask {
   String title;
   DateTime date;
   KeepUpDayTime startTime, endTime;
+  Color color;
 
   KeepUpTask(
       {required this.eventId,
@@ -758,7 +768,8 @@ class KeepUpTask {
       required this.title,
       required this.date,
       required this.startTime,
-      required this.endTime});
+      required this.endTime,
+      required this.color});
 
   @override
   int get hashCode =>

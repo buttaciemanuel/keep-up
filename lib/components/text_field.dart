@@ -12,6 +12,7 @@ class AppTextField extends StatefulWidget {
   final TextEditingController? controller;
   final TextInputType? inputType;
   final bool? isTextArea;
+  final TextInputAction? textInputAction;
   const AppTextField(
       {Key? key,
       this.icon,
@@ -22,7 +23,8 @@ class AppTextField extends StatefulWidget {
       this.validator,
       this.controller,
       this.inputType,
-      this.isTextArea})
+      this.isTextArea,
+      this.textInputAction})
       : super(key: key);
 
   @override
@@ -44,6 +46,7 @@ class _AppTextFieldState extends State<AppTextField> {
     return SizedBox(
         width: size.width,
         child: TextFormField(
+            textInputAction: widget.textInputAction,
             maxLines: (widget.isTextArea ?? false) ? 4 : 1,
             minLines: (widget.isTextArea ?? false) ? 4 : 1,
             keyboardType: widget.inputType ??

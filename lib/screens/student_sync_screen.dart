@@ -99,7 +99,9 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
             });
           } else {
             final event = KeepUpEvent(
-                title: lecture.subject, startDate: lecture.startDateTime);
+                title: lecture.subject,
+                startDate: lecture.startDateTime,
+                color: AppEventColors.fromEvent(lecture.subject));
             event.addWeeklySchedule(
                 weekDay: lecture.startDateTime.weekday,
                 startTime: KeepUpDayTime.fromDateTime(lecture.startDateTime),
@@ -171,6 +173,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                     validator: _studentIdValidator,
                     hint: 'La tua matricola studente',
                     label: 'Matricola studente',
+                    textInputAction: TextInputAction.next,
                     icon: Icons.person,
                     controller: _studentIdController),
                 SizedBox(height: 0.02 * size.height),
@@ -178,6 +181,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                     validator: _studentPasswordValidator,
                     hint: 'La tua password studente',
                     label: 'Password studente',
+                    textInputAction: TextInputAction.done,
                     icon: Icons.lock,
                     isPassword: true,
                     controller: _studentPasswordController)

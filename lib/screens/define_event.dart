@@ -77,6 +77,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   final _startTimePickerController = TextEditingController();
   final _endTimePickerController = TextEditingController();
   int _selectedDayIndex = 0;
+  int _selectedColor = 0;
 
   String? _eventNameValidator(String? text) {
     if (text == null || text.isEmpty) {
@@ -87,10 +88,12 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
   @override
   void initState() {
-    _event = KeepUpEvent(title: '', startDate: DateTime.now());
+    _event = KeepUpEvent(
+        title: '', startDate: DateTime.now(), color: AppColors.primaryColor);
 
     if (widget.fromTask != null) {
       _selectedDayIndex = widget.fromTask!.date.weekday - 1;
+      _selectedColor = AppEventColors.values.indexOf(widget.fromTask!.color);
     }
 
     super.initState();
@@ -249,28 +252,14 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         Form(
             key: _formKey,
             child: Column(children: [
-              SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                      children: List.generate(weekDays.length, (index) {
-                    return SizedBox(
-                        width: size.width / 8.5,
-                        child: TextButton(
-                            style: TextButton.styleFrom(
-                                side: _selectedDayIndex == index
-                                    ? const BorderSide(
-                                        width: 3.0, color: AppColors.lightGrey)
-                                    : BorderSide.none,
-                                shape: const CircleBorder(),
-                                backgroundColor:
-                                    _scheduleInWeekDay(index) != null
-                                        ? AppColors.primaryColor
-                                        : Colors.black.withOpacity(0.15)),
-                            onPressed: () =>
-                                setState(() => _selectedDayIndex = index),
-                            child: Text(weekDays[index][0].toUpperCase(),
-                                style: const TextStyle(color: Colors.white))));
-                  }))),
+              WeekDaySelector(
+                  selectedDay: _selectedDayIndex,
+                  isScheduled: (index) {
+                    return _scheduleInWeekDay(index) != null;
+                  },
+                  onSelected: (index) {
+                    setState(() => _selectedDayIndex = index);
+                  }),
               SizedBox(height: 0.03 * size.height),
               Row(children: [
                 AppTimeTextField(
@@ -392,6 +381,16 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                   isTextArea: true,
                   label: 'Descrizione',
                   hint: 'La descrizione dell\'attività'),
+              SizedBox(height: 0.03 * size.height),
+              ColorSelector(
+                  selectedColorIndex: _selectedColor,
+                  colors: AppEventColors.values,
+                  onSelected: (index) {
+                    setState(() {
+                      _selectedColor = index;
+                      _event.color = AppEventColors.values[index];
+                    });
+                  })
             ])),
         const Expanded(child: SizedBox()),
         Row(children: [
@@ -476,32 +475,14 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                 Form(
                     key: _formKey,
                     child: Column(children: [
-                      SingleChildScrollView(
-                          scrollDirection: Axis.horizontal,
-                          child: Row(
-                              children: List.generate(weekDays.length, (index) {
-                            return SizedBox(
-                                width: size.width / 8.5,
-                                child: TextButton(
-                                    style: TextButton.styleFrom(
-                                        side: _selectedDayIndex == index
-                                            ? const BorderSide(
-                                                width: 3.0,
-                                                color: AppColors.lightGrey)
-                                            : BorderSide.none,
-                                        shape: const CircleBorder(),
-                                        backgroundColor:
-                                            _scheduleInWeekDay(index) != null
-                                                ? AppColors.primaryColor
-                                                : Colors.black
-                                                    .withOpacity(0.15)),
-                                    onPressed: () => setState(
-                                        () => _selectedDayIndex = index),
-                                    child: Text(
-                                        weekDays[index][0].toUpperCase(),
-                                        style: const TextStyle(
-                                            color: Colors.white))));
-                          }))),
+                      WeekDaySelector(
+                          selectedDay: _selectedDayIndex,
+                          isScheduled: (index) {
+                            return _scheduleInWeekDay(index) != null;
+                          },
+                          onSelected: (index) {
+                            setState(() => _selectedDayIndex = index);
+                          }),
                       SizedBox(height: 0.03 * size.height),
                       Row(children: [
                         AppTimeTextField(
@@ -630,6 +611,16 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                           isTextArea: true,
                           label: 'Descrizione',
                           hint: 'La descrizione dell\'attività'),
+                      SizedBox(height: 0.03 * size.height),
+                      ColorSelector(
+                          selectedColorIndex: _selectedColor,
+                          colors: AppEventColors.values,
+                          onSelected: (index) {
+                            setState(() {
+                              _selectedColor = index;
+                              _event.color = AppEventColors.values[index];
+                            });
+                          })
                     ])),
                 const Expanded(child: SizedBox()),
                 Row(children: [
@@ -672,5 +663,85 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
             return _loadingSkeleton(context, screenTitle: screenTitle);
           }
         });
+  }
+}
+
+class WeekDaySelector extends StatelessWidget {
+  final int selectedDay;
+  final bool Function(int) isScheduled;
+  final Function(int) onSelected;
+  const WeekDaySelector(
+      {Key? key,
+      this.selectedDay = 0,
+      required this.isScheduled,
+      required this.onSelected})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+            children: List.generate(weekDays.length, (index) {
+          bool isDayScheduled = isScheduled(index);
+          return SizedBox(
+              width: size.width / 8.5,
+              child: TextButton(
+                  style: TextButton.styleFrom(
+                      primary: isDayScheduled
+                          ? AppColors.primaryColor
+                          : AppColors.weekDayButtonColor,
+                      elevation: selectedDay == index ? 5 : 0,
+                      fixedSize: selectedDay == index
+                          ? const Size.fromHeight(50)
+                          : const Size.fromHeight(40),
+                      shape: const CircleBorder(),
+                      backgroundColor: isDayScheduled
+                          ? AppColors.primaryColor
+                          : AppColors.weekDayButtonColor),
+                  onPressed: () => onSelected(index),
+                  child: Text(weekDays[index][0].toUpperCase(),
+                      style: const TextStyle(color: Colors.white))));
+        })));
+  }
+}
+
+class ColorSelector extends StatelessWidget {
+  final List<Color> colors;
+  final int selectedColorIndex;
+  final Function(int) onSelected;
+  const ColorSelector(
+      {Key? key,
+      required this.colors,
+      this.selectedColorIndex = 0,
+      required this.onSelected})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
+    return SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+            children: List.generate(colors.length, (index) {
+          return SizedBox(
+              width: size.width / 8.5,
+              child: TextButton(
+                  style: TextButton.styleFrom(
+                      primary: colors[index],
+                      elevation: selectedColorIndex == index ? 5 : 0,
+                      fixedSize: selectedColorIndex == index
+                          ? const Size.fromHeight(50)
+                          : const Size.fromHeight(40),
+                      shape: const CircleBorder(),
+                      backgroundColor: colors[index]),
+                  onPressed: () => onSelected(index),
+                  child: selectedColorIndex == index
+                      ? Transform.scale(
+                          scale: 1.3,
+                          child: const Icon(Icons.check, color: Colors.white))
+                      : const Icon(null)));
+        })));
   }
 }

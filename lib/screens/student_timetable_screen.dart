@@ -39,11 +39,13 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
               padding: EdgeInsets.zero,
               tooltip: 'Aggiungi',
               onPressed: () {
-                Navigator.of(context).push(MaterialPageRoute(
-                    fullscreenDialog: true,
-                    builder: (context) {
-                      return const DefineEventScreen();
-                    }));
+                Navigator.of(context)
+                    .push(MaterialPageRoute(
+                        fullscreenDialog: true,
+                        builder: (context) {
+                          return const DefineEventScreen();
+                        }))
+                    .then((_) => setState(() {}));
               },
               icon: const Icon(Icons.add, color: AppColors.primaryColor))
         ]),
@@ -80,13 +82,18 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                       children: tasks
                           .map((task) => GestureDetector(
                               onTap: () {
-                                Navigator.of(context).push(MaterialPageRoute(
-                                    fullscreenDialog: true,
-                                    builder: (context) {
-                                      return DefineEventScreen(fromTask: task);
-                                    }));
+                                Navigator.of(context)
+                                    .push(MaterialPageRoute(
+                                        fullscreenDialog: true,
+                                        builder: (context) {
+                                          return DefineEventScreen(
+                                              fromTask: task);
+                                        }))
+                                    .then((_) => setState(() {}));
+                                ;
                               },
                               child: AppTaskCard(
+                                  color: task.color,
                                   title: task.title,
                                   time: task.startTime.toTimeOfDay(),
                                   endTime: task.endTime.toTimeOfDay())))
