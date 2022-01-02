@@ -43,7 +43,8 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                     .push(MaterialPageRoute(
                         fullscreenDialog: true,
                         builder: (context) {
-                          return const DefineEventScreen();
+                          return DefineEventScreen(
+                              fromDayIndex: _currentPageIndex);
                         }))
                     .then((_) => setState(() {}));
               },
@@ -87,10 +88,10 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                                         fullscreenDialog: true,
                                         builder: (context) {
                                           return DefineEventScreen(
+                                              fromDayIndex: _currentPageIndex,
                                               fromTask: task);
                                         }))
                                     .then((_) => setState(() {}));
-                                ;
                               },
                               child: AppTaskCard(
                                   color: task.color,
@@ -100,13 +101,12 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                           .toList());
                 } else {
                   return ListView(
-                    children: [
-                      SkeletonLoader(
-                          child: AppTaskCard(
-                              title: '',
-                              time: const TimeOfDay(hour: 0, minute: 0)))
-                    ],
-                  );
+                      children: List.generate(
+                          3,
+                          (_) => SkeletonLoader(
+                              child: AppTaskCard(
+                                  title: '',
+                                  time: const TimeOfDay(hour: 0, minute: 0)))));
                 }
               }),
         )),

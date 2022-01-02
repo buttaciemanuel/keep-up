@@ -56,7 +56,9 @@ class AppTimeTextField extends StatelessWidget {
 
 class DefineEventScreen extends StatefulWidget {
   final KeepUpTask? fromTask;
-  const DefineEventScreen({Key? key, this.fromTask}) : super(key: key);
+  final int fromDayIndex;
+  const DefineEventScreen({Key? key, this.fromTask, required this.fromDayIndex})
+      : super(key: key);
 
   @override
   _DefineEventScreenState createState() => _DefineEventScreenState();
@@ -91,8 +93,9 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     _event = KeepUpEvent(
         title: '', startDate: DateTime.now(), color: AppColors.primaryColor);
 
+    _selectedDayIndex = widget.fromDayIndex;
+
     if (widget.fromTask != null) {
-      _selectedDayIndex = widget.fromTask!.date.weekday - 1;
       _selectedColor = AppEventColors.values.indexOf(widget.fromTask!.color);
     }
 
@@ -109,8 +112,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.fromTask != null) return editExistingEvent(context);
-    return createNewEventScreen(context);
+    if (widget.fromTask != null) return _editExistingEvent(context);
+    return _createNewEventScreen(context);
   }
 
   // scarica l'evento dal database solo al primo caricamento di schermata,
@@ -135,6 +138,29 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     }
 
     return null;
+  }
+
+  Widget _createNewEventScreen(BuildContext context) {
+    return _form(context, screenTitle: 'Crea l\'attività');
+  }
+
+  Widget _editExistingEvent(BuildContext context) {
+    const screenTitle = 'Modifica l\'attività';
+    return FutureBuilder<bool>(
+        future: _getExistingEvent(widget.fromTask!.eventId),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            _eventNameController.text = _event.title;
+
+            if (_event.description != null) {
+              _eventDescriptionController.text = _event.description!;
+            }
+
+            return _form(context, screenTitle: screenTitle);
+          } else {
+            return _loadingSkeleton(context, screenTitle: screenTitle);
+          }
+        });
   }
 
   Widget _loadingSkeleton(BuildContext context, {required String screenTitle}) {
@@ -218,8 +244,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     );
   }
 
-  Widget createNewEventScreen(BuildContext context) {
-    Size size = MediaQuery.of(context).size;
+  Widget _form(BuildContext context, {required String screenTitle}) {
+    final size = MediaQuery.of(context).size;
     final dayRecurrence = _scheduleInWeekDay(_selectedDayIndex);
 
     if (dayRecurrence != null) {
@@ -241,7 +267,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         SizedBox(height: 0.05 * size.height),
         Align(
             alignment: Alignment.centerLeft,
-            child: Text('Crea l\'attività',
+            child: Text(screenTitle,
                 style: Theme.of(context).textTheme.headline2)),
         SizedBox(height: 0.02 * size.height),
         Align(
@@ -410,7 +436,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                 if (_formKey.currentState!.validate()) {
                   _event.title = _eventNameController.text;
                   _event.description = _eventDescriptionController.text;
-                  final response = await KeepUp.instance.createEvent(_event);
+                  final response = await KeepUp.instance.updateEvent(_event);
                   if (response.error) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(_eventCreationSnackbar);
@@ -427,242 +453,6 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         SizedBox(height: 0.05 * size.height)
       ],
     );
-  }
-
-  Widget editExistingEvent(BuildContext context) {
-    const screenTitle = 'Modifica l\'attività';
-    final size = MediaQuery.of(context).size;
-
-    return FutureBuilder<bool>(
-        future: _getExistingEvent(widget.fromTask!.eventId),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            _eventNameController.text = _event.title;
-
-            if (_event.description != null) {
-              _eventDescriptionController.text = _event.description!;
-            }
-
-            final dayRecurrence = _scheduleInWeekDay(_selectedDayIndex);
-
-            if (dayRecurrence != null) {
-              _startTimePickerController.text =
-                  dayRecurrence.startTime.toTimeOfDay().format(context);
-              if (dayRecurrence.endTime == null) {
-                _endTimePickerController.clear();
-              } else {
-                _endTimePickerController.text =
-                    dayRecurrence.endTime!.toTimeOfDay().format(context);
-              }
-            } else {
-              _startTimePickerController.clear();
-              _endTimePickerController.clear();
-            }
-
-            return AppLayout(
-              children: [
-                SizedBox(height: 0.05 * size.height),
-                Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text(screenTitle,
-                        style: Theme.of(context).textTheme.headline2)),
-                SizedBox(height: 0.02 * size.height),
-                Align(
-                    alignment: Alignment.centerLeft,
-                    child: Text('Pianifica l\'attività durante la settimana.',
-                        style: Theme.of(context).textTheme.subtitle1)),
-                SizedBox(height: 0.03 * size.height),
-                Form(
-                    key: _formKey,
-                    child: Column(children: [
-                      WeekDaySelector(
-                          selectedDay: _selectedDayIndex,
-                          isScheduled: (index) {
-                            return _scheduleInWeekDay(index) != null;
-                          },
-                          onSelected: (index) {
-                            setState(() => _selectedDayIndex = index);
-                          }),
-                      SizedBox(height: 0.03 * size.height),
-                      Row(children: [
-                        AppTimeTextField(
-                            hint: 'Inizio',
-                            controller: _startTimePickerController,
-                            width: size.width / 2.5,
-                            onTap: () async {
-                              final _startTime = await showTimePicker(
-                                  context: context,
-                                  initialTime: dayRecurrence != null
-                                      ? dayRecurrence.startTime.toTimeOfDay()
-                                      : TimeOfDay.now(),
-                                  initialEntryMode: TimePickerEntryMode.input,
-                                  helpText: 'Inizio',
-                                  errorInvalidText: 'L\'orario non è valido',
-                                  hourLabelText: 'Ora',
-                                  minuteLabelText: 'Minuto',
-                                  confirmText: 'Continua',
-                                  cancelText: 'Annulla');
-
-                              if (_startTime == null) return;
-
-                              _startTimePickerController.text =
-                                  _startTime.format(context);
-
-                              final _endTime = await showTimePicker(
-                                  context: context,
-                                  initialTime: dayRecurrence != null
-                                      ? (dayRecurrence.endTime != null
-                                          ? dayRecurrence.endTime!.toTimeOfDay()
-                                          : dayRecurrence.startTime
-                                              .toTimeOfDay())
-                                      : TimeOfDay.now(),
-                                  initialEntryMode: TimePickerEntryMode.input,
-                                  helpText: 'Fine',
-                                  errorInvalidText: 'L\'orario non è valido',
-                                  hourLabelText: 'Ora',
-                                  minuteLabelText: 'Minuto',
-                                  confirmText: 'Salva',
-                                  cancelText: 'Annulla');
-
-                              if (_endTime == null) return;
-
-                              _endTimePickerController.text =
-                                  _endTime.format(context);
-
-                              final startTime =
-                                  KeepUpDayTime.fromTimeOfDay(_startTime);
-                              final endTime =
-                                  KeepUpDayTime.fromTimeOfDay(_endTime);
-
-                              if (startTime.compareTo(endTime) >= 0) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(_timeMismatchSnackbar);
-                                return;
-                              }
-
-                              setState(() {
-                                _event.addWeeklySchedule(
-                                    weekDay: _selectedDayIndex + 1,
-                                    startTime: startTime,
-                                    endTime: endTime);
-                              });
-                            }),
-                        const Expanded(child: SizedBox()),
-                        AppTimeTextField(
-                            hint: 'Fine',
-                            controller: _endTimePickerController,
-                            width: size.width / 2.5,
-                            onTap: () async {
-                              final _endTime = await showTimePicker(
-                                  context: context,
-                                  initialTime: dayRecurrence != null
-                                      ? (dayRecurrence.endTime != null
-                                          ? dayRecurrence.endTime!.toTimeOfDay()
-                                          : dayRecurrence.startTime
-                                              .toTimeOfDay())
-                                      : TimeOfDay.now(),
-                                  initialEntryMode: TimePickerEntryMode.input,
-                                  helpText: 'Fine',
-                                  errorInvalidText: 'L\'orario non è valido',
-                                  hourLabelText: 'Ora',
-                                  minuteLabelText: 'Minuto',
-                                  confirmText: 'Salva',
-                                  cancelText: 'Annulla');
-
-                              if (_endTime == null) return;
-
-                              _endTimePickerController.text =
-                                  _endTime.format(context);
-
-                              if (_startTimePickerController.text.isEmpty) {
-                                return;
-                              }
-
-                              final startTime = KeepUpDayTime.fromDateTime(
-                                  DateFormat("h:mm")
-                                      .parse(_startTimePickerController.text));
-                              final endTime =
-                                  KeepUpDayTime.fromTimeOfDay(_endTime);
-
-                              if (startTime.compareTo(endTime) >= 0) {
-                                ScaffoldMessenger.of(context)
-                                    .showSnackBar(_timeMismatchSnackbar);
-                                return;
-                              }
-
-                              setState(() {
-                                _event.addWeeklySchedule(
-                                    weekDay: _selectedDayIndex + 1,
-                                    startTime: startTime,
-                                    endTime: endTime);
-                              });
-                            })
-                      ]),
-                      SizedBox(height: 0.03 * size.height),
-                      AppTextField(
-                          validator: _eventNameValidator,
-                          hint: 'Il nome dell\'attività',
-                          label: 'Attività',
-                          inputType: TextInputType.name,
-                          controller: _eventNameController),
-                      SizedBox(height: 0.02 * size.height),
-                      AppTextField(
-                          controller: _eventDescriptionController,
-                          isTextArea: true,
-                          label: 'Descrizione',
-                          hint: 'La descrizione dell\'attività'),
-                      SizedBox(height: 0.03 * size.height),
-                      ColorSelector(
-                          selectedColorIndex: _selectedColor,
-                          colors: AppEventColors.values,
-                          onSelected: (index) {
-                            setState(() {
-                              _selectedColor = index;
-                              _event.color = AppEventColors.values[index];
-                            });
-                          })
-                    ])),
-                const Expanded(child: SizedBox()),
-                Row(children: [
-                  Expanded(
-                      child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton(
-                      onPressed: () => Navigator.of(context).pop(),
-                      child: const Text('Annulla'),
-                      style: TextButton.styleFrom(primary: AppColors.grey),
-                    ),
-                  )),
-                  Align(
-                    alignment: Alignment.centerRight,
-                    child: TextButton(
-                      onPressed: () async {
-                        if (_formKey.currentState!.validate()) {
-                          _event.title = _eventNameController.text;
-                          _event.description = _eventDescriptionController.text;
-                          final response =
-                              await KeepUp.instance.updateEvent(_event);
-                          if (response.error) {
-                            ScaffoldMessenger.of(context)
-                                .showSnackBar(_eventCreationSnackbar);
-                          } else {
-                            Navigator.of(context).pop();
-                          }
-                        }
-                      },
-                      child: const Text('Salva'),
-                      style:
-                          TextButton.styleFrom(primary: AppColors.primaryColor),
-                    ),
-                  ),
-                ]),
-                SizedBox(height: 0.05 * size.height)
-              ],
-            );
-          } else {
-            return _loadingSkeleton(context, screenTitle: screenTitle);
-          }
-        });
   }
 }
 

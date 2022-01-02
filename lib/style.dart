@@ -9,20 +9,6 @@ abstract class AppColors {
   static const weekDayButtonColor = Color(0xFFD9D9D9);
 }
 
-abstract class AppEventColors {
-  static const orange = Color(0xFFFF7F00);
-  static const yellow = Color(0xFFE6AD41);
-  static const green = Color(0xFF4AB45E);
-  static const red = Color(0xFFCE4747);
-  static const purple = Color(0xFFC21EC9);
-  static const lightBlue = Color(0xFF1EC2C9);
-  static const values = [orange, yellow, green, red, purple, lightBlue];
-
-  static Color fromEvent(String title) {
-    return values[title.hashCode % values.length];
-  }
-}
-
 abstract class AppThemes {
   static ThemeData get lightTheme => ThemeData(
       primaryColor: AppColors.primaryColor,
