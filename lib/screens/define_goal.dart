@@ -11,6 +11,7 @@ import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
 
 class AppDateTextField extends StatelessWidget {
+  static final formatter = DateFormat.yMMMM('it');
   final String? initialText;
   final String label;
   final String? hint;
@@ -72,7 +73,7 @@ class AppDateTextField extends StatelessWidget {
 
               if (date != null) {
                 if (controller != null) {
-                  controller!.text = DateFormat.yMMMM('it').format(date);
+                  controller!.text = formatter.format(date);
                 }
                 if (onSelected != null) onSelected!(date);
               }
@@ -144,7 +145,8 @@ class AppCategorySelector extends StatelessWidget {
 }
 
 class DefineGoalScreen extends StatefulWidget {
-  const DefineGoalScreen({Key? key}) : super(key: key);
+  final KeepUpGoal? fromGoal;
+  const DefineGoalScreen({Key? key, this.fromGoal}) : super(key: key);
 
   @override
   _DefineGoalScreenState createState() => _DefineGoalScreenState();
@@ -157,17 +159,19 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
   static const _goalCreationSnackbar = SnackBar(
       padding: EdgeInsets.all(20),
       content: Text('Sembra ci sia un errore nel creare l\'obiettivo'));
+  static const _goalUpdateSnackbar = SnackBar(
+      padding: EdgeInsets.all(20),
+      content: Text('Sembra ci sia un errore nel modificare l\'obiettivo'));
 
-  late KeepUpEvent _goal;
   final _formKey = GlobalKey<FormState>();
   final _goalNameController = TextEditingController();
   final _goalDescriptionController = TextEditingController();
   final _finishDatePickerController = TextEditingController();
-  String? _category = null;
-  DateTime? _finishDate = null;
+  DateTime? _finishDate;
+  int _selectedColor = 0;
   double _daysPerWeek = 3;
   double _hoursPerDay = 1;
-  int _selectedColor = 0;
+  String? _category;
 
   String? _goalNameValidator(String? text) {
     if (text == null || text.isEmpty) {
@@ -178,8 +182,21 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
 
   @override
   void initState() {
-    _goal = KeepUpEvent(
-        title: '', startDate: DateTime.now(), color: AppColors.primaryColor);
+    if (widget.fromGoal != null) {
+      _goalNameController.text = widget.fromGoal!.title;
+      if (widget.fromGoal!.description != null) {
+        _goalDescriptionController.text = widget.fromGoal!.description!;
+      }
+      if (widget.fromGoal!.endDate != null) {
+        _finishDate = widget.fromGoal!.endDate;
+        _finishDatePickerController.text =
+            AppDateTextField.formatter.format(widget.fromGoal!.endDate!);
+      }
+      _selectedColor = AppEventColors.values.indexOf(widget.fromGoal!.color);
+      _daysPerWeek = widget.fromGoal!.daysPerWeek.roundToDouble();
+      _hoursPerDay = widget.fromGoal!.hoursPerDay.roundToDouble();
+      _category = widget.fromGoal!.category;
+    }
 
     super.initState();
   }
@@ -194,49 +211,16 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
 
   @override
   Widget build(BuildContext context) {
-    //if (widget.fromTask != null) return _editExistingEvent(context);
-    return _createNewEventScreen(context);
-  }
+    if (widget.fromGoal != null) {
+      return _form(context, screenTitle: 'Modifica l\'obiettivo');
+    }
 
-  // scarica l'evento dal database solo al primo caricamento di schermata,
-  // ovvero lazy loading, e dopo lo riutilizza per un merge
-  Future<bool> _getExistingEvent(String eventId) async {
-    if (_goal.id != null) return true;
-
-    final response = await KeepUp.instance.getEvent(eventId: eventId);
-
-    if (response.error) return false;
-
-    _goal = response.result as KeepUpEvent;
-
-    return true;
-  }
-
-  Widget _createNewEventScreen(BuildContext context) {
     return _form(context, screenTitle: 'Pianifica l\'obiettivo');
   }
 
-  /*Widget _editExistingEvent(BuildContext context) {
-    const screenTitle = 'Modifica l\'attività';
-    return FutureBuilder<bool>(
-        future: _getExistingEvent(widget.fromTask!.eventId),
-        builder: (context, snapshot) {
-          if (snapshot.hasData) {
-            _goalNameController.text = _goal.title;
-
-            if (_goal.description != null) {
-              _goalDescriptionController.text = _goal.description!;
-            }
-
-            return _form(context, screenTitle: screenTitle);
-          } else {
-            return _loadingSkeleton(context, screenTitle: screenTitle);
-          }
-        });
-  }*/
-
   Widget _loadingSkeleton(BuildContext context, {required String screenTitle}) {
     final size = MediaQuery.of(context).size;
+
     return AppLayout(
       children: [
         SizedBox(height: 0.05 * size.height),
@@ -247,44 +231,65 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
         SizedBox(height: 0.02 * size.height),
         Align(
             alignment: Alignment.centerLeft,
-            child: Text('Pianifica l\'attività durante la settimana.',
+            child: Text('Proietta il tuo impegno nel futuro.',
                 style: Theme.of(context).textTheme.subtitle1)),
         SizedBox(height: 0.03 * size.height),
         Form(
             key: _formKey,
             child: Column(children: [
-              SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                      children: List.generate(weekDays.length, (index) {
-                    return SizedBox(
-                        width: size.width / 8.5,
-                        child: TextButton(
-                            onPressed: () {},
-                            style: TextButton.styleFrom(
-                                side: BorderSide.none,
-                                shape: const CircleBorder(),
-                                backgroundColor:
-                                    Colors.black.withOpacity(0.15)),
-                            child: const Text('')));
-                  }))),
-              SizedBox(height: 0.03 * size.height),
-              const SkeletonLoader(
-                  child: AppDateTextField(label: 'Realizzazione')),
-              SizedBox(height: 0.03 * size.height),
-              const SkeletonLoader(
+              AppCategorySelector(
+                  value: _category,
+                  categories: KeepUpGoalCategory.values,
+                  onClicked: (_) {}),
+              SizedBox(height: 0.02 * size.height),
+              SkeletonLoader(
+                  child: AppDateTextField(
+                      label: 'Realizzazione',
+                      hint: 'Data di realizzazione',
+                      icon: Icons.flag,
+                      controller: _finishDatePickerController,
+                      onSelected: (_) {})),
+              SizedBox(height: 0.02 * size.height),
+              SkeletonLoader(
                   child: AppTextField(
+                      validator: _goalNameValidator,
                       hint: 'Il nome dell\'obiettivo',
                       label: 'Obiettivo',
-                      inputType: TextInputType.name)),
+                      inputType: TextInputType.name,
+                      controller: _goalNameController)),
               SizedBox(height: 0.02 * size.height),
-              const SkeletonLoader(
+              SkeletonLoader(
                   child: AppTextField(
+                      controller: _goalDescriptionController,
                       isTextArea: true,
                       label: 'Descrizione',
                       hint: 'La descrizione dell\'obiettivo')),
+              SizedBox(height: 0.02 * size.height),
+              SkeletonLoader(
+                child: SliderInputField(
+                    label: 'Giorni alla settimana',
+                    value: _daysPerWeek,
+                    min: 1,
+                    max: 7,
+                    onChanged: (_) {}),
+              ),
+              SizedBox(height: 0.02 * size.height),
+              SkeletonLoader(
+                  child: SliderInputField(
+                label: 'Ore al giorno',
+                value: _hoursPerDay,
+                min: 1,
+                max: 6,
+                onChanged: (value) => setState(() => _hoursPerDay = value),
+              )),
+              SizedBox(height: 0.03 * size.height),
+              SkeletonLoader(
+                  child: ColorSelector(
+                      selectedColorIndex: _selectedColor,
+                      colors: AppEventColors.values,
+                      onSelected: (_) {}))
             ])),
-        const Expanded(child: SizedBox()),
+        Expanded(child: SizedBox(height: 0.03 * size.height)),
         Row(children: [
           Expanded(
               child: Align(
@@ -311,7 +316,6 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
 
   Widget _form(BuildContext context, {required String screenTitle}) {
     final size = MediaQuery.of(context).size;
-
     return AppLayout(
       children: [
         SizedBox(height: 0.05 * size.height),
@@ -330,7 +334,7 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
             child: Column(children: [
               AppCategorySelector(
                   value: _category,
-                  categories: ['Educazione', 'Sport', 'Altro'],
+                  categories: KeepUpGoalCategory.values,
                   onClicked: (category) {
                     setState(() {
                       if (_category != category) {
@@ -383,10 +387,7 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
                   selectedColorIndex: _selectedColor,
                   colors: AppEventColors.values,
                   onSelected: (index) {
-                    setState(() {
-                      _selectedColor = index;
-                      _goal.color = AppEventColors.values[index];
-                    });
+                    setState(() => _selectedColor = index);
                   })
             ])),
         Expanded(child: SizedBox(height: 0.03 * size.height)),
@@ -405,15 +406,46 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
             child: TextButton(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  /*_goal.title = _goalNameController.text;
-                  _goal.description = _goalDescriptionController.text;
-                  final response = await KeepUp.instance.updateEvent(_goal);
-                  if (response.error) {
-                    ScaffoldMessenger.of(context)
-                        .showSnackBar(_goalCreationSnackbar);
+                  if (widget.fromGoal == null) {
+                    final newGoal = KeepUpGoal(
+                        title: _goalNameController.text,
+                        description: _goalDescriptionController.text,
+                        startDate: DateTime.now(),
+                        endDate: _finishDate,
+                        color: AppEventColors.values[_selectedColor],
+                        daysPerWeek: _daysPerWeek.round(),
+                        hoursPerDay: _hoursPerDay.round(),
+                        category: _category!);
+
+                    final response = await KeepUp.instance.createGoal(newGoal);
+
+                    if (response.error) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(_goalCreationSnackbar);
+                    } else {
+                      Navigator.of(context).pop();
+                    }
                   } else {
-                    Navigator.of(context).pop();
-                  }*/
+                    widget.fromGoal!.title = _goalNameController.text;
+                    widget.fromGoal!.description =
+                        _goalDescriptionController.text;
+                    widget.fromGoal!.endDate = _finishDate;
+                    widget.fromGoal!.color =
+                        AppEventColors.values[_selectedColor];
+                    widget.fromGoal!.daysPerWeek = _daysPerWeek.round();
+                    widget.fromGoal!.hoursPerDay = _hoursPerDay.round();
+                    widget.fromGoal!.category = _category!;
+
+                    final response =
+                        await KeepUp.instance.updateGoal(widget.fromGoal!);
+
+                    if (response.error) {
+                      ScaffoldMessenger.of(context)
+                          .showSnackBar(_goalUpdateSnackbar);
+                    } else {
+                      Navigator.of(context).pop();
+                    }
+                  }
                 }
               },
               child: const Text('Salva'),

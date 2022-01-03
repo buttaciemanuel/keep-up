@@ -44,7 +44,7 @@ class MyApp extends StatelessWidget {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return StudentTimetableScreen();
+                return StudentGoalChoiceScreen();
               } else {
                 // home screen
                 return const LoginScreen();

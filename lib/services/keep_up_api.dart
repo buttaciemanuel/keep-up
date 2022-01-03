@@ -2,9 +2,6 @@ import 'dart:collection';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
-import 'package:keep_up/main.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
 class KeepUp {
@@ -119,6 +116,8 @@ class KeepUp {
           'KeepUp: event creation failure: ${response.error!.message}');
     }
 
+    event.id = eventObject.objectId;
+
     log('KeepUp: event creation success ${eventObject.objectId}');
 
     for (final recurrence in event.recurrences) {
@@ -172,6 +171,9 @@ class KeepUp {
             'KeepUp: recurrence creation failure: ${response.error!.message}');
       }
 
+      recurrence.id = recurrenceObject.objectId;
+      recurrence.eventId = eventObject.objectId;
+
       log('KeepUp: recurrence creation success');
 
       for (final exception in recurrence.exceptions) {
@@ -190,6 +192,10 @@ class KeepUp {
         } else {
           log('KeepUp: exception creation success');
         }
+
+        exception.id = exceptionObject.objectId;
+        exception.eventId = eventObject.objectId;
+        exception.recurrenceId = recurrenceObject.objectId;
       }
     }
 
@@ -399,6 +405,118 @@ class KeepUp {
     return KeepUpResponse.result(event);
   }
 
+  /// crea un nuovo evento goal da zero
+  Future<KeepUpResponse> createGoal(KeepUpGoal goal) async {
+    // prima si assicura che la creazione dell'evento avvenga senza problemi
+    final response = await createEvent(goal);
+
+    if (response.error) return response;
+
+    // crea i metadati
+    final goalMetadata = ParseObject(KeepUpGoalDataModelKey.className)
+      ..set(KeepUpGoalDataModelKey.eventId,
+          KeepUpEventDataModelKey.pointerTo(goal.id!))
+      ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
+      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
+      ..set(KeepUpGoalDataModelKey.category, goal.category);
+
+    // salva i metadati
+    final parseResponse = await goalMetadata.save();
+
+    if (!parseResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: goal creation failure: ${parseResponse.error!.message}');
+    }
+
+    return KeepUpResponse();
+  }
+
+  /// aggiorno un evento goal
+  Future<KeepUpResponse> updateGoal(KeepUpGoal goal) async {
+    // prima si assicura che la creazione dell'evento avvenga senza problemi
+    final response = await updateEvent(goal);
+
+    if (response.error) return response;
+
+    // aggiorna i metadati
+    final goalMetadata = ParseObject(KeepUpGoalDataModelKey.className)
+      ..objectId = goal.metadataId
+      ..set(KeepUpGoalDataModelKey.eventId,
+          KeepUpEventDataModelKey.pointerTo(goal.id!))
+      ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
+      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
+      ..set(KeepUpGoalDataModelKey.category, goal.category);
+
+    // salva i metadati
+    final parseResponse = await goalMetadata.save();
+
+    if (!parseResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: goal update failure: ${parseResponse.error!.message}');
+    }
+
+    return KeepUpResponse();
+  }
+
+  /// legge tutti i goal (eventi estesi) dal database
+  Future<KeepUpResponse<List<KeepUpGoal>>> getAllGoals(
+      {bool getMetadata = false}) async {
+    // costruisce la query per ottenere i goal
+    final goalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className);
+    // ottiene i metadata sui goal
+    final goalObjects = await goalQuery.find();
+
+    if (goalObjects.isEmpty) return KeepUpResponse.result([]);
+
+    goalObjects.sort((a, b) {
+      return (a[KeepUpGoalDataModelKey.eventId][KeepUpEventDataModelKey.id]
+              as String)
+          .compareTo(b[KeepUpGoalDataModelKey.eventId]
+              [KeepUpEventDataModelKey.id] as String);
+    });
+
+    // ora ottiene tutti gli eventi per poi effettuare il merge estraendo
+    // solo i goal
+    final response = await getAllEvents(getMetadata: getMetadata);
+
+    if (response.error || response.result == null) {
+      return KeepUpResponse.error('KeepUp: unable to get events');
+    }
+
+    final events = response.result!;
+
+    events.sort((a, b) {
+      return a.id!.compareTo(b.id!);
+    });
+
+    final result = <KeepUpGoal>[];
+    int i = 0;
+
+    // effettua il merge per estrarre i eventi che sono goal
+    for (final event in events) {
+      if (i >= goalObjects.length) break;
+      if (event.id ==
+          goalObjects[i][KeepUpGoalDataModelKey.eventId]
+              [KeepUpEventDataModelKey.id]) {
+        result.add(KeepUpGoal(
+            id: event.id,
+            title: event.title,
+            description: event.description,
+            startDate: event.startDate,
+            endDate: event.endDate,
+            color: event.color,
+            daysPerWeek: goalObjects[i][KeepUpGoalDataModelKey.daysPerWeek],
+            hoursPerDay: goalObjects[i][KeepUpGoalDataModelKey.hoursPerDay],
+            category: goalObjects[i][KeepUpGoalDataModelKey.category],
+            metadataId: goalObjects[i][KeepUpGoalDataModelKey.id]));
+        result.last.recurrences = event.recurrences;
+        ++i;
+      }
+    }
+
+    return KeepUpResponse.result(result);
+  }
+
   /// legge un obiettivo (evento esteso) dal database
   Future<KeepUpResponse<KeepUpGoal>> getGoal({required String eventId}) async {
     // effettua la query sull'evento associato
@@ -414,7 +532,7 @@ class KeepUp {
       return KeepUpResponse.error('KeepUp: no event found with such id');
     }
 
-    return KeepUpResponse.result(KeepUpGoal(
+    final result = KeepUpGoal(
         id: response.result!.id,
         title: response.result!.title,
         description: response.result!.description,
@@ -423,7 +541,12 @@ class KeepUp {
         color: response.result!.color,
         daysPerWeek: goalObjects.first[KeepUpGoalDataModelKey.daysPerWeek],
         hoursPerDay: goalObjects.first[KeepUpGoalDataModelKey.hoursPerDay],
-        category: goalObjects.first[KeepUpGoalDataModelKey.category]));
+        category: goalObjects.first[KeepUpGoalDataModelKey.category],
+        metadataId: goalObjects.first[KeepUpGoalDataModelKey.id]);
+
+    result.recurrences = response.result!.recurrences;
+
+    return KeepUpResponse.result(result);
   }
 
   /// il risultato è restituito come List<KeepUpTask> all'interno del campo
@@ -571,7 +694,7 @@ class KeepUpEvent {
   DateTime? endDate;
   String? description;
   Color color;
-  final List<KeepUpRecurrence> recurrences = [];
+  List<KeepUpRecurrence> recurrences = [];
 
   KeepUpEvent(
       {this.id,
@@ -651,10 +774,18 @@ class KeepUpEvent {
   }
 }
 
+class KeepUpGoalCategory {
+  static const education = 'Educazione';
+  static const sport = 'Sport';
+  static const other = 'Altro';
+  static const values = [education, sport, other];
+}
+
 class KeepUpGoal extends KeepUpEvent {
   int daysPerWeek;
   int hoursPerDay;
   String category;
+  String? metadataId;
 
   KeepUpGoal(
       {String? id,
@@ -663,9 +794,10 @@ class KeepUpGoal extends KeepUpEvent {
       DateTime? endDate,
       String? description,
       required Color color,
-      required this.daysPerWeek,
-      required this.hoursPerDay,
-      required this.category})
+      this.daysPerWeek = 3,
+      this.hoursPerDay = 1,
+      this.category = KeepUpGoalCategory.education,
+      this.metadataId})
       : super(
             id: id,
             title: title,
@@ -673,6 +805,18 @@ class KeepUpGoal extends KeepUpEvent {
             endDate: endDate,
             description: description,
             color: color);
+
+  factory KeepUpGoal.fromEvent(KeepUpEvent event) {
+    return KeepUpGoal(
+        id: event.id,
+        title: event.title,
+        description: event.description,
+        startDate: event.startDate,
+        endDate: event.endDate,
+        color: event.color);
+  }
+
+  KeepUpEvent toEvent() => this;
 }
 
 enum KeepUpRecurrenceType { daily, weekly, monthly, none }
@@ -742,10 +886,10 @@ class KeepUpRecurrence {
 }
 
 class KeepUpRecurrenceException {
-  final String? id;
-  final String? eventId;
-  final String? recurrenceId;
-  final DateTime onDate;
+  String? id;
+  String? eventId;
+  String? recurrenceId;
+  DateTime onDate;
 
   KeepUpRecurrenceException(
       {this.id, this.eventId, this.recurrenceId, required this.onDate});

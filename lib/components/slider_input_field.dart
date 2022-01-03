@@ -47,7 +47,7 @@ class SliderInputField extends StatelessWidget {
           value: value,
           min: min,
           max: max,
-          divisions: max.round() - min.round() + 1,
+          divisions: max.round() - min.round(),
           label: value.round().toString(),
           onChanged: onChanged,
         ),

@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:keep_up/constant.dart';
+import 'package:keep_up/screens/define_goal.dart';
 import 'package:keep_up/style.dart';
 
 class AppTaskCard extends StatelessWidget {
@@ -103,10 +104,16 @@ class AppGoalCard extends StatelessWidget {
   String title;
   Color? color;
   bool? active;
+  DateTime? finishDate;
   Function(bool?)? onChecked;
 
   AppGoalCard(
-      {Key? key, required this.title, this.color, this.active, this.onChecked})
+      {Key? key,
+      required this.title,
+      this.color,
+      this.active,
+      this.onChecked,
+      this.finishDate})
       : super(key: key);
 
   @override
@@ -115,6 +122,10 @@ class AppGoalCard extends StatelessWidget {
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,
+        color: Colors.white);
+    final subtitleStyle = TextStyle(
+        fontSize: Theme.of(context).textTheme.bodyText1?.fontSize,
+        fontWeight: FontWeight.normal,
         color: Colors.white);
     var cardColor = color ?? AppEventColors.fromEvent(title);
 
@@ -148,10 +159,22 @@ class AppGoalCard extends StatelessWidget {
                                 ),
                                 value: active,
                                 onChanged: onChecked)),
-                      )
-                    ]
+                      ),
+                    ],
                   ]),
-                  SizedBox(height: 0.005 * size.height)
+                  SizedBox(height: 0.005 * size.height),
+                  if (finishDate != null) ...[
+                    SizedBox(height: 0.005 * size.height),
+                    Row(children: [
+                      const Icon(Icons.flag, color: Colors.white),
+                      const SizedBox(width: 10),
+                      Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                              AppDateTextField.formatter.format(finishDate!),
+                              style: subtitleStyle))
+                    ])
+                  ]
                 ],
               ),
             )));
