@@ -134,14 +134,6 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
     return AppLayout(
       children: [
         SizedBox(height: 0.05 * size.height),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
-            onPressed: () {},
-            child: const Text('Salta'),
-            style: TextButton.styleFrom(primary: AppColors.grey),
-          ),
-        ),
         Expanded(
             child: Image.asset('assets/images/students.png',
                 height: 0.25 * size.height, width: 0.9 * size.width)),
@@ -187,21 +179,36 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                     controller: _studentPasswordController)
               ],
               SizedBox(height: 0.04 * size.height),
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
+              Row(children: [
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
                     onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        _downloadUniversitySchedule(onComplete: () {
-                          Navigator.of(context).pushReplacement(
-                              MaterialPageRoute(
-                                  builder: (context) =>
-                                      const StudentTimetableScreen()));
-                        });
-                      }
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(
+                          builder: (context) =>
+                              const StudentTimetableScreen()));
                     },
-                    child: const Text('Avanti')),
-              ),
+                    child: const Text('Salta'),
+                    style: TextButton.styleFrom(primary: AppColors.grey),
+                  ),
+                ),
+                const Expanded(child: SizedBox()),
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: TextButton(
+                      onPressed: () {
+                        if (_formKey.currentState!.validate()) {
+                          _downloadUniversitySchedule(onComplete: () {
+                            Navigator.of(context).pushReplacement(
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        const StudentTimetableScreen()));
+                          });
+                        }
+                      },
+                      child: const Text('Avanti')),
+                ),
+              ]),
               SizedBox(height: 0.05 * size.height),
             ]))
       ],

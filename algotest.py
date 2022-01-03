@@ -196,7 +196,7 @@ def main():
         Task('Sistemi operativi', 2, 4, 16, 18)
     ]
 
-    timetable = schedule(fixed, goals)
+    timetable = schedule(fixed, goals, tries=10000)
 
     for t in timetable:
         print(f'[{t.name}] {week_days[t.weekday]} {t.start}:00 -> {t.end}:00')

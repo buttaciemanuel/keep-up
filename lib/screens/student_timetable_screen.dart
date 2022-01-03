@@ -3,6 +3,7 @@ import 'package:dots_indicator/dots_indicator.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/screens/define_event.dart';
+import 'package:keep_up/screens/goal_choice_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
@@ -79,34 +80,43 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
                         ]);
                   }
 
-                  return ListView(
-                      children: tasks
-                          .map((task) => GestureDetector(
-                              onTap: () {
-                                Navigator.of(context)
-                                    .push(MaterialPageRoute(
-                                        fullscreenDialog: true,
-                                        builder: (context) {
-                                          return DefineEventScreen(
-                                              fromDayIndex: _currentPageIndex,
-                                              fromTask: task);
-                                        }))
-                                    .then((_) => setState(() {}));
-                              },
-                              child: AppTaskCard(
-                                  color: task.color,
-                                  title: task.title,
-                                  time: task.startTime.toTimeOfDay(),
-                                  endTime: task.endTime.toTimeOfDay())))
-                          .toList());
+                  return Scrollbar(
+                      child: ListView.builder(
+                          padding: const EdgeInsets.all(5),
+                          itemCount: tasks.length,
+                          physics: const BouncingScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            return GestureDetector(
+                                onTap: () {
+                                  Navigator.of(context)
+                                      .push(MaterialPageRoute(
+                                          fullscreenDialog: true,
+                                          builder: (context) {
+                                            return DefineEventScreen(
+                                                fromDayIndex: _currentPageIndex,
+                                                fromTask: tasks[index]);
+                                          }))
+                                      .then((_) => setState(() {}));
+                                },
+                                child: AppTaskCard(
+                                    color: tasks[index].color,
+                                    title: tasks[index].title,
+                                    time: tasks[index].startTime.toTimeOfDay(),
+                                    endTime:
+                                        tasks[index].endTime.toTimeOfDay()));
+                          }));
                 } else {
-                  return ListView(
-                      children: List.generate(
-                          3,
-                          (_) => SkeletonLoader(
-                              child: AppTaskCard(
-                                  title: '',
-                                  time: const TimeOfDay(hour: 0, minute: 0)))));
+                  return Scrollbar(
+                      child: ListView.builder(
+                          padding: const EdgeInsets.all(5),
+                          itemCount: 3,
+                          physics: const BouncingScrollPhysics(),
+                          itemBuilder: (context, index) {
+                            return SkeletonLoader(
+                                child: AppTaskCard(
+                                    title: '',
+                                    time: const TimeOfDay(hour: 0, minute: 0)));
+                          }));
                 }
               }),
         )),
@@ -124,6 +134,20 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
             onTap: (position) {
               setState(() => _currentPageIndex = position.toInt());
             }),
+        SizedBox(height: 0.03 * size.height),
+        Align(
+          alignment: Alignment.centerRight,
+          child: TextButton(
+            onPressed: () {
+              Navigator.of(context)
+                  .pushReplacement(MaterialPageRoute(builder: (context) {
+                return const StudentGoalChoiceScreen();
+              }));
+            },
+            child: const Text('Continua'),
+            style: TextButton.styleFrom(primary: AppColors.primaryColor),
+          ),
+        ),
         SizedBox(height: 0.05 * size.height),
       ],
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:keep_up/screens/goal_choice_screen.dart';
 import 'package:keep_up/screens/login_screen.dart';
 import 'package:keep_up/screens/register_screen.dart';
 import 'package:keep_up/screens/student_timetable_screen.dart';
@@ -28,6 +30,9 @@ class MyApp extends StatelessWidget {
             data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: child!),
         debugShowCheckedModeBanner: false,
+        locale: const Locale('it', 'IT'),
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        supportedLocales: const [Locale('it', 'IT')],
         title: 'KeepUp',
         theme: AppThemes.lightTheme,
         home: AnimatedSplashScreen.withScreenFunction(

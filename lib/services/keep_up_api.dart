@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/main.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
@@ -296,6 +297,59 @@ class KeepUp {
     return KeepUpResponse();
   }
 
+  /// legge tutti gli eventi dell'utente dal database
+  Future<KeepUpResponse<List<KeepUpEvent>>> getAllEvents(
+      {bool getMetadata = false}) async {
+    // costruisce la query per ottenere l'evento
+    final mainQuery = QueryBuilder.name(KeepUpEventDataModelKey.className);
+    // costruisce la lista delle ricorrenze
+    final recurrencesQuery =
+        QueryBuilder.name(KeepUpRecurrenceDataModelKey.className);
+    // costruisce la lista delle eccezioni alle ricorrenze
+    final exceptionsQuery =
+        QueryBuilder.name(KeepUpExceptionDataModelKey.className);
+
+    // effettua le query
+    final events = (await mainQuery.find()).map((e) => KeepUpEvent.fromJson(e));
+
+    if (!getMetadata) {
+      return KeepUpResponse.result(
+          events.toList()..sort((a, b) => a.title.compareTo(b.title)));
+    }
+
+    final recurrences = (await recurrencesQuery.find())
+        .map((e) => KeepUpRecurrence.fromJson(e));
+    final exceptions = (await exceptionsQuery.find())
+        .map((e) => KeepUpRecurrenceException.fromJson(e));
+    final eventMap = HashMap<String, KeepUpEvent>();
+    final recurrenceMap = HashMap<String, KeepUpRecurrence>();
+
+    for (final event in events) {
+      eventMap.putIfAbsent(event.id!, () => event);
+    }
+
+    for (final recurrence in recurrences) {
+      recurrenceMap.putIfAbsent(recurrence.id!, () => recurrence);
+    }
+
+    for (final exception in exceptions) {
+      recurrenceMap.update(exception.recurrenceId!, (value) {
+        value.exceptions.add(exception);
+        return value;
+      });
+    }
+
+    for (final recurrence in recurrenceMap.entries) {
+      eventMap.update(recurrence.value.eventId!, (value) {
+        value.recurrences.add(recurrence.value);
+        return value;
+      });
+    }
+
+    return KeepUpResponse.result(
+        eventMap.values.toList()..sort((a, b) => a.title.compareTo(b.title)));
+  }
+
   /// legge un evento con tutte le ricorrenze relative dal database
   Future<KeepUpResponse<KeepUpEvent>> getEvent(
       {required String eventId}) async {
@@ -343,6 +397,33 @@ class KeepUp {
     }
 
     return KeepUpResponse.result(event);
+  }
+
+  /// legge un obiettivo (evento esteso) dal database
+  Future<KeepUpResponse<KeepUpGoal>> getGoal({required String eventId}) async {
+    // effettua la query sull'evento associato
+    final response = await getEvent(eventId: eventId);
+    // costruisce la query per estrarre i metadati dell'obiettivo
+    final goalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className)
+      ..whereEqualTo(KeepUpGoalDataModelKey.eventId,
+          KeepUpEventDataModelKey.pointerTo(eventId));
+
+    final goalObjects = await goalQuery.find();
+
+    if (goalObjects.isEmpty || response.error || response.result == null) {
+      return KeepUpResponse.error('KeepUp: no event found with such id');
+    }
+
+    return KeepUpResponse.result(KeepUpGoal(
+        id: response.result!.id,
+        title: response.result!.title,
+        description: response.result!.description,
+        startDate: response.result!.startDate,
+        endDate: response.result!.endDate,
+        color: response.result!.color,
+        daysPerWeek: goalObjects.first[KeepUpGoalDataModelKey.daysPerWeek],
+        hoursPerDay: goalObjects.first[KeepUpGoalDataModelKey.hoursPerDay],
+        category: goalObjects.first[KeepUpGoalDataModelKey.category]));
   }
 
   /// il risultato è restituito come List<KeepUpTask> all'interno del campo
@@ -570,6 +651,30 @@ class KeepUpEvent {
   }
 }
 
+class KeepUpGoal extends KeepUpEvent {
+  int daysPerWeek;
+  int hoursPerDay;
+  String category;
+
+  KeepUpGoal(
+      {String? id,
+      required String title,
+      required DateTime startDate,
+      DateTime? endDate,
+      String? description,
+      required Color color,
+      required this.daysPerWeek,
+      required this.hoursPerDay,
+      required this.category})
+      : super(
+            id: id,
+            title: title,
+            startDate: startDate,
+            endDate: endDate,
+            description: description,
+            color: color);
+}
+
 enum KeepUpRecurrenceType { daily, weekly, monthly, none }
 
 class KeepUpRecurrence {
@@ -707,6 +812,19 @@ abstract class KeepUpExceptionDataModelKey {
   static const eventId = 'eventId';
   static const recurrenceId = 'recurrenceId';
   static const onDate = 'onDate';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpGoalDataModelKey {
+  static const className = 'Goal';
+  static const id = 'objectId';
+  static const eventId = 'eventId';
+  static const category = 'category';
+  static const daysPerWeek = 'daysPerWeek';
+  static const hoursPerDay = 'hoursPerDay';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};

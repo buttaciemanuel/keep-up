@@ -1,9 +1,8 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
+import 'package:keep_up/components/color_selector.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
@@ -105,6 +104,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   @override
   void dispose() {
     _eventNameController.dispose();
+    _eventDescriptionController.dispose();
     _startTimePickerController.dispose();
     _endTimePickerController.dispose();
     super.dispose();
@@ -479,9 +479,10 @@ class WeekDaySelector extends StatelessWidget {
               width: size.width / 8.5,
               child: TextButton(
                   style: TextButton.styleFrom(
+                      animationDuration: const Duration(milliseconds: 200),
                       primary: isDayScheduled
                           ? AppColors.primaryColor
-                          : AppColors.weekDayButtonColor,
+                          : AppColors.fieldBackgroundColor,
                       elevation: selectedDay == index ? 5 : 0,
                       fixedSize: selectedDay == index
                           ? const Size.fromHeight(50)
@@ -489,49 +490,13 @@ class WeekDaySelector extends StatelessWidget {
                       shape: const CircleBorder(),
                       backgroundColor: isDayScheduled
                           ? AppColors.primaryColor
-                          : AppColors.weekDayButtonColor),
+                          : AppColors.fieldBackgroundColor),
                   onPressed: () => onSelected(index),
                   child: Text(weekDays[index][0].toUpperCase(),
-                      style: const TextStyle(color: Colors.white))));
-        })));
-  }
-}
-
-class ColorSelector extends StatelessWidget {
-  final List<Color> colors;
-  final int selectedColorIndex;
-  final Function(int) onSelected;
-  const ColorSelector(
-      {Key? key,
-      required this.colors,
-      this.selectedColorIndex = 0,
-      required this.onSelected})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
-    return SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-            children: List.generate(colors.length, (index) {
-          return SizedBox(
-              width: size.width / 8.5,
-              child: TextButton(
-                  style: TextButton.styleFrom(
-                      primary: colors[index],
-                      elevation: selectedColorIndex == index ? 5 : 0,
-                      fixedSize: selectedColorIndex == index
-                          ? const Size.fromHeight(50)
-                          : const Size.fromHeight(40),
-                      shape: const CircleBorder(),
-                      backgroundColor: colors[index]),
-                  onPressed: () => onSelected(index),
-                  child: selectedColorIndex == index
-                      ? Transform.scale(
-                          scale: 1.3,
-                          child: const Icon(Icons.check, color: Colors.white))
-                      : const Icon(null)));
+                      style: TextStyle(
+                          color: isDayScheduled
+                              ? Colors.white
+                              : AppColors.fieldTextColor))));
         })));
   }
 }

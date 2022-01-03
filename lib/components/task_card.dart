@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:keep_up/constant.dart';
 import 'package:keep_up/style.dart';
 
 class AppTaskCard extends StatelessWidget {
@@ -11,15 +12,6 @@ class AppTaskCard extends StatelessWidget {
   int? completedTasksCount;
   int? totalTaskCount;
   bool? active;
-  static final _defaultColors = [
-    AppColors.primaryColor,
-    Colors.green,
-    Colors.blue,
-    Colors.amber,
-    Colors.cyan,
-    Colors.indigo,
-    Colors.purple
-  ];
 
   AppTaskCard(
       {Key? key,
@@ -35,8 +27,7 @@ class AppTaskCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
-    final cardColor =
-        color ?? _defaultColors[title.hashCode % _defaultColors.length];
+    final cardColor = color ?? AppEventColors.fromEvent(title);
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,
@@ -62,6 +53,7 @@ class AppTaskCard extends StatelessWidget {
                             alignment: Alignment.centerLeft,
                             child: Text(title, style: titleStyle))),
                     if (active != null) ...[
+                      const SizedBox(width: 10),
                       SizedBox(
                         height: 24.0,
                         width: 24.0,
@@ -101,6 +93,65 @@ class AppTaskCard extends StatelessWidget {
                             '$completedTasksCount/$totalTaskCount completati questa settimana',
                             style: progressStyle))
                   ]
+                ],
+              ),
+            )));
+  }
+}
+
+class AppGoalCard extends StatelessWidget {
+  String title;
+  Color? color;
+  bool? active;
+  Function(bool?)? onChecked;
+
+  AppGoalCard(
+      {Key? key, required this.title, this.color, this.active, this.onChecked})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    final titleStyle = TextStyle(
+        fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
+        fontWeight: FontWeight.bold,
+        color: Colors.white);
+    var cardColor = color ?? AppEventColors.fromEvent(title);
+
+    if (active != null && !active!) cardColor = AppColors.notSelectedColor;
+
+    return Center(
+        child: Card(
+            color: cardColor,
+            child: Padding(
+              padding: const EdgeInsets.all(15),
+              child: Column(
+                children: [
+                  Row(children: [
+                    Expanded(
+                        child: Align(
+                            alignment: Alignment.centerLeft,
+                            child: Text(title, style: titleStyle))),
+                    if (active != null) ...[
+                      const SizedBox(width: 10),
+                      SizedBox(
+                        height: 24.0,
+                        width: 24.0,
+                        child: Transform.scale(
+                            scale: 1.3,
+                            child: Checkbox(
+                                fillColor: !active!
+                                    ? MaterialStateProperty.all(Colors.white)
+                                    : null,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(2),
+                                ),
+                                value: active,
+                                onChanged: onChecked)),
+                      )
+                    ]
+                  ]),
+                  SizedBox(height: 0.005 * size.height)
                 ],
               ),
             )));

@@ -6,7 +6,7 @@ abstract class AppColors {
   static const lightGrey = Color.fromRGBO(0, 0, 0, 0.3);
   static const fieldBackgroundColor = Color(0xFFF5F4F4);
   static const fieldTextColor = Color.fromRGBO(0, 0, 0, 0.5);
-  static const weekDayButtonColor = Color(0xFFD9D9D9);
+  static const notSelectedColor = Color(0xFFD9D9D9);
 }
 
 abstract class AppThemes {
@@ -50,6 +50,12 @@ abstract class AppThemes {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.all(Radius.circular(10.0)),
           )),
+      sliderTheme: SliderThemeData.fromPrimaryColors(
+          primaryColor: AppColors.primaryColor,
+          primaryColorDark: Colors.black,
+          primaryColorLight: Colors.white,
+          valueIndicatorTextStyle: const TextStyle(
+              color: Colors.white, fontWeight: FontWeight.w500, fontSize: 20)),
       timePickerTheme: const TimePickerThemeData(
         hourMinuteTextColor: AppColors.fieldTextColor,
         dayPeriodTextStyle:
@@ -61,8 +67,6 @@ abstract class AppThemes {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.all(Radius.circular(10.0)),
         ),
-        /*helpTextStyle: TextStyle(
-              color: Colors.black, fontWeight: FontWeight.w900, fontSize: 24)*/
       ));
 }
 
