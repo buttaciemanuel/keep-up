@@ -998,6 +998,12 @@ class KeepUpDayTime {
 
   TimeOfDay toTimeOfDay() => TimeOfDay(hour: hour, minute: minute);
 
+  Duration elapsed(KeepUpDayTime other) {
+    final minutes = hour * 60 + minute;
+    final otherMinutes = other.hour * 60 + other.minute;
+    return Duration(minutes: minutes - otherMinutes);
+  }
+
   int compareTo(KeepUpDayTime other) {
     if (hour < other.hour) return -1;
     if (hour > other.hour) return 1;

@@ -20,6 +20,7 @@ class Task:
         self.end = end
         self.category = category
 
+
 def pending_tasks(goals):
     result = []
 
@@ -51,14 +52,12 @@ def fill_week_table(fixed, min_hour, max_hour):
     
     return table
 
-
 def is_free(table, index, duration):
     for i in range(index, index + duration):
         if table[i]:
             return False
     
     return True
-
 
 def cost(fixed, pending, log=False):
     busy_hours = [ 0 for _ in range(7) ]
@@ -100,15 +99,13 @@ def cost(fixed, pending, log=False):
 
     return weight
 
-
 def sort_key(task):
     return task.weekday * 24 + task.start
-
 
 def schedule(fixed, goals, tries=100000):
     pending = pending_tasks(goals)
     day_average = len(pending) / 7
-    week_table = fill_week_table(fixed, 8, 23)
+    week_table = fill_week_table(fixed, 8, 20)
     best = []
     best_cost = math.inf
     i = 0
@@ -128,6 +125,9 @@ def schedule(fixed, goals, tries=100000):
         random.shuffle(pending)
 
         for t in pending:
+            if index >= len(week_table):
+                index = index % len(week_table)
+
             day = math.floor(index / 24)
 
             if assigned[day] > day_average:
@@ -136,18 +136,18 @@ def schedule(fixed, goals, tries=100000):
 
             while index < len(week_table):
                 if is_free(week_table, index, t.duration):
-                    t.weekday = day
+                    t.weekday = math.floor(index / 24)
                     t.start = index % 24
                     t.end = t.start + t.duration
                     # riempio un'ora in più per lasciare un'ora di gioco libera fra due task successivi
                     index = index + t.duration + 1
-                    assigned[day] = assigned[day] + 1
+                    assigned[t.weekday] = assigned[t.weekday] + 1
                     count = count + 1
                     break
 
                 index = index + 1
 
-                while week_table[index]:
+                while index < len(week_table) and week_table[index]:
                     index = index + 1
         
         if count < len(pending):
@@ -169,15 +169,14 @@ def schedule(fixed, goals, tries=100000):
     
     return result
         
-
-
 def main():
     week_days = ['lunedì', 'martedì', 'mercoledì', 'giovedì', 'venerdì', 'sabato', 'domenica']
 
     goals = [
-        Goal('Nuoto', 3, 2, 'SPORT'),
-        Goal('Preparazione esami', 4, 1, 'EDUCAZIONE'),
-        Goal('Pugilato', 3, 1, 'ALTRO')
+        Goal('Studio - Sistemi elettronici', 4, 1, 'EDUCAZIONE'),
+        Goal('Studio - Imprenditorialità', 5, 2, 'EDUCAZIONE'),
+        Goal('Pugilato', 3, 2, 'SPORT'),
+        Goal('Film', 2, 1, 'ALTRO')
     ]
 
     fixed = [

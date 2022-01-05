@@ -131,20 +131,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {
+                  onPressed: () async {
                     if (_formKey.currentState!.validate()) {
-                      KeepUp.instance
-                          .register(
-                              _fullnameController.text.trim(),
-                              _emailController.text.trim(),
-                              _passwordController.text.trim())
-                          .then((value) {
+                      final response = await KeepUp.instance.register(
+                          _fullnameController.text.trim(),
+                          _emailController.text.trim(),
+                          _passwordController.text.trim());
+
+                      if (response.error) {
+                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
+                      } else {
                         Navigator.of(context).pushReplacement(MaterialPageRoute(
                             builder: (context) => StudentSyncScreen(
                                 username: _fullnameController.text)));
-                      }).onError((error, stackTrace) {
-                        ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                      });
+                      }
                     }
                   },
                   child: const Text('Registrati'),

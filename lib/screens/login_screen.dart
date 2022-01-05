@@ -102,16 +102,17 @@ class _LoginScreenState extends State<LoginScreen> {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton(
-                onPressed: () {
+                onPressed: () async {
                   if (_formKey.currentState!.validate()) {
-                    KeepUp.instance
-                        .login(_emailController.text.trim(),
-                            _passwordController.text.trim())
-                        .then((value) {
-                      // SHOW HOME PAGE
-                    }).onError((error, stackTrace) {
+                    final response = await KeepUp.instance.login(
+                        _emailController.text.trim(),
+                        _passwordController.text.trim());
+
+                    if (response.error) {
                       ScaffoldMessenger.of(context).showSnackBar(snackBar);
-                    });
+                    } else {
+                      // SHOW HOME PAGE
+                    }
                   }
                 },
                 child: const Text('Accedi'),

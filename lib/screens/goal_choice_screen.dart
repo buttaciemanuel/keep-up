@@ -6,6 +6,7 @@ import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/screens/define_goal.dart';
 import 'package:keep_up/services/keep_up_api.dart';
+import 'package:keep_up/services/keep_up_scheduler.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
 
@@ -161,6 +162,10 @@ class GoalChoiceScreen extends StatefulWidget {
 }
 
 class _GoalChoiceScreenState extends State<GoalChoiceScreen> {
+  static const _downloadSnackbar = SnackBar(
+      padding: EdgeInsets.all(20),
+      content: Text('Ci sono dei problemi nello scaricare i dati'));
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -260,11 +265,25 @@ class _GoalChoiceScreenState extends State<GoalChoiceScreen> {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () {
-              Navigator.of(context)
-                  .pushReplacement(MaterialPageRoute(builder: (context) {
-                return const StudentGoalChoiceScreen();
-              }));
+            onPressed: () async {
+              // ottiene tutti gli eventi preesistenti per estrarre le ricorrenze
+              final allEvents =
+                  await KeepUp.instance.getAllEvents(getMetadata: true);
+              // ottiene tutti i goal creati
+              final allGoals =
+                  await KeepUp.instance.getAllGoals(getMetadata: false);
+
+              if (allEvents.error || allGoals.error) {
+                ScaffoldMessenger.of(context).showSnackBar(_downloadSnackbar);
+                return;
+              }
+              print('[data retrieved]');
+              // crea lo scheduler
+              final scheduler =
+                  KeepUpScheduler.fromTimeTable(allEvents.result!);
+              print('[let\'s do it]');
+              // avvia lo schduling
+              scheduler.scheduleGoals(allGoals.result!);
             },
             child: const Text('Continua'),
             style: TextButton.styleFrom(primary: AppColors.primaryColor),
