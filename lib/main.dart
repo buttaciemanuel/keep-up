@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:keep_up/screens/goal_choice_screen.dart';
 import 'package:keep_up/screens/login_screen.dart';
 import 'package:keep_up/screens/register_screen.dart';
+import 'package:keep_up/screens/schedule_loading_screen.dart';
 import 'package:keep_up/screens/student_timetable_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
@@ -44,7 +45,7 @@ class MyApp extends StatelessWidget {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return StudentGoalChoiceScreen();
+                return StudentTimetableScreen();
               } else {
                 // home screen
                 return const LoginScreen();

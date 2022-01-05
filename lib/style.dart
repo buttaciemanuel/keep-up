@@ -71,27 +71,31 @@ abstract class AppThemes {
 }
 
 class AppLayout extends StatelessWidget {
+  Color? backgroundColor = Colors.white;
   final List<Widget> children;
-  const AppLayout({Key? key, required this.children}) : super(key: key);
+  AppLayout({Key? key, required this.children, this.backgroundColor})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: SafeArea(
-      child: LayoutBuilder(builder: (context, constraint) {
-        return SingleChildScrollView(
-          child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraint.maxHeight),
-              child: IntrinsicHeight(
-                  child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 32.0),
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: children,
-                      )))),
-        );
-      }),
-    ));
+    return Scaffold(
+        backgroundColor: backgroundColor,
+        body: SafeArea(
+          child: LayoutBuilder(builder: (context, constraint) {
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraint.maxHeight),
+                  child: IntrinsicHeight(
+                      child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            mainAxisAlignment: MainAxisAlignment.start,
+                            crossAxisAlignment: CrossAxisAlignment.center,
+                            children: children,
+                          )))),
+            );
+          }),
+        ));
   }
 }

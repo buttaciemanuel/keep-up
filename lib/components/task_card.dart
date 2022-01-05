@@ -1,8 +1,9 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:keep_up/components/progress_bar.dart';
 import 'package:keep_up/constant.dart';
-import 'package:keep_up/screens/define_goal.dart';
+import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/style.dart';
 
 class AppTaskCard extends StatelessWidget {
@@ -80,14 +81,10 @@ class AppTaskCard extends StatelessWidget {
                           style: timeStyle)),
                   if (completedTasksCount != null &&
                       totalTaskCount != null) ...[
-                    SizedBox(height: 0.01 * size.height),
-                    LinearProgressIndicator(
-                        backgroundColor: AppColors.lightGrey,
-                        color: Colors.white,
-                        minHeight: 10,
+                    AppProgressBar(
+                        valueColor: Colors.white,
                         value: completedTasksCount!.toDouble() /
                             totalTaskCount!.toDouble()),
-                    SizedBox(height: 0.01 * size.height),
                     Align(
                         alignment: Alignment.centerLeft,
                         child: Text(

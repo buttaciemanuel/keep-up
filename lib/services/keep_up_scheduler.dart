@@ -4,7 +4,7 @@ import 'package:keep_up/constant.dart';
 import 'package:flutter/material.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 
-class _Task {
+class _Task extends Comparable {
   // identificativo
   String id;
   // durata in ore
@@ -29,6 +29,14 @@ class _Task {
       start: start,
       weekDay: weekDay,
       category: category);
+
+  @override
+  int compareTo(other) {
+    return weekDay! * 24 +
+        start! -
+        (other as _Task).weekDay! * 24 -
+        other.start!;
+  }
 }
 
 class KeepUpScheduler {
@@ -66,8 +74,33 @@ class KeepUpScheduler {
   }
 
   // pianifica i task dei goal nelle varie settimane
-  void scheduleGoals(List<KeepUpGoal> goals) {
+  void scheduleGoals(List<KeepUpGoal> goals) async {
     final tasks = _scheduleGoals(_fixedTasks, goals);
+    final goalTasks = <String, List<_Task>>{};
+    // raggruppa i task per goal associato
+    for (final task in tasks) {
+      goalTasks.putIfAbsent(task.id, () => []);
+      goalTasks.update(task.id, (tasks) => tasks..add(task));
+    }
+    // aggiunge le varie ricorrenze generate dai task dell'algoritmo
+    for (var goal in goals) {
+      if (!goalTasks.containsKey(goal.title)) continue;
+      for (final task in goalTasks[goal.title]!) {
+        goal.addWeeklySchedule(
+            weekDay: task.weekDay! + 1,
+            startTime: KeepUpDayTime(hour: task.start!, minute: 0),
+            endTime:
+                KeepUpDayTime(hour: task.start! + task.duration, minute: 0));
+      }
+      // aggiorna il goal sul database
+      final response = await KeepUp.instance.updateGoal(goal);
+
+      if (response.error) {
+        log(response.message!);
+      } else {
+        log('${goal.title} updated with ${goal.recurrences.length} recurrences');
+      }
+    }
   }
 
   // pianifica i task dei goal nelle varie settimane e restituisce tutti i task
@@ -79,32 +112,29 @@ class KeepUpScheduler {
     // media giornaliera di goal task posizionabili
     final dailyAverage = pendingTasks.length / 7;
     // tabella oraria settimanale
-    final weekTable = _fillWeekTable(fixedTasks, 8, 20);
-
-    for (int i = 0; i < weekTable.length; ++i) {
-      print('[${weekTable[i] ? '/' : ' '}] ${weekDays[i ~/ 24]} ${i % 24}:00');
-    }
-
+    final fixedWeekTable = _fillWeekTable(fixedTasks, 8, 20);
     // la soluzione migliore e il suo costo relativo
     var bestResult = <_Task>[];
     var bestCost = double.infinity;
-    var bestCount = 0;
     // ordina i task preesistenti per ora di inizio
-    fixedTasks.sort(
-        (a, b) => a.weekDay! * 24 + a.start! - b.weekDay! * 24 - b.start!);
+    fixedTasks.sort();
     // fa un numero di tentativi per trovare la soluzione migliore
     for (var i = 0; i < tries; ++i) {
-      //print('attempt $i');
+      // fa una copia da modificare della table
+      final weekTable = fixedWeekTable.toList();
+      // task assegnati
+      final assignedTasks = <_Task>[];
       // numero di task assegnati ogni giorno
       final dailyAssigned = List<int>.generate(7, (_) => 0);
+      // giorni in cui un task di un dato obiettivo è svolto
+      final goalDays = <String, Set<int>>{};
       // indice di avanzamento nella tabelle di celle orarie della settimana
       int index = 0;
-      // numero di task assegnati finora
-      int count = 0;
       // ordina casualmente i task in attesa
       pendingTasks.shuffle();
       // tenta di assegnare ogni task in attesa
       for (var task in pendingTasks) {
+        goalDays.putIfAbsent(task.id, () => {});
         // rianalizza settimana dall'inizio se sfora
         if (index >= weekTable.length) index %= weekTable.length;
         // giorno corrente nella tabella
@@ -117,14 +147,22 @@ class KeepUpScheduler {
         }
         // tenta di posizionare il task corrente in tale giornata o successive
         while (index < weekTable.length) {
+          // se nel giorno attuale è già distribuito questo task, allora si passa
+          // al successivo
+          if (goalDays[task.id]!.contains(index ~/ 24)) {
+            index = (index ~/ 24 + 1) * 24;
+            continue;
+          }
           // se lo slot è libero, posizione il task e avanza l'indice di tabella
           if (_isWeekTableSlotFree(weekTable, index, task.duration)) {
+            // il task viene assegnato in tale slot
             task.start = index % 24;
             task.weekDay = index ~/ 24;
+            assignedTasks.add(task.clone());
+            goalDays[task.id]!.add(task.weekDay!);
             // un'ora in più è riempita per lasciare libertà fra task successivi
             index = index + task.duration + 1;
             ++dailyAssigned[day];
-            ++count;
             break;
           }
           // avanza almeno di una posizione
@@ -135,27 +173,19 @@ class KeepUpScheduler {
           }
         }
       }
-      // se sono stati posizionati meno task del previsto in tale soluzione,
-      // allora viene scartata
-      if (count < pendingTasks.length) {
-        continue;
-      }
-      //print('attempt $i, cost to be computed');
+
       // calcola il costo della soluzione attuale
       final newCost =
-          _costOf(fixedTasks: fixedTasks, pendingTask: pendingTasks);
+          _costOf(fixedTasks: fixedTasks, pendingTask: assignedTasks);
       // confronta con l'attuale migliore ed eventualmente aggiorna
       // la soluzione migliore
-      if (newCost < bestCost) {
-        bestCount = count;
+      if (newCost < bestCost && assignedTasks.length > bestResult.length) {
         bestCost = newCost;
-        bestResult = List.generate(pendingTasks.length, (index) {
-          return pendingTasks[index].clone();
-        });
+        bestResult = assignedTasks;
       }
     }
 
-    if (bestCount < pendingTasks.length) log('some is missing, fuck');
+    log('${bestResult.length}/${pendingTasks.length} positioned');
     // stampa la soluzione migliore
     _costOf(fixedTasks: fixedTasks, pendingTask: bestResult, debug: true);
 
@@ -215,7 +245,10 @@ class KeepUpScheduler {
         return false;
       }
     }
-    // tutte le celle libera, allora lo slot è libero
+    for (var i = start; i <= start + duration; ++i) {
+      weekTable[i] = true;
+    }
+    // tutte le celle libere, allora lo slot è libero
     return true;
   }
 
@@ -266,7 +299,7 @@ class KeepUpScheduler {
     }
     // verifica che non ci sia pià di un goal task nella stessa giornata
     for (final entry in goalDays.entries) {
-      if (entry.value.length != goalTasksCount[entry.key]) {
+      if (entry.value.length < goalTasksCount[entry.key]!) {
         return double.infinity;
       }
     }
@@ -277,9 +310,7 @@ class KeepUpScheduler {
         _variance(otherHours);
 
     if (debug) {
-      final allTasks = (fixedTasks + pendingTask)
-        ..sort(
-            (a, b) => a.weekDay! * 24 + a.start! - b.weekDay! * 24 - b.start!);
+      final allTasks = (fixedTasks + pendingTask)..sort();
       for (final task in allTasks) {
         log('[${weekDays[task.weekDay!]} ${task.start}:00-${task.duration + task.start!}:00] ${task.id}');
       }

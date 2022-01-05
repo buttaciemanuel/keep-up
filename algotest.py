@@ -52,10 +52,13 @@ def fill_week_table(fixed, min_hour, max_hour):
     
     return table
 
-def is_free(table, index, duration):
+def test_and_set(table, index, duration):
     for i in range(index, index + duration):
         if table[i]:
             return False
+    
+    for i in range(index, index + duration):
+        table[i] = True
     
     return True
 
@@ -89,7 +92,7 @@ def cost(fixed, pending, log=False):
             other_hours[t.weekday] = other_hours[t.weekday] + t.duration
 
     for goal in goal_days:
-        if len(goal_days[goal]) != goal_tasks_count[goal]:
+        if len(goal_days[goal]) < goal_tasks_count[goal]:
             return math.inf
 
     weight = variance(busy_hours) * variance(education_hours) * variance(sport_hours) * variance(other_hours)
@@ -115,16 +118,15 @@ def schedule(fixed, goals, tries=100000):
     while i < tries:
         assigned = [ 0 for _ in range(7) ]
         index = 0
-        count = 0
+        assigned_tasks = []
+        goal_days = {}
 
-        for t in pending:
-            t.weekday = None
-            t.start = None
-            t.end = None
-        
         random.shuffle(pending)
 
         for t in pending:
+            if t.name not in goal_days:
+                goal_days[t.name] = set()
+
             if index >= len(week_table):
                 index = index % len(week_table)
 
@@ -135,14 +137,19 @@ def schedule(fixed, goals, tries=100000):
                 index = day * 24
 
             while index < len(week_table):
-                if is_free(week_table, index, t.duration):
+                if math.floor(index / 24) in goal_days[t.name]:
+                    index = (math.floor(index / 24) + 1) * 24
+                    continue
+
+                if test_and_set(week_table, index, t.duration):
                     t.weekday = math.floor(index / 24)
                     t.start = index % 24
                     t.end = t.start + t.duration
                     # riempio un'ora in più per lasciare un'ora di gioco libera fra due task successivi
                     index = index + t.duration + 1
                     assigned[t.weekday] = assigned[t.weekday] + 1
-                    count = count + 1
+                    assigned_tasks.append(copy.deepcopy(t))
+                    goal_days[t.name].add(t.weekday)
                     break
 
                 index = index + 1
@@ -150,14 +157,11 @@ def schedule(fixed, goals, tries=100000):
                 while index < len(week_table) and week_table[index]:
                     index = index + 1
         
-        if count < len(pending):
-            continue
+        new_cost = cost(fixed, assigned_tasks)
 
-        new_cost = cost(fixed, pending)
-
-        if new_cost < best_cost:
+        if new_cost < best_cost and len(assigned_tasks) > len(best):
             best_cost = new_cost
-            best = copy.deepcopy(pending)
+            best = assigned_tasks
 
         i = i + 1
 

@@ -4,7 +4,8 @@ import 'dart:developer';
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
-import 'package:keep_up/screens/define_goal.dart';
+import 'package:keep_up/screens/define_goal_screen.dart';
+import 'package:keep_up/screens/schedule_loading_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/services/keep_up_scheduler.dart';
 import 'package:keep_up/style.dart';
@@ -23,7 +24,7 @@ class _StudentGoalChoiceScreenState extends State<StudentGoalChoiceScreen> {
       padding: EdgeInsets.all(20),
       content: Text('Sembra ci sia un errore nel creare l\'attività'));
 
-  List<KeepUpEvent>? _recommendedGoals = null;
+  List<KeepUpEvent>? _recommendedGoals;
   final _selectedGoals = HashSet<String>();
 
   Future<List<KeepUpEvent>> _getRecommendedGoals() async {
@@ -144,8 +145,9 @@ class _StudentGoalChoiceScreenState extends State<StudentGoalChoiceScreen> {
   Future<void> _saveSelectedGoals() async {
     for (final recommended in _recommendedGoals!) {
       if (_selectedGoals.contains(recommended.title)) {
-        final response =
-            await KeepUp.instance.createGoal(KeepUpGoal.fromEvent(recommended));
+        final response = await KeepUp.instance.createGoal(
+            KeepUpGoal.fromEvent(recommended)
+              ..category = KeepUpGoalCategory.education);
         if (response.error) {
           ScaffoldMessenger.of(context).showSnackBar(_goalCreationSnackbar);
         }
@@ -266,24 +268,10 @@ class _GoalChoiceScreenState extends State<GoalChoiceScreen> {
           alignment: Alignment.centerRight,
           child: TextButton(
             onPressed: () async {
-              // ottiene tutti gli eventi preesistenti per estrarre le ricorrenze
-              final allEvents =
-                  await KeepUp.instance.getAllEvents(getMetadata: true);
-              // ottiene tutti i goal creati
-              final allGoals =
-                  await KeepUp.instance.getAllGoals(getMetadata: false);
-
-              if (allEvents.error || allGoals.error) {
-                ScaffoldMessenger.of(context).showSnackBar(_downloadSnackbar);
-                return;
-              }
-              print('[data retrieved]');
-              // crea lo scheduler
-              final scheduler =
-                  KeepUpScheduler.fromTimeTable(allEvents.result!);
-              print('[let\'s do it]');
-              // avvia lo schduling
-              scheduler.scheduleGoals(allGoals.result!);
+              Navigator.of(context)
+                  .pushReplacement(MaterialPageRoute(builder: (context) {
+                return const ScheduleLoadingScreen();
+              }));
             },
             child: const Text('Continua'),
             style: TextButton.styleFrom(primary: AppColors.primaryColor),

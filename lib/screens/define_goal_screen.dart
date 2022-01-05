@@ -162,6 +162,9 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
   static const _goalUpdateSnackbar = SnackBar(
       padding: EdgeInsets.all(20),
       content: Text('Sembra ci sia un errore nel modificare l\'obiettivo'));
+  static const _formErrorSnackbar = SnackBar(
+      padding: EdgeInsets.all(20),
+      content: Text('Scegli almeno una categoria di obiettivo'));
 
   final _formKey = GlobalKey<FormState>();
   final _goalNameController = TextEditingController();
@@ -406,7 +409,10 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
             child: TextButton(
               onPressed: () async {
                 if (_formKey.currentState!.validate()) {
-                  if (widget.fromGoal == null) {
+                  if (_category == null) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(_formErrorSnackbar);
+                  } else if (widget.fromGoal == null) {
                     final newGoal = KeepUpGoal(
                         title: _goalNameController.text,
                         description: _goalDescriptionController.text,
