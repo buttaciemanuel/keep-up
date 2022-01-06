@@ -287,10 +287,10 @@ class KeepUpScheduler {
       busyHours[task.weekDay!] += task.duration;
       // aggiorna le informazioni specifiche
       switch (task.category) {
-        case KeepUpGoalCategory.education:
+        case KeepUpEventCategory.education:
           educationHours[task.weekDay!] += task.duration;
           break;
-        case KeepUpGoalCategory.sport:
+        case KeepUpEventCategory.sport:
           sportHours[task.weekDay!] += task.duration;
           break;
         default:

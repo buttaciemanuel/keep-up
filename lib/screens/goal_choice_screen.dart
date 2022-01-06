@@ -35,6 +35,9 @@ class _StudentGoalChoiceScreenState extends State<StudentGoalChoiceScreen> {
     _recommendedGoals = [];
 
     for (final event in response.result!) {
+      if (event.category != KeepUpEventCategory.lecture) continue;
+      // consiglia l'obiettivo preparazione solo per quegli eventi che erano
+      // stati marchiati con la descrizione di lezione
       _recommendedGoals!.add(KeepUpEvent(
           title: 'Studio - ${event.title}',
           startDate: event.startDate,
@@ -147,7 +150,7 @@ class _StudentGoalChoiceScreenState extends State<StudentGoalChoiceScreen> {
       if (_selectedGoals.contains(recommended.title)) {
         final response = await KeepUp.instance.createGoal(
             KeepUpGoal.fromEvent(recommended)
-              ..category = KeepUpGoalCategory.education);
+              ..category = KeepUpEventCategory.education);
         if (response.error) {
           ScaffoldMessenger.of(context).showSnackBar(_goalCreationSnackbar);
         }

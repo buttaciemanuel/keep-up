@@ -3,7 +3,7 @@ import 'dart:collection';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:keep_up/constant.dart';
-import 'package:keep_up/screens/student_timetable_screen.dart';
+import 'package:keep_up/screens/timetable_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/services/polito_api.dart';
 import 'package:keep_up/style.dart';
@@ -100,6 +100,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
           } else {
             final event = KeepUpEvent(
                 title: lecture.subject,
+                category: KeepUpEventCategory.lecture,
                 startDate: lecture.startDateTime,
                 color: AppEventColors.fromEvent(lecture.subject));
             event.addWeeklySchedule(
@@ -185,8 +186,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                   child: TextButton(
                     onPressed: () {
                       Navigator.of(context).pushReplacement(MaterialPageRoute(
-                          builder: (context) =>
-                              const StudentTimetableScreen()));
+                          builder: (context) => const TimetableScreen()));
                     },
                     child: const Text('Salta'),
                     style: TextButton.styleFrom(primary: AppColors.grey),
@@ -202,7 +202,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                             Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
                                     builder: (context) =>
-                                        const StudentTimetableScreen()));
+                                        const TimetableScreen()));
                           });
                         }
                       },

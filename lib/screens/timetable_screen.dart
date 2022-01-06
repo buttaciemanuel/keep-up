@@ -8,14 +8,14 @@ import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
 
-class StudentTimetableScreen extends StatefulWidget {
-  const StudentTimetableScreen({Key? key}) : super(key: key);
+class TimetableScreen extends StatefulWidget {
+  const TimetableScreen({Key? key}) : super(key: key);
 
   @override
-  _StudentTimetableScreenState createState() => _StudentTimetableScreenState();
+  _TimetableScreenState createState() => _TimetableScreenState();
 }
 
-class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
+class _TimetableScreenState extends State<TimetableScreen> {
   var _currentPageIndex = 0;
 
   @override
@@ -24,10 +24,6 @@ class _StudentTimetableScreenState extends State<StudentTimetableScreen> {
 
     return AppLayout(
       children: [
-        /*SizedBox(height: 0.05 * size.height),
-        Image.asset('assets/images/timetable.png',
-            height: 0.25 * size.height, width: 0.7 * size.width),
-        */
         SizedBox(height: 0.05 * size.height),
         Row(children: [
           Expanded(

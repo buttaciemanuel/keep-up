@@ -124,7 +124,6 @@ class AppCategorySelector extends StatelessWidget {
                     primary: category == value
                         ? AppColors.primaryColor
                         : AppColors.fieldBackgroundColor,
-                    elevation: category == value ? 5 : 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(10),
                     ),
@@ -153,9 +152,6 @@ class DefineGoalScreen extends StatefulWidget {
 }
 
 class _DefineGoalScreenState extends State<DefineGoalScreen> {
-  static const _dateMismatchSnackbar = SnackBar(
-      padding: EdgeInsets.all(20),
-      content: Text('La data inserita non ha molto senso'));
   static const _goalCreationSnackbar = SnackBar(
       padding: EdgeInsets.all(20),
       content: Text('Sembra ci sia un errore nel creare l\'obiettivo'));
@@ -223,7 +219,6 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
 
   Widget _loadingSkeleton(BuildContext context, {required String screenTitle}) {
     final size = MediaQuery.of(context).size;
-
     return AppLayout(
       children: [
         SizedBox(height: 0.05 * size.height),
@@ -241,29 +236,24 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
             key: _formKey,
             child: Column(children: [
               AppCategorySelector(
-                  value: _category,
-                  categories: KeepUpGoalCategory.values,
-                  onClicked: (_) {}),
+                  categories: KeepUpEventCategory.values, onClicked: (_) {}),
               SizedBox(height: 0.02 * size.height),
               SkeletonLoader(
                   child: AppDateTextField(
                       label: 'Realizzazione',
                       hint: 'Data di realizzazione',
                       icon: Icons.flag,
-                      controller: _finishDatePickerController,
                       onSelected: (_) {})),
               SizedBox(height: 0.02 * size.height),
               SkeletonLoader(
                   child: AppTextField(
-                      validator: _goalNameValidator,
                       hint: 'Il nome dell\'obiettivo',
                       label: 'Obiettivo',
                       inputType: TextInputType.name,
                       controller: _goalNameController)),
               SizedBox(height: 0.02 * size.height),
-              SkeletonLoader(
+              const SkeletonLoader(
                   child: AppTextField(
-                      controller: _goalDescriptionController,
                       isTextArea: true,
                       label: 'Descrizione',
                       hint: 'La descrizione dell\'obiettivo')),
@@ -337,7 +327,7 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
             child: Column(children: [
               AppCategorySelector(
                   value: _category,
-                  categories: KeepUpGoalCategory.values,
+                  categories: KeepUpEventCategory.values,
                   onClicked: (category) {
                     setState(() {
                       if (_category != category) {

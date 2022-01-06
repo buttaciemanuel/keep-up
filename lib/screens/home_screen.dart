@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
+import 'package:keep_up/screens/define_event_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
@@ -32,7 +33,17 @@ class _HomeScreenState extends State<HomeScreen> {
               iconSize: 32.0,
               padding: EdgeInsets.zero,
               tooltip: 'Aggiungi',
-              onPressed: () {},
+              onPressed: () {
+                Navigator.of(context)
+                    .push(MaterialPageRoute(
+                        fullscreenDialog: true,
+                        builder: (context) {
+                          return DefineEventScreen(
+                              showOnlyForDay: true,
+                              fromDayIndex: dateTime.weekday - 1);
+                        }))
+                    .then((_) => setState(() {}));
+              },
               icon: const Icon(Icons.add, color: AppColors.primaryColor))
         ]),
         SizedBox(height: 0.02 * size.height),

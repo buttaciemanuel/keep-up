@@ -107,6 +107,7 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
       ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.color, event.color.value)
+      ..set(KeepUpEventDataModelKey.category, event.category)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
@@ -213,6 +214,7 @@ class KeepUp {
       ..set(KeepUpEventDataModelKey.endDate, event.endDate)
       ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.color, event.color.value)
+      ..set(KeepUpEventDataModelKey.category, event.category)
       ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
@@ -417,8 +419,7 @@ class KeepUp {
       ..set(KeepUpGoalDataModelKey.eventId,
           KeepUpEventDataModelKey.pointerTo(goal.id!))
       ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
-      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
-      ..set(KeepUpGoalDataModelKey.category, goal.category);
+      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -444,8 +445,7 @@ class KeepUp {
       ..set(KeepUpGoalDataModelKey.eventId,
           KeepUpEventDataModelKey.pointerTo(goal.id!))
       ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
-      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
-      ..set(KeepUpGoalDataModelKey.category, goal.category);
+      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -505,9 +505,9 @@ class KeepUp {
             startDate: event.startDate,
             endDate: event.endDate,
             color: event.color,
+            category: event.category,
             daysPerWeek: goalObjects[i][KeepUpGoalDataModelKey.daysPerWeek],
             hoursPerDay: goalObjects[i][KeepUpGoalDataModelKey.hoursPerDay],
-            category: goalObjects[i][KeepUpGoalDataModelKey.category],
             metadataId: goalObjects[i][KeepUpGoalDataModelKey.id]));
         result.last.recurrences = event.recurrences;
         ++i;
@@ -539,9 +539,9 @@ class KeepUp {
         startDate: response.result!.startDate,
         endDate: response.result!.endDate,
         color: response.result!.color,
+        category: response.result!.category,
         daysPerWeek: goalObjects.first[KeepUpGoalDataModelKey.daysPerWeek],
         hoursPerDay: goalObjects.first[KeepUpGoalDataModelKey.hoursPerDay],
-        category: goalObjects.first[KeepUpGoalDataModelKey.category],
         metadataId: goalObjects.first[KeepUpGoalDataModelKey.id]);
 
     result.recurrences = response.result!.recurrences;
@@ -694,6 +694,7 @@ class KeepUpEvent {
   DateTime? endDate;
   String? description;
   Color color;
+  String category;
   List<KeepUpRecurrence> recurrences = [];
 
   KeepUpEvent(
@@ -702,7 +703,8 @@ class KeepUpEvent {
       required this.startDate,
       this.endDate,
       this.description,
-      required this.color});
+      required this.color,
+      this.category = KeepUpEventCategory.other});
 
   factory KeepUpEvent.fromJson(dynamic json) {
     return KeepUpEvent(
@@ -711,7 +713,8 @@ class KeepUpEvent {
         startDate: json[KeepUpEventDataModelKey.startDate],
         endDate: json[KeepUpEventDataModelKey.endDate],
         description: json[KeepUpEventDataModelKey.description],
-        color: Color(json[KeepUpEventDataModelKey.color]));
+        color: Color(json[KeepUpEventDataModelKey.color]),
+        category: json[KeepUpEventDataModelKey.category]);
   }
 
   void addDailySchedule(
@@ -774,17 +777,17 @@ class KeepUpEvent {
   }
 }
 
-class KeepUpGoalCategory {
+class KeepUpEventCategory {
   static const education = 'Educazione';
   static const sport = 'Sport';
+  static const lecture = 'Lezione';
   static const other = 'Altro';
-  static const values = [education, sport, other];
+  static const values = [education, sport, lecture, other];
 }
 
 class KeepUpGoal extends KeepUpEvent {
   int daysPerWeek;
   int hoursPerDay;
-  String category;
   String? metadataId;
 
   KeepUpGoal(
@@ -794,9 +797,9 @@ class KeepUpGoal extends KeepUpEvent {
       DateTime? endDate,
       String? description,
       required Color color,
+      String category = KeepUpEventCategory.other,
       this.daysPerWeek = 3,
       this.hoursPerDay = 1,
-      this.category = KeepUpGoalCategory.education,
       this.metadataId})
       : super(
             id: id,
@@ -804,6 +807,7 @@ class KeepUpGoal extends KeepUpEvent {
             startDate: startDate,
             endDate: endDate,
             description: description,
+            category: category,
             color: color);
 
   factory KeepUpGoal.fromEvent(KeepUpEvent event) {
@@ -813,6 +817,7 @@ class KeepUpGoal extends KeepUpEvent {
         description: event.description,
         startDate: event.startDate,
         endDate: event.endDate,
+        category: event.category,
         color: event.color);
   }
 
@@ -927,6 +932,7 @@ abstract class KeepUpEventDataModelKey {
   static const creatorId = 'creatorId';
   static const description = 'description';
   static const color = 'color';
+  static const category = 'category';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
@@ -966,7 +972,6 @@ abstract class KeepUpGoalDataModelKey {
   static const className = 'Goal';
   static const id = 'objectId';
   static const eventId = 'eventId';
-  static const category = 'category';
   static const daysPerWeek = 'daysPerWeek';
   static const hoursPerDay = 'hoursPerDay';
 

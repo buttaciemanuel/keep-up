@@ -3,60 +3,20 @@ import 'package:intl/intl.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/components/color_selector.dart';
+import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
 
-class AppTimeTextField extends StatelessWidget {
-  final String? initialText;
-  final String? hint;
-  final double? width;
-  final Function()? onTap;
-  final TextEditingController? controller;
-  const AppTimeTextField(
-      {Key? key,
-      this.hint,
-      this.onTap,
-      this.controller,
-      this.initialText,
-      this.width})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
-    return SizedBox(
-        width: width ?? size.width,
-        child: TextFormField(
-            initialValue: initialText,
-            controller: controller,
-            onTap: onTap,
-            textAlign: TextAlign.start,
-            readOnly: true,
-            style: Theme.of(context).textTheme.bodyText1,
-            decoration: InputDecoration(
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-                filled: true,
-                fillColor: AppColors.fieldBackgroundColor,
-                hintText: hint,
-                labelText: controller != null && controller!.text.isEmpty
-                    ? null
-                    : hint,
-                floatingLabelStyle:
-                    const TextStyle(color: AppColors.primaryColor),
-                border: UnderlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(10)),
-                prefixIcon:
-                    Icon(Icons.timer, color: Theme.of(context).hintColor))));
-  }
-}
-
 class DefineEventScreen extends StatefulWidget {
   final KeepUpTask? fromTask;
   final int fromDayIndex;
-  const DefineEventScreen({Key? key, this.fromTask, required this.fromDayIndex})
+  final bool showOnlyForDay;
+  const DefineEventScreen(
+      {Key? key,
+      this.fromTask,
+      required this.fromDayIndex,
+      this.showOnlyForDay = false})
       : super(key: key);
 
   @override
@@ -79,6 +39,8 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   final _endTimePickerController = TextEditingController();
   int _selectedDayIndex = 0;
   int _selectedColor = 0;
+  String? _category;
+  bool _justToday = false;
 
   String? _eventNameValidator(String? text) {
     if (text == null || text.isEmpty) {
@@ -151,6 +113,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasData) {
             _eventNameController.text = _event.title;
+            _category = _event.category;
 
             if (_event.description != null) {
               _eventDescriptionController.text = _event.description!;
@@ -181,22 +144,30 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         Form(
             key: _formKey,
             child: Column(children: [
-              SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                      children: List.generate(weekDays.length, (index) {
-                    return SizedBox(
-                        width: size.width / 8.5,
-                        child: TextButton(
-                            onPressed: () {},
-                            style: TextButton.styleFrom(
-                                side: BorderSide.none,
-                                shape: const CircleBorder(),
-                                backgroundColor:
-                                    Colors.black.withOpacity(0.15)),
-                            child: const Text('')));
-                  }))),
-              SizedBox(height: 0.03 * size.height),
+              if (widget.showOnlyForDay) ...[
+                const SkeletonLoader(
+                    child:
+                        SwitchInputField(label: 'Solo per oggi', value: false)),
+                SizedBox(height: 0.03 * size.height),
+              ],
+              if (!_justToday) ...[
+                SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                        children: List.generate(weekDays.length, (index) {
+                      return SizedBox(
+                          width: size.width / 8.5,
+                          child: TextButton(
+                              onPressed: () {},
+                              style: TextButton.styleFrom(
+                                  side: BorderSide.none,
+                                  shape: const CircleBorder(),
+                                  backgroundColor:
+                                      Colors.black.withOpacity(0.15)),
+                              child: const Text('')));
+                    }))),
+                SizedBox(height: 0.03 * size.height),
+              ],
               Row(children: [
                 SkeletonLoader(
                     child: AppTimeTextField(
@@ -207,6 +178,9 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                         AppTimeTextField(hint: 'Fine', width: size.width / 2.5))
               ]),
               SizedBox(height: 0.03 * size.height),
+              AppCategorySelector(
+                  categories: KeepUpEventCategory.values, onClicked: (_) {}),
+              SizedBox(height: 0.02 * size.height),
               const SkeletonLoader(
                   child: AppTextField(
                       hint: 'Il nome dell\'attività',
@@ -219,7 +193,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                       label: 'Descrizione',
                       hint: 'La descrizione dell\'attività')),
             ])),
-        const Expanded(child: SizedBox()),
+        Expanded(child: SizedBox(height: size.height * 0.03)),
         Row(children: [
           Expanded(
               child: Align(
@@ -278,15 +252,24 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         Form(
             key: _formKey,
             child: Column(children: [
-              WeekDaySelector(
-                  selectedDay: _selectedDayIndex,
-                  isScheduled: (index) {
-                    return _scheduleInWeekDay(index) != null;
-                  },
-                  onSelected: (index) {
-                    setState(() => _selectedDayIndex = index);
-                  }),
-              SizedBox(height: 0.03 * size.height),
+              if (widget.showOnlyForDay) ...[
+                SwitchInputField(
+                    label: 'Solo per oggi',
+                    value: _justToday,
+                    onChanged: (value) => setState(() => _justToday = value!)),
+                SizedBox(height: 0.03 * size.height),
+              ],
+              if (!_justToday) ...[
+                WeekDaySelector(
+                    selectedDay: _selectedDayIndex,
+                    isScheduled: (index) {
+                      return _scheduleInWeekDay(index) != null;
+                    },
+                    onSelected: (index) {
+                      setState(() => _selectedDayIndex = index);
+                    }),
+                SizedBox(height: 0.03 * size.height)
+              ],
               Row(children: [
                 AppTimeTextField(
                     hint: 'Inizio',
@@ -395,6 +378,19 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                     })
               ]),
               SizedBox(height: 0.03 * size.height),
+              AppCategorySelector(
+                  value: _category,
+                  categories: KeepUpEventCategory.values,
+                  onClicked: (category) {
+                    setState(() {
+                      if (_category != category) {
+                        _category = category;
+                      } else {
+                        _category = null;
+                      }
+                    });
+                  }),
+              SizedBox(height: 0.02 * size.height),
               AppTextField(
                   validator: _eventNameValidator,
                   hint: 'Il nome dell\'attività',
@@ -418,7 +414,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                     });
                   })
             ])),
-        const Expanded(child: SizedBox()),
+        Expanded(child: SizedBox(height: size.height * 0.03)),
         Row(children: [
           Expanded(
               child: Align(
@@ -436,6 +432,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                 if (_formKey.currentState!.validate()) {
                   _event.title = _eventNameController.text;
                   _event.description = _eventDescriptionController.text;
+                  _event.category = _category ?? KeepUpEventCategory.other;
                   final response = await KeepUp.instance.updateEvent(_event);
                   if (response.error) {
                     ScaffoldMessenger.of(context)
@@ -453,6 +450,52 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         SizedBox(height: 0.05 * size.height)
       ],
     );
+  }
+}
+
+class AppTimeTextField extends StatelessWidget {
+  final String? initialText;
+  final String? hint;
+  final double? width;
+  final Function()? onTap;
+  final TextEditingController? controller;
+  const AppTimeTextField(
+      {Key? key,
+      this.hint,
+      this.onTap,
+      this.controller,
+      this.initialText,
+      this.width})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    return SizedBox(
+        width: width ?? size.width,
+        child: TextFormField(
+            initialValue: initialText,
+            controller: controller,
+            onTap: onTap,
+            textAlign: TextAlign.start,
+            readOnly: true,
+            style: Theme.of(context).textTheme.bodyText1,
+            decoration: InputDecoration(
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
+                filled: true,
+                fillColor: AppColors.fieldBackgroundColor,
+                hintText: hint,
+                labelText: controller != null && controller!.text.isEmpty
+                    ? null
+                    : hint,
+                floatingLabelStyle:
+                    const TextStyle(color: AppColors.primaryColor),
+                border: UnderlineInputBorder(
+                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(10)),
+                prefixIcon:
+                    Icon(Icons.timer, color: Theme.of(context).hintColor))));
   }
 }
 
@@ -498,5 +541,54 @@ class WeekDaySelector extends StatelessWidget {
                               ? Colors.white
                               : AppColors.fieldTextColor))));
         })));
+  }
+}
+
+class SwitchInputField extends StatelessWidget {
+  final String label;
+  final bool value;
+  final Function(bool?)? onChanged;
+  const SwitchInputField(
+      {Key? key, required this.label, required this.value, this.onChanged})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      alignment: Alignment.centerLeft,
+      padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
+      decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: AppColors.fieldBackgroundColor),
+      child: Column(children: [
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5),
+            child: Row(children: [
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(label,
+                      style: TextStyle(
+                          fontWeight: FontWeight.w500,
+                          color: Theme.of(context).hintColor,
+                          fontSize: 16))),
+              const Expanded(child: SizedBox(width: 10)),
+              SizedBox(
+                height: 24.0,
+                width: 24.0,
+                child: Transform.scale(
+                    scale: 1.3,
+                    child: Checkbox(
+                        fillColor: value
+                            ? MaterialStateProperty.all(AppColors.primaryColor)
+                            : Theme.of(context).checkboxTheme.fillColor,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                        value: value,
+                        onChanged: onChanged)),
+              )
+            ])),
+      ]),
+    );
   }
 }
