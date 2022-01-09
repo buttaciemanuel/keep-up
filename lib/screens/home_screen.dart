@@ -50,6 +50,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         fullscreenDialog: true,
                         builder: (context) {
                           return DefineEventScreen(
+                              fromDate: _selectedDate,
                               showOnlyForDay: true,
                               fromDayIndex: _selectedDate.weekday - 1);
                         }))

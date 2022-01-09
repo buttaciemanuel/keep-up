@@ -792,7 +792,6 @@ class KeepUpEvent {
       required int year,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
-    final date = DateTime(year, month, day);
     final any = recurrences.where((element) =>
         element.type == KeepUpRecurrenceType.none &&
         element.day == day &&
@@ -809,7 +808,7 @@ class KeepUpEvent {
           day: day,
           month: month,
           year: year,
-          weekDay: date.weekday,
+          weekDay: null,
           startTime: startTime,
           endTime: endTime));
     }

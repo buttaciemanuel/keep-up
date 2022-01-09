@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "cron": "^1.8.2",
+    "parse-server-scheduler": "^1.0.21"
+  }
+}

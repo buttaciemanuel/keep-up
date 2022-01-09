@@ -480,6 +480,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                   _event.description = _eventDescriptionController.text;
                   _event.category = _category ?? KeepUpEventCategory.other;
                   if (_justToday &&
+                      widget.fromTask != null &&
                       widget.fromTask!.recurrenceType !=
                           KeepUpRecurrenceType.none) {
                     _event.recurrences.where((recurrence) {
