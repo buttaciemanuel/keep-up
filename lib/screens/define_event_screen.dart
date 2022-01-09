@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
@@ -11,11 +13,13 @@ import 'package:keep_up/constant.dart';
 class DefineEventScreen extends StatefulWidget {
   final KeepUpTask? fromTask;
   final int fromDayIndex;
+  final DateTime? fromDate;
   final bool showOnlyForDay;
   const DefineEventScreen(
       {Key? key,
       this.fromTask,
       required this.fromDayIndex,
+      this.fromDate,
       this.showOnlyForDay = false})
       : super(key: key);
 
@@ -57,6 +61,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
     _selectedDayIndex = widget.fromDayIndex;
 
     if (widget.fromTask != null) {
+      _justToday = widget.fromTask!.recurrenceType == KeepUpRecurrenceType.none;
       _selectedColor = AppEventColors.values.indexOf(widget.fromTask!.color);
     }
 
@@ -94,7 +99,22 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
   KeepUpRecurrence? _scheduleInWeekDay(int index) {
     for (final recurrence in _event.recurrences) {
-      if (recurrence.weekDay == index + 1) {
+      if (recurrence.type == KeepUpRecurrenceType.daily ||
+          (recurrence.type == KeepUpRecurrenceType.weekly &&
+              recurrence.weekDay == index + 1)) {
+        return recurrence;
+      }
+    }
+
+    return null;
+  }
+
+  KeepUpRecurrence? _scheduleInDay(DateTime date) {
+    for (final recurrence in _event.recurrences) {
+      if (recurrence.type == KeepUpRecurrenceType.none &&
+          recurrence.day == date.day &&
+          recurrence.month == date.month &&
+          recurrence.year == date.year) {
         return recurrence;
       }
     }
@@ -220,7 +240,9 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
   Widget _form(BuildContext context, {required String screenTitle}) {
     final size = MediaQuery.of(context).size;
-    final dayRecurrence = _scheduleInWeekDay(_selectedDayIndex);
+    final dayRecurrence = _justToday
+        ? _scheduleInDay(widget.fromDate!)
+        : _scheduleInWeekDay(_selectedDayIndex);
 
     if (dayRecurrence != null) {
       _startTimePickerController.text =
@@ -256,11 +278,17 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                 SwitchInputField(
                     label: 'Solo per oggi',
                     value: _justToday,
-                    onChanged: (value) => setState(() => _justToday = value!)),
+                    onChanged: (value) => setState(() {
+                          _justToday = value!;
+                          if (value) {
+                            _startTimePickerController.clear();
+                            _endTimePickerController.clear();
+                          }
+                        })),
                 SizedBox(height: 0.03 * size.height),
               ],
               if (!_justToday) ...[
-                WeekDaySelector(
+                AppWeekDaySelector(
                     selectedDay: _selectedDayIndex,
                     isScheduled: (index) {
                       return _scheduleInWeekDay(index) != null;
@@ -323,10 +351,19 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                       }
 
                       setState(() {
-                        _event.addWeeklySchedule(
-                            weekDay: _selectedDayIndex + 1,
-                            startTime: startTime,
-                            endTime: endTime);
+                        if (_justToday) {
+                          _event.addSchedule(
+                              day: widget.fromDate!.day,
+                              month: widget.fromDate!.month,
+                              year: widget.fromDate!.year,
+                              startTime: startTime,
+                              endTime: endTime);
+                        } else {
+                          _event.addWeeklySchedule(
+                              weekDay: _selectedDayIndex + 1,
+                              startTime: startTime,
+                              endTime: endTime);
+                        }
                       });
                     }),
                 const Expanded(child: SizedBox()),
@@ -370,10 +407,19 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                       }
 
                       setState(() {
-                        _event.addWeeklySchedule(
-                            weekDay: _selectedDayIndex + 1,
-                            startTime: startTime,
-                            endTime: endTime);
+                        if (_justToday) {
+                          _event.addSchedule(
+                              day: widget.fromDate!.day,
+                              month: widget.fromDate!.month,
+                              year: widget.fromDate!.year,
+                              startTime: startTime,
+                              endTime: endTime);
+                        } else {
+                          _event.addWeeklySchedule(
+                              weekDay: _selectedDayIndex + 1,
+                              startTime: startTime,
+                              endTime: endTime);
+                        }
                       });
                     })
               ]),
@@ -433,7 +479,28 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                   _event.title = _eventNameController.text;
                   _event.description = _eventDescriptionController.text;
                   _event.category = _category ?? KeepUpEventCategory.other;
-                  final response = await KeepUp.instance.updateEvent(_event);
+                  if (_justToday &&
+                      widget.fromTask!.recurrenceType !=
+                          KeepUpRecurrenceType.none) {
+                    _event.recurrences.where((recurrence) {
+                      return (recurrence.type == KeepUpRecurrenceType.weekly &&
+                              recurrence.weekDay == widget.fromDate!.weekday) ||
+                          recurrence.type == KeepUpRecurrenceType.daily;
+                    }).forEach((recurrence) {
+                      recurrence.addException(
+                          onDate: (widget.fromDate ?? DateTime.now())
+                              .getDateOnly());
+                    });
+                  }
+
+                  KeepUpResponse response;
+
+                  if (_event.id == null) {
+                    response = await KeepUp.instance.createEvent(_event);
+                  } else {
+                    response = await KeepUp.instance.updateEvent(_event);
+                  }
+
                   if (response.error) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(_eventCreationSnackbar);
@@ -499,11 +566,11 @@ class AppTimeTextField extends StatelessWidget {
   }
 }
 
-class WeekDaySelector extends StatelessWidget {
+class AppWeekDaySelector extends StatelessWidget {
   final int selectedDay;
   final bool Function(int) isScheduled;
   final Function(int) onSelected;
-  const WeekDaySelector(
+  const AppWeekDaySelector(
       {Key? key,
       this.selectedDay = 0,
       required this.isScheduled,

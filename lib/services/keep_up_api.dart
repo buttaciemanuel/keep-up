@@ -549,6 +549,36 @@ class KeepUp {
     return KeepUpResponse.result(result);
   }
 
+  /// elimina un task, il che significa che cancella l'entry della sua ricorrenza
+  Future<KeepUpResponse> cancelTask({required KeepUpTask task}) async {
+    final target = ParseObject(KeepUpRecurrenceDataModelKey.className)
+      ..objectId = task.recurrenceId;
+    final response = await target.delete();
+
+    // elimina qualunque eccezione presente oggi se il task era solo per oggi
+    if (task.recurrenceType == KeepUpRecurrenceType.none) {
+      final cancelExceptionQuery =
+          QueryBuilder.name(KeepUpExceptionDataModelKey.className)
+            ..whereEqualTo(KeepUpExceptionDataModelKey.eventId,
+                KeepUpEventDataModelKey.pointerTo(task.eventId))
+            ..whereEqualTo(
+                KeepUpExceptionDataModelKey.onDate, task.date.getDateOnly());
+
+      final results = await cancelExceptionQuery.find();
+
+      for (final exceptionEntry in results) {
+        exceptionEntry.delete();
+      }
+    }
+
+    if (response.success) {
+      return KeepUpResponse();
+    } else {
+      return KeepUpResponse.error(
+          'KeepUp: goal update failure: ${response.error!.message}');
+    }
+  }
+
   /// il risultato è restituito come List<KeepUpTask> all'interno del campo
   /// 'response' della KeepUpResponse
   Future<KeepUpResponse<List<KeepUpTask>>> getTasks(
@@ -560,13 +590,12 @@ class KeepUp {
           ..whereEqualTo(KeepUpEventDataModelKey.creatorId,
               KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!));
     // questa query restituisce le eccezioni in tale data da escludere
-    final exceptionsQuery =
-        QueryBuilder.name(KeepUpExceptionDataModelKey.className)
-          ..keysToReturn([KeepUpExceptionDataModelKey.recurrenceId])
-          ..whereEqualTo(KeepUpExceptionDataModelKey.onDate, inDate)
-          // seleziona solo le eccezioni di ricorrenze del'utente loggato
-          ..whereMatchesQuery(
-              KeepUpExceptionDataModelKey.eventId, isUserEventQuery);
+    final exceptionsQuery = QueryBuilder.name(
+        KeepUpExceptionDataModelKey.className)
+      ..whereEqualTo(KeepUpExceptionDataModelKey.onDate, inDate.getDateOnly())
+      // seleziona solo le eccezioni di ricorrenze del'utente loggato
+      ..whereMatchesQuery(
+          KeepUpExceptionDataModelKey.eventId, isUserEventQuery);
     // effettua le query
     final exceptionObjects = await exceptionsQuery.find();
     // questa query restituisce gli eventi dell'utente in data
@@ -592,7 +621,8 @@ class KeepUp {
       ..whereNotContainedIn(
           KeepUpRecurrenceDataModelKey.id,
           exceptionObjects
-              .map((e) => e[KeepUpExceptionDataModelKey.recurrenceId])
+              .map((e) => e[KeepUpExceptionDataModelKey.recurrenceId]
+                  [KeepUpRecurrenceDataModelKey.id])
               .toList());
 
     // effettua la query principale
@@ -644,7 +674,9 @@ class KeepUp {
               startTime: KeepUpDayTime.fromJson(
                   recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]),
               endTime: KeepUpDayTime.fromJson(
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.endTime]));
+                  recurrenceObject[KeepUpRecurrenceDataModelKey.endTime]),
+              recurrenceType: KeepUpRecurrenceType
+                  .values[recurrenceObject[KeepUpRecurrenceDataModelKey.type]]);
         })
         .toSet()
         .toList();
@@ -761,19 +793,26 @@ class KeepUpEvent {
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
     final date = DateTime(year, month, day);
-    recurrences.removeWhere((element) =>
+    final any = recurrences.where((element) =>
         element.type == KeepUpRecurrenceType.none &&
         element.day == day &&
         element.month == month &&
         element.year == year);
-    recurrences.add(KeepUpRecurrence(
-        type: KeepUpRecurrenceType.none,
-        day: day,
-        month: month,
-        year: year,
-        weekDay: date.weekday,
-        startTime: startTime,
-        endTime: endTime));
+    if (any.isNotEmpty) {
+      for (var recurrence in any) {
+        recurrence.startTime = startTime;
+        recurrence.endTime = endTime;
+      }
+    } else {
+      recurrences.add(KeepUpRecurrence(
+          type: KeepUpRecurrenceType.none,
+          day: day,
+          month: month,
+          year: year,
+          weekDay: date.weekday,
+          startTime: startTime,
+          endTime: endTime));
+    }
   }
 }
 
@@ -883,10 +922,10 @@ class KeepUpRecurrence {
     return result;
   }
 
-  void addException(
-      {String? eventId, String? recurrenceId, required DateTime onDate}) {
+  void addException({required DateTime onDate}) {
+    exceptions.where((exception) => exception.onDate == onDate);
     exceptions.add(KeepUpRecurrenceException(
-        eventId: eventId, recurrenceId: recurrenceId, onDate: onDate));
+        eventId: eventId, recurrenceId: id, onDate: onDate));
   }
 }
 
@@ -1033,6 +1072,7 @@ class KeepUpTask {
   DateTime date;
   KeepUpDayTime startTime, endTime;
   Color color;
+  KeepUpRecurrenceType recurrenceType;
 
   KeepUpTask(
       {required this.eventId,
@@ -1041,7 +1081,8 @@ class KeepUpTask {
       required this.date,
       required this.startTime,
       required this.endTime,
-      required this.color});
+      required this.color,
+      required this.recurrenceType});
 
   @override
   int get hashCode =>
@@ -1053,4 +1094,8 @@ class KeepUpTask {
         other.startTime == startTime &&
         other.date == date;
   }
+}
+
+extension MyDateTimeExtension on DateTime {
+  DateTime getDateOnly() => DateTime(year, month, day);
 }

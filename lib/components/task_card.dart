@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:keep_up/components/progress_bar.dart';
 import 'package:keep_up/constant.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
@@ -14,6 +15,7 @@ class AppTaskCard extends StatelessWidget {
   int? completedTasksCount;
   int? totalTaskCount;
   bool? active;
+  Function(BuildContext?)? onCancelTask;
 
   AppTaskCard(
       {Key? key,
@@ -23,7 +25,8 @@ class AppTaskCard extends StatelessWidget {
       this.color,
       this.completedTasksCount,
       this.totalTaskCount,
-      this.active})
+      this.active,
+      this.onCancelTask})
       : super(key: key);
 
   @override
@@ -45,55 +48,70 @@ class AppTaskCard extends StatelessWidget {
     return Center(
         child: Card(
             color: cardColor,
-            child: Padding(
-              padding: const EdgeInsets.all(15),
-              child: Column(
-                children: [
-                  Row(children: [
-                    Expanded(
-                        child: Align(
+            child: Slidable(
+                startActionPane: ActionPane(
+                  motion: const BehindMotion(),
+                  dragDismissible: false,
+                  children: [
+                    SlidableAction(
+                      onPressed: onCancelTask,
+                      backgroundColor: Colors.red,
+                      foregroundColor: Colors.white,
+                      icon: Icons.delete_forever,
+                      label: 'Cancella',
+                    )
+                  ],
+                ),
+                endActionPane: null,
+                child: Padding(
+                  padding: const EdgeInsets.all(15),
+                  child: Column(
+                    children: [
+                      Row(children: [
+                        Expanded(
+                            child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(title, style: titleStyle))),
+                        if (active != null) ...[
+                          const SizedBox(width: 10),
+                          SizedBox(
+                            height: 24.0,
+                            width: 24.0,
+                            child: Transform.scale(
+                                scale: 1.3,
+                                child: Checkbox(
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(2),
+                                    ),
+                                    value: active,
+                                    onChanged: null)),
+                          )
+                        ]
+                      ]),
+                      SizedBox(height: 0.005 * size.height),
+                      Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                              time.format(context) +
+                                  (endTime != null
+                                      ? ' → ${endTime!.format(context)}'
+                                      : ''),
+                              style: timeStyle)),
+                      if (completedTasksCount != null &&
+                          totalTaskCount != null) ...[
+                        AppProgressBar(
+                            valueColor: Colors.white,
+                            value: completedTasksCount!.toDouble() /
+                                totalTaskCount!.toDouble()),
+                        Align(
                             alignment: Alignment.centerLeft,
-                            child: Text(title, style: titleStyle))),
-                    if (active != null) ...[
-                      const SizedBox(width: 10),
-                      SizedBox(
-                        height: 24.0,
-                        width: 24.0,
-                        child: Transform.scale(
-                            scale: 1.3,
-                            child: Checkbox(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(2),
-                                ),
-                                value: true,
-                                onChanged: null)),
-                      )
-                    ]
-                  ]),
-                  SizedBox(height: 0.005 * size.height),
-                  Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                          time.format(context) +
-                              (endTime != null
-                                  ? ' → ${endTime!.format(context)}'
-                                  : ''),
-                          style: timeStyle)),
-                  if (completedTasksCount != null &&
-                      totalTaskCount != null) ...[
-                    AppProgressBar(
-                        valueColor: Colors.white,
-                        value: completedTasksCount!.toDouble() /
-                            totalTaskCount!.toDouble()),
-                    Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                            '$completedTasksCount/$totalTaskCount completati questa settimana',
-                            style: progressStyle))
-                  ]
-                ],
-              ),
-            )));
+                            child: Text(
+                                '$completedTasksCount/$totalTaskCount completati questa settimana',
+                                style: progressStyle))
+                      ]
+                    ],
+                  ),
+                ))));
   }
 }
 

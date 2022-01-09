@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/screens/register_screen.dart';
@@ -111,7 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     if (response.error) {
                       ScaffoldMessenger.of(context).showSnackBar(snackBar);
                     } else {
-                      // SHOW HOME PAGE
+                      Navigator.of(context).pushReplacement(MaterialPageRoute(
+                          builder: (context) => const HomeScreen()));
                     }
                   }
                 },
