@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:keep_up/services/notification_service.dart';
 import 'package:keep_up/screens/goal_choice_screen.dart';
 import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/screens/login_screen.dart';
@@ -22,8 +23,19 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({Key? key}) : super(key: key);
+
+  @override
+  State<MyApp> createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  @override
+  void initState() {
+    super.initState();
+    NotificationService().init(context);
+  }
 
   @override
   Widget build(BuildContext context) {

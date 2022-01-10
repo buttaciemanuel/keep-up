@@ -44,3 +44,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Cloud code
+/cloud/logs
+/cloud/node_modules
+/cloud/package-lock.json

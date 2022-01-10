@@ -1,35 +1,57 @@
 const CronJob = require('cron').CronJob;
 
-var job = new CronJob('00 11 23 * * *', function () {
-    console.log("executing");
-    // per ogni evento privo di ricorrenze, elimina l'evento
-    let query = new Parse.Query("Event");
-    query.find({ useMasterKey: true,
-            success: function (events) {
-                console.log("success");
-                events.forEach(event => {
-                    console.log(event.title);
-                    let recurrencesQuery = new Parse.Query("Recurrence");
-                    recurrencesQuery.equalTo("eventId", {
+// pulisce il database da eventi privi di ricorrenze
+const job = new CronJob('0 * * * *', function () {
+    const eventQuery = new Parse.Query("Event").fromLocalDatastore();
+
+    eventQuery.find({ useMasterKey: true }).then(events => {
+        events.forEach(event => {
+            let recurrenceQuery = new Parse.Query("Recurrence").fromLocalDatastore();
+
+            recurrenceQuery.equalTo("eventId", {
+                __type: 'Pointer',
+                className: 'Event',
+                objectId: event.id
+            });
+            
+            recurrenceQuery.find({ useMasterKey: true }).then(recurrences => {
+                // no ricorrenze individuate
+                if (recurrences.length == 0) {
+                    console.log('deleting event ', event.get('title'));
+                    // rimuove le eccezioni
+                    let removeExceptionQuery = new Parse.Query("Exception").fromLocalDatastore();
+
+                    removeExceptionQuery.equalTo("eventId", {
                         __type: 'Pointer',
                         className: 'Event',
                         objectId: event.id
                     });
-                    recurrencesQuery.find({ useMasterKey: true,
-                            success: function (recurrences) {
-                                console.log(recurrences);
-                                if (recurrences.length == 0) {
-                                    console.log("deleting " + event.title);
-                                    event.destroy();
-                                }
-                            },
-                            error: function (error) { }
-                        });
-                });
-            },
-            error: function (error) { console.log(error); }
-        }
-    );
+
+                    removeExceptionQuery.find({ useMasterKey: true }).then(exceptions => {
+                        for (var i = 0; i < exceptions.length; ++i) exceptions[i].destroy({ useMasterKey: true });
+                    });
+                    // rimuove il goal associato
+                    let removeGoalQuery = new Parse.Query("Goal").fromLocalDatastore();
+
+                    removeGoalQuery.equalTo("eventId", {
+                        __type: 'Pointer',
+                        className: 'Event',
+                        objectId: event.id
+                    });
+
+                    removeGoalQuery.find({ useMasterKey: true }).then(goals => {
+                        for (var i = 0; i < goals.length; ++i) goals[i].destroy({ useMasterKey: true });
+                    });
+                    // rimuove l'evento
+                    event.destroy({ useMasterKey: true });
+                }
+            }).catch(error => {
+                console.log('error: ', error);
+            });
+        });
+    }).catch(error => {
+        console.log('error: ', error);
+    });
 }, null, true, 'Europe/Rome');
 
 job.start();

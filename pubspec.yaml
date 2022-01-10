@@ -48,6 +48,7 @@ dependencies:
   shimmer: ^2.0.0
   animated_text_kit: ^4.2.1
   flutter_slidable: ^1.2.0
+  flutter_local_notifications: ^9.2.0
   flutter_localizations:
     sdk: flutter 
 
