@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/services/notification_service.dart';
 import 'package:keep_up/screens/goal_choice_screen.dart';
 import 'package:keep_up/screens/home_screen.dart';
@@ -58,7 +59,7 @@ class _MyAppState extends State<MyApp> {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return HomeScreen();
+                return PersonalGrowthScreen();
               } else {
                 // home screen
                 return const LoginScreen();

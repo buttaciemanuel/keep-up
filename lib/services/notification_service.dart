@@ -48,7 +48,11 @@ class NotificationService {
         tz.TZDateTime.now(tz.local).add(const Duration(seconds: 20));
 
     _notificationsPlugin.zonedSchedule(
-        1, 'KeepUp', 'Hello, boy', currentDateTime, generalNotificationDetails,
+        1,
+        'Ehi, come va?',
+        'Raccontami come è andata la tua giornata!',
+        currentDateTime,
+        generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidAllowWhileIdle: true,
