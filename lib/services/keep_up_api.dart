@@ -685,6 +685,73 @@ class KeepUp {
 
     return KeepUpResponse.result(tasks);
   }
+
+  /// ottiene tutti le tracce giornaliere fino alla data specificata inclusa,
+  /// utilizzando una data di inizio se specificata
+  Future<KeepUpResponse<List<KeepUpDailyTrace>>> getDailyTraces(
+      {required DateTime until, DateTime? from}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+    // costruisce la query
+    final query = QueryBuilder.name(KeepUpDailyTraceDataModelKey.className)
+      ..whereEqualTo(KeepUpDailyTraceDataModelKey.userId,
+          KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
+      ..whereLessThanOrEqualTo(KeepUpDailyTraceDataModelKey.date, until);
+
+    if (from != null) {
+      query.whereGreaterThanOrEqualsTo(KeepUpDailyTraceDataModelKey.date, from);
+    }
+    // effettua la query principale
+    final objects = await query.find();
+
+    if (objects.isEmpty) {
+      KeepUpResponse.result(List<KeepUpDailyTrace>.empty());
+    }
+
+    return KeepUpResponse.result(
+        objects.map((object) => KeepUpDailyTrace.fromJson(object)).toList()
+          ..sort((a, b) => a.date.compareTo(b.date)));
+  }
+
+  /// ottiene la daily trace nel determinato giorno
+  Future<KeepUpResponse<KeepUpDailyTrace?>> getDailyTrace(
+      {required DateTime inDate}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+    // costruisce la query
+    final query = QueryBuilder.name(KeepUpDailyTraceDataModelKey.className)
+      ..whereEqualTo(KeepUpDailyTraceDataModelKey.userId,
+          KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
+      ..whereEqualTo(KeepUpDailyTraceDataModelKey.date, inDate.getDateOnly());
+    // effettua la query principale
+    final objects = await query.find();
+
+    if (objects.isEmpty) {
+      return KeepUpResponse.result(null);
+    }
+
+    return KeepUpResponse.result(KeepUpDailyTrace.fromJson(objects.first));
+  }
+
+  /// ottiene la daily trace nel determinato giorno
+  Future<KeepUpResponse> updateDailyTrace(KeepUpDailyTrace trace) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+    final object = ParseObject(KeepUpDailyTraceDataModelKey.className)
+      ..objectId = trace.id
+      ..set(KeepUpDailyTraceDataModelKey.userId, currentUser!.objectId!)
+      ..set(KeepUpDailyTraceDataModelKey.completedTasks, trace.completedTasks)
+      ..set(KeepUpDailyTraceDataModelKey.date, trace.date)
+      ..set(KeepUpDailyTraceDataModelKey.mood, trace.mood)
+      ..set(KeepUpDailyTraceDataModelKey.notes, trace.notes);
+
+    // salva i metadati
+    final parseResponse = await object.save();
+
+    if (!parseResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: daily trace update failure: ${parseResponse.error!.message}');
+    }
+
+    return KeepUpResponse();
+  }
 }
 
 /// Questa classe è utilizzata per ricevere una risposta attraverso una
@@ -904,7 +971,6 @@ class KeepUpRecurrence {
         result.day = int.parse(json[KeepUpRecurrenceDataModelKey.day]);
         result.month = int.parse(json[KeepUpRecurrenceDataModelKey.month]);
         result.year = int.parse(json[KeepUpRecurrenceDataModelKey.year]);
-        result.weekDay = int.parse(json[KeepUpRecurrenceDataModelKey.weekDay]);
         break;
       case KeepUpRecurrenceType.daily:
         break;
@@ -945,6 +1011,34 @@ class KeepUpRecurrenceException {
         recurrenceId: json[KeepUpExceptionDataModelKey.recurrenceId]
             [KeepUpEventDataModelKey.id],
         onDate: json[KeepUpExceptionDataModelKey.onDate]);
+  }
+}
+
+class KeepUpDailyTrace {
+  String? id;
+  String? userId;
+  DateTime date;
+  List<String> completedTasks;
+  int? mood;
+  String? notes;
+
+  KeepUpDailyTrace(
+      {this.id,
+      this.userId,
+      required this.date,
+      required this.completedTasks,
+      this.mood,
+      this.notes});
+
+  factory KeepUpDailyTrace.fromJson(dynamic json) {
+    return KeepUpDailyTrace(
+        id: json[KeepUpDailyTraceDataModelKey.id],
+        userId: json[KeepUpDailyTraceDataModelKey.userId],
+        date: json[KeepUpDailyTraceDataModelKey.date],
+        completedTasks:
+            List.from(json[KeepUpDailyTraceDataModelKey.completedTasks]),
+        mood: json[KeepUpDailyTraceDataModelKey.mood],
+        notes: json[KeepUpDailyTraceDataModelKey.notes]);
   }
 }
 
@@ -1012,6 +1106,20 @@ abstract class KeepUpGoalDataModelKey {
   static const eventId = 'eventId';
   static const daysPerWeek = 'daysPerWeek';
   static const hoursPerDay = 'hoursPerDay';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpDailyTraceDataModelKey {
+  static const className = 'DailyTrace';
+  static const id = 'objectId';
+  static const userId = 'userId';
+  static const completedTasks = 'completedTasks';
+  static const date = 'date';
+  static const mood = 'mood';
+  static const notes = 'notes';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};

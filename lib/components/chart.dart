@@ -47,13 +47,13 @@ class _AppChartState extends State<AppChart> {
       Align(
           alignment: Alignment.centerLeft,
           child:
-              Text(widget.title, style: Theme.of(context).textTheme.headline2)),
+              Text(widget.title, style: Theme.of(context).textTheme.headline3)),
       if (widget.description != null) ...[
         SizedBox(height: 0.02 * size.height),
         Align(
             alignment: Alignment.centerLeft,
             child: Text(widget.description!,
-                style: Theme.of(context).textTheme.subtitle1))
+                style: Theme.of(context).textTheme.subtitle2))
       ],
       SizedBox(height: 0.05 * size.height),
       SingleChildScrollView(
@@ -119,7 +119,7 @@ class _AppChartState extends State<AppChart> {
       minX: 0,
       maxX: 29,
       minY: 0,
-      maxY: 29,
+      maxY: 30,
       lineBarsData: [
         LineChartBarData(
           spots: List.generate(

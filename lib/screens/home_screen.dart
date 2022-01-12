@@ -19,11 +19,26 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   final _initialDate = DateTime.now();
   late DateTime _selectedDate;
+  KeepUpDailyTrace? _todayTrace;
 
   @override
   void initState() {
-    _selectedDate = _initialDate;
     super.initState();
+    _selectedDate = _initialDate;
+    _fetchTodayTrace();
+  }
+
+  Future<void> _fetchTodayTrace() async {
+    if (_todayTrace == null) {
+      // legge la daily trace o ne crea una vuota
+      final response =
+          await KeepUp.instance.getDailyTrace(inDate: _initialDate);
+
+      setState(() {
+        _todayTrace = response.result ??
+            KeepUpDailyTrace(date: _initialDate, completedTasks: []);
+      });
+    }
   }
 
   @override
@@ -31,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
     final dateFormatter =
         DateFormat.MMMMEEEEd(Localizations.localeOf(context).toLanguageTag());
-    return AppLayout(
+    return AppScrollView(
       children: [
         SizedBox(height: 0.05 * size.height),
         Row(children: [
@@ -68,81 +83,92 @@ class _HomeScreenState extends State<HomeScreen> {
             });
           },
         ),
-        Expanded(
-            child: SizedBox(
-          height: 0,
-          child: FutureBuilder<KeepUpResponse>(
-              future: KeepUp.instance.getTasks(inDate: _selectedDate),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final tasks = snapshot.data!.result as List<KeepUpTask>;
+        Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 5.0),
+            child: FutureBuilder<KeepUpResponse>(
+                future: KeepUp.instance.getTasks(inDate: _selectedDate),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData && _todayTrace != null) {
+                    final tasks = snapshot.data!.result as List<KeepUpTask>;
 
-                  if (tasks.isEmpty) {
+                    if (tasks.isEmpty) {
+                      return Column(
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            SizedBox(height: 0.05 * size.height),
+                            Image.asset('assets/images/no_tasks.png',
+                                height: 0.25 * size.height,
+                                width: 0.7 * size.width),
+                            SizedBox(height: 0.05 * size.height),
+                            Text('Giornata libera!',
+                                style: Theme.of(context).textTheme.headline3),
+                            SizedBox(height: 0.02 * size.height),
+                            Text('Aggiungi qualche evento in alto.',
+                                style: Theme.of(context).textTheme.subtitle2)
+                          ]);
+                    }
+
                     return Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset('assets/images/no_tasks.png',
-                              height: 0.25 * size.height,
-                              width: 0.7 * size.width),
-                          SizedBox(height: 0.05 * size.height),
-                          Text('Giornata libera!',
-                              style: Theme.of(context).textTheme.headline3),
-                          SizedBox(height: 0.02 * size.height),
-                          Text('Aggiungi qualche evento in alto.',
-                              style: Theme.of(context).textTheme.subtitle2)
-                        ]);
-                  }
-
-                  return Scrollbar(
-                      child: ListView.builder(
-                          padding: const EdgeInsets.all(5),
-                          itemCount: tasks.length,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            return GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context)
-                                      .push(MaterialPageRoute(
-                                          fullscreenDialog: true,
-                                          builder: (context) {
-                                            return DefineEventScreen(
-                                                fromTask: tasks[index],
-                                                showOnlyForDay: true,
-                                                fromDate: _selectedDate,
-                                                fromDayIndex:
-                                                    _selectedDate.weekday - 1);
-                                          }))
-                                      .then((_) => setState(() {}));
-                                },
-                                child: AppTaskCard(
-                                    color: tasks[index].color,
-                                    title: tasks[index].title,
-                                    time: tasks[index].startTime.toTimeOfDay(),
-                                    endTime: tasks[index].endTime.toTimeOfDay(),
-                                    onCancelTask: (context) {
-                                      setState(() {
-                                        KeepUp.instance
-                                            .cancelTask(task: tasks[index]);
-                                      });
-                                    }));
-                          }));
-                } else {
-                  return Scrollbar(
-                      child: ListView.builder(
-                          padding: const EdgeInsets.all(5),
-                          itemCount: 3,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            return SkeletonLoader(
+                        mainAxisSize: MainAxisSize.max,
+                        children: tasks.map((task) {
+                          return GestureDetector(
+                              onTap: () {
+                                Navigator.of(context)
+                                    .push(MaterialPageRoute(
+                                        fullscreenDialog: true,
+                                        builder: (context) {
+                                          return DefineEventScreen(
+                                              fromTask: task,
+                                              showOnlyForDay: true,
+                                              fromDate: _selectedDate,
+                                              fromDayIndex:
+                                                  _selectedDate.weekday - 1);
+                                        }))
+                                    .then((_) => setState(() {}));
+                              },
+                              child: AppTaskCard(
+                                  active: (_selectedDate == _initialDate &&
+                                          KeepUpDayTime.fromDateTime(
+                                                      _initialDate)
+                                                  .compareTo(task.endTime) >
+                                              0)
+                                      ? _todayTrace!.completedTasks
+                                          .contains(task.recurrenceId)
+                                      : null,
+                                  color: task.color,
+                                  title: task.title,
+                                  time: task.startTime.toTimeOfDay(),
+                                  endTime: task.endTime.toTimeOfDay(),
+                                  onCheckTask: (value) {
+                                    setState(() {
+                                      if (value!) {
+                                        _todayTrace!.completedTasks
+                                            .add(task.recurrenceId);
+                                      } else {
+                                        _todayTrace!.completedTasks
+                                            .remove(task.recurrenceId);
+                                      }
+                                    });
+                                  },
+                                  onCancelTask: (context) {
+                                    setState(() {
+                                      KeepUp.instance.cancelTask(task: task);
+                                    });
+                                  }));
+                        }).toList());
+                  } else {
+                    return Column(
+                        mainAxisSize: MainAxisSize.max,
+                        children: List.generate(
+                            3,
+                            (index) => SkeletonLoader(
                                 child: AppTaskCard(
                                     title: '',
-                                    time: const TimeOfDay(hour: 0, minute: 0)));
-                          }));
-                }
-              }),
-        )),
-        SizedBox(height: 0.05 * size.height),
+                                    time:
+                                        const TimeOfDay(hour: 0, minute: 0)))));
+                  }
+                }))
       ],
     );
   }

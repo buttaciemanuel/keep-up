@@ -16,6 +16,7 @@ class AppTaskCard extends StatelessWidget {
   int? totalTaskCount;
   bool? active;
   Function(BuildContext?)? onCancelTask;
+  Function(bool?)? onCheckTask;
 
   AppTaskCard(
       {Key? key,
@@ -26,7 +27,8 @@ class AppTaskCard extends StatelessWidget {
       this.completedTasksCount,
       this.totalTaskCount,
       this.active,
-      this.onCancelTask})
+      this.onCancelTask,
+      this.onCheckTask})
       : super(key: key);
 
   @override
@@ -84,7 +86,7 @@ class AppTaskCard extends StatelessWidget {
                                       borderRadius: BorderRadius.circular(2),
                                     ),
                                     value: active,
-                                    onChanged: null)),
+                                    onChanged: onCheckTask)),
                           )
                         ]
                       ]),
