@@ -60,7 +60,7 @@ class _MyAppState extends State<MyApp> {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return AppNavigator(children: []);
+                return const AppNavigator();
               } else {
                 // home screen
                 return const LoginScreen();

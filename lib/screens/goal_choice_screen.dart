@@ -249,9 +249,15 @@ class _GoalChoiceScreenState extends State<GoalChoiceScreen> {
                                       .then((_) => setState(() {}));
                                 },
                                 child: AppGoalCard(
-                                    color: goals[index].color,
-                                    title: goals[index].title,
-                                    finishDate: goals[index].endDate));
+                                  color: goals[index].color,
+                                  title: goals[index].title,
+                                  finishDate: goals[index].endDate,
+                                  onDeleteGoal: (context) {
+                                    KeepUp.instance
+                                        .deleteEvent(eventId: goals[index].id!)
+                                        .then((_) => setState(() {}));
+                                  },
+                                ));
                           }));
                 } else {
                   return Scrollbar(

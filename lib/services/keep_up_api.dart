@@ -103,8 +103,8 @@ class KeepUp {
 
     final eventObject = ParseObject(KeepUpEventDataModelKey.className)
       ..set(KeepUpEventDataModelKey.title, event.title)
-      ..set(KeepUpEventDataModelKey.startDate, event.startDate)
-      ..set(KeepUpEventDataModelKey.endDate, event.endDate)
+      ..set(KeepUpEventDataModelKey.startDate, event.startDate.getDateOnly())
+      ..set(KeepUpEventDataModelKey.endDate, event.endDate?.getDateOnly())
       ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.color, event.color.value)
       ..set(KeepUpEventDataModelKey.category, event.category)
@@ -210,8 +210,8 @@ class KeepUp {
     final eventObject = ParseObject(KeepUpEventDataModelKey.className)
       ..objectId = event.id
       ..set(KeepUpEventDataModelKey.title, event.title)
-      ..set(KeepUpEventDataModelKey.startDate, event.startDate)
-      ..set(KeepUpEventDataModelKey.endDate, event.endDate)
+      ..set(KeepUpEventDataModelKey.startDate, event.startDate.getDateOnly())
+      ..set(KeepUpEventDataModelKey.endDate, event.endDate?.getDateOnly())
       ..set(KeepUpEventDataModelKey.description, event.description)
       ..set(KeepUpEventDataModelKey.color, event.color.value)
       ..set(KeepUpEventDataModelKey.category, event.category)
@@ -575,7 +575,41 @@ class KeepUp {
       return KeepUpResponse();
     } else {
       return KeepUpResponse.error(
-          'KeepUp: goal update failure: ${response.error!.message}');
+          'KeepUp: task cancel failure: ${response.error!.message}');
+    }
+  }
+
+  /// elimina un evento dal database, anche se goal
+  Future<KeepUpResponse> deleteEvent({required String eventId}) async {
+    // costruisce la query per eliminare le ricorrenze associate
+    final deleteRecurrencesQuery =
+        QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
+          ..whereEqualTo(KeepUpRecurrenceDataModelKey.eventId,
+              KeepUpEventDataModelKey.pointerTo(eventId));
+    // costruisce la query per eliminare le eccezioni associate
+    final deleteExceptionsQuery =
+        QueryBuilder.name(KeepUpExceptionDataModelKey.className)
+          ..whereEqualTo(KeepUpExceptionDataModelKey.eventId,
+              KeepUpEventDataModelKey.pointerTo(eventId));
+    // costruisce la query per eliminare il goal associato, se presente
+    final deleteGoalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className)
+      ..whereEqualTo(KeepUpGoalDataModelKey.eventId,
+          KeepUpEventDataModelKey.pointerTo(eventId));
+    // costruisce la query per eliminare l'evento
+    final target = ParseObject(KeepUpEventDataModelKey.className)
+      ..objectId = eventId;
+
+    await deleteRecurrencesQuery.query();
+    await deleteExceptionsQuery.query();
+    await deleteGoalQuery.query();
+
+    final response = await target.delete();
+
+    if (response.success) {
+      return KeepUpResponse();
+    } else {
+      return KeepUpResponse.error(
+          'KeepUp: event deletetion failure: ${response.error!.message}');
     }
   }
 
@@ -604,7 +638,8 @@ class KeepUp {
       ..whereEqualTo(KeepUpEventDataModelKey.creatorId,
           KeepUpUserDataModelKey.pointerTo(currentUser.objectId!))
       // filtra le date
-      ..whereLessThanOrEqualTo(KeepUpEventDataModelKey.startDate, inDate);
+      ..whereLessThanOrEqualTo(
+          KeepUpEventDataModelKey.startDate, inDate.getDateOnly());
     // effettua la query
     final eventsObjects = await eventsQuery.find();
     // costruisce la query principale

@@ -9,7 +9,7 @@ class PersonalGrowthScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return AppScrollView(children: [
+    return AppNavigationPageLayout(children: [
       SizedBox(height: 0.05 * size.height),
       Align(
           alignment: Alignment.centerLeft,

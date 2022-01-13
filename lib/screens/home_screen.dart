@@ -46,7 +46,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final size = MediaQuery.of(context).size;
     final dateFormatter =
         DateFormat.MMMMEEEEd(Localizations.localeOf(context).toLanguageTag());
-    return AppScrollView(
+    return AppNavigationPageLayout(
       children: [
         SizedBox(height: 0.05 * size.height),
         Row(children: [
@@ -152,9 +152,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                     });
                                   },
                                   onCancelTask: (context) {
-                                    setState(() {
-                                      KeepUp.instance.cancelTask(task: task);
-                                    });
+                                    KeepUp.instance
+                                        .cancelTask(task: task)
+                                        .then((_) => setState(() {}));
                                   }));
                         }).toList());
                   } else {

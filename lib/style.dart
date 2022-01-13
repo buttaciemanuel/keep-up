@@ -114,9 +114,10 @@ class AppLayout extends StatelessWidget {
 
 /// Utilizzato per le schermate all'interno del navigator, quindi già dotate
 /// di scaffold
-class AppScrollView extends StatelessWidget {
+class AppNavigationPageLayout extends StatelessWidget {
   final List<Widget> children;
-  const AppScrollView({Key? key, required this.children}) : super(key: key);
+  const AppNavigationPageLayout({Key? key, required this.children})
+      : super(key: key);
 
   @override
   Widget build(BuildContext context) {

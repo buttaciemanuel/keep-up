@@ -4,8 +4,7 @@ import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/style.dart';
 
 class AppNavigator extends StatefulWidget {
-  final List<Widget> children;
-  const AppNavigator({Key? key, required this.children}) : super(key: key);
+  const AppNavigator({Key? key}) : super(key: key);
 
   @override
   State<AppNavigator> createState() => _AppNavigatorState();
