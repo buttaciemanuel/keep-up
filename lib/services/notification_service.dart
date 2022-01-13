@@ -34,6 +34,8 @@ class NotificationService {
 
     tz.initializeTimeZones();
 
+    // tz.setLocalLocation(tz.getLocation('Europe/Rome'));
+
     _scheduleNotification();
   }
 

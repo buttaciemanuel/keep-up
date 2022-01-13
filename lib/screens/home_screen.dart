@@ -149,6 +149,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                         _todayTrace!.completedTasks
                                             .remove(task.recurrenceId);
                                       }
+
+                                      KeepUp.instance
+                                          .updateDailyTrace(_todayTrace!);
                                     });
                                   },
                                   onCancelTask: (context) {

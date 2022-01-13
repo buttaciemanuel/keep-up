@@ -730,10 +730,12 @@ class KeepUp {
     final query = QueryBuilder.name(KeepUpDailyTraceDataModelKey.className)
       ..whereEqualTo(KeepUpDailyTraceDataModelKey.userId,
           KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
-      ..whereLessThanOrEqualTo(KeepUpDailyTraceDataModelKey.date, until);
+      ..whereLessThanOrEqualTo(
+          KeepUpDailyTraceDataModelKey.date, until.getDateOnly());
 
     if (from != null) {
-      query.whereGreaterThanOrEqualsTo(KeepUpDailyTraceDataModelKey.date, from);
+      query.whereGreaterThanOrEqualsTo(
+          KeepUpDailyTraceDataModelKey.date, from.getDateOnly());
     }
     // effettua la query principale
     final objects = await query.find();
@@ -766,19 +768,23 @@ class KeepUp {
     return KeepUpResponse.result(KeepUpDailyTrace.fromJson(objects.first));
   }
 
-  /// ottiene la daily trace nel determinato giorno
+  /// aggiorna o crea la daily trace nel determinato giorno
   Future<KeepUpResponse> updateDailyTrace(KeepUpDailyTrace trace) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     final object = ParseObject(KeepUpDailyTraceDataModelKey.className)
       ..objectId = trace.id
-      ..set(KeepUpDailyTraceDataModelKey.userId, currentUser!.objectId!)
+      ..set(KeepUpDailyTraceDataModelKey.userId,
+          KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
       ..set(KeepUpDailyTraceDataModelKey.completedTasks, trace.completedTasks)
-      ..set(KeepUpDailyTraceDataModelKey.date, trace.date)
+      ..set(KeepUpDailyTraceDataModelKey.date, trace.date.getDateOnly())
       ..set(KeepUpDailyTraceDataModelKey.mood, trace.mood)
       ..set(KeepUpDailyTraceDataModelKey.notes, trace.notes);
 
     // salva i metadati
     final parseResponse = await object.save();
+
+    // setta l'id se non era settato perchè doveva essere ancora creato
+    trace.id = object.objectId;
 
     if (!parseResponse.success) {
       return KeepUpResponse.error(
@@ -1068,7 +1074,8 @@ class KeepUpDailyTrace {
   factory KeepUpDailyTrace.fromJson(dynamic json) {
     return KeepUpDailyTrace(
         id: json[KeepUpDailyTraceDataModelKey.id],
-        userId: json[KeepUpDailyTraceDataModelKey.userId],
+        userId: json[KeepUpDailyTraceDataModelKey.userId]
+            [KeepUpUserDataModelKey.id],
         date: json[KeepUpDailyTraceDataModelKey.date],
         completedTasks:
             List.from(json[KeepUpDailyTraceDataModelKey.completedTasks]),
@@ -1239,5 +1246,5 @@ class KeepUpTask {
 }
 
 extension MyDateTimeExtension on DateTime {
-  DateTime getDateOnly() => DateTime(year, month, day);
+  DateTime getDateOnly() => DateTime.utc(year, month, day);
 }
