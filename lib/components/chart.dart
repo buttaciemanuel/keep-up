@@ -94,6 +94,7 @@ class _AppChartState extends State<AppChart> {
             minHeight: 0.0,
             maxHeight: yAxisHeight,
             child: SingleChildScrollView(
+                physics: const ClampingScrollPhysics(),
                 controller: _controller,
                 padding: const EdgeInsets.symmetric(vertical: 35),
                 scrollDirection: Axis.horizontal,
@@ -147,14 +148,17 @@ class _AppChartState extends State<AppChart> {
           reservedSize: 22,
           interval: 1,
           getTextStyles: (context, value) => textStyle,
-          getTitles: (value) => widget.points[value.round()].x.day.toString(),
+          getTitles: (value) =>
+              (value.toInt() == 0 || value.toInt() == widget.points.length - 1)
+                  ? ''
+                  : widget.points[value.round()].x.day.toString(),
           margin: 20,
         ),
         leftTitles: SideTitles(
           showTitles: false,
           interval: 10,
           getTextStyles: (context, value) => textStyle,
-          getTitles: (value) => value.round().toString(),
+          getTitles: (value) => widget.points[value.round()].x.day.toString(),
           reservedSize: 32,
           margin: 20,
         ),

@@ -128,7 +128,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                     .then((_) => setState(() {}));
                               },
                               child: AppTaskCard(
-                                  active: (_selectedDate == _initialDate &&
+                                  active: (task.completedWeeklyCount != null &&
+                                          _selectedDate == _initialDate &&
                                           KeepUpDayTime.fromDateTime(
                                                       _initialDate)
                                                   .compareTo(task.endTime) >
@@ -136,6 +137,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                       ? _todayTrace!.completedTasks
                                           .contains(task.recurrenceId)
                                       : null,
+                                  completedTasksCount:
+                                      task.completedWeeklyCount,
+                                  totalTaskCount: task.totalWeeklyCount,
                                   color: task.color,
                                   title: task.title,
                                   time: task.startTime.toTimeOfDay(),

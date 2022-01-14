@@ -4,14 +4,17 @@ import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/style.dart';
 
 class AppNavigator extends StatefulWidget {
-  const AppNavigator({Key? key}) : super(key: key);
+  static const homePage = 0;
+  static const personalGrowthPage = 1;
+  final int? initialPage;
+  const AppNavigator({Key? key, this.initialPage = homePage}) : super(key: key);
 
   @override
   State<AppNavigator> createState() => _AppNavigatorState();
 }
 
 class _AppNavigatorState extends State<AppNavigator> {
-  int _selectedIndex = 0;
+  late int _selectedIndex = widget.initialPage!;
   final _pages = const [HomeScreen(), PersonalGrowthScreen()];
 
   @override
@@ -19,11 +22,11 @@ class _AppNavigatorState extends State<AppNavigator> {
     return Scaffold(
         extendBody: true,
         backgroundColor: Colors.white,
-        body: /*IndexedStack(
+        body: IndexedStack(
           index: _selectedIndex,
           children: _pages,
-        ),*/
-            _pages[_selectedIndex],
+        ),
+        //_pages[_selectedIndex],
         bottomNavigationBar: BottomAppBar(
           elevation: 25,
           color: Colors.white,

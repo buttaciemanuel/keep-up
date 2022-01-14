@@ -718,6 +718,51 @@ class KeepUp {
 
     tasks.sort((a, b) => a.startTime.compareTo(b.startTime));
 
+    // ottiene le statistiche sugli oggetti dall'inizio della settimana
+    // FIXME: algoritmo parecchio lento, forse conviene sistemare lo schema
+    final weekStart = inDate.subtract(Duration(days: inDate.weekday - 1));
+    final weekTraces = await getDailyTraces(from: weekStart, until: inDate);
+    final recurrenceToEventMap = <String, String>{};
+    final completedEventTasksMap = <String, int>{};
+
+    if (!weekTraces.error) {
+      // ora costruisce le statistiche da tutte le tracce giornaliere
+      for (final trace in weekTraces.result!) {
+        for (final recurrenceId in trace.completedTasks) {
+          if (recurrenceToEventMap.containsKey(recurrenceId)) {
+            completedEventTasksMap.update(recurrenceToEventMap[recurrenceId]!,
+                (value) {
+              return ++value;
+            });
+          } else {
+            final query =
+                QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
+                  ..whereEqualTo(KeepUpRecurrenceDataModelKey.id, recurrenceId);
+            final result = await query.find();
+            if (result.isNotEmpty) {
+              final eventId = result.first[KeepUpRecurrenceDataModelKey.eventId]
+                  [KeepUpEventDataModelKey.id];
+              recurrenceToEventMap.putIfAbsent(recurrenceId, () => eventId);
+              completedEventTasksMap.putIfAbsent(eventId, () => 1);
+            }
+          }
+        }
+      }
+      // ora preleva il numero di occorrenze settimanali per goal
+      for (final task in tasks) {
+        final isGoalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className)
+          ..whereEqualTo(KeepUpGoalDataModelKey.eventId,
+              KeepUpEventDataModelKey.pointerTo(task.eventId));
+        final result = await isGoalQuery.find();
+        // aggiorna l'evento associato al task e scrive la statistica
+        if (result.isNotEmpty) {
+          task.totalWeeklyCount =
+              result.first[KeepUpGoalDataModelKey.daysPerWeek];
+          task.completedWeeklyCount = completedEventTasksMap[task.eventId] ?? 0;
+        }
+      }
+    }
+
     return KeepUpResponse.result(tasks);
   }
 
@@ -1222,6 +1267,8 @@ class KeepUpTask {
   KeepUpDayTime startTime, endTime;
   Color color;
   KeepUpRecurrenceType recurrenceType;
+  int? totalWeeklyCount;
+  int? completedWeeklyCount;
 
   KeepUpTask(
       {required this.eventId,
@@ -1231,7 +1278,9 @@ class KeepUpTask {
       required this.startTime,
       required this.endTime,
       required this.color,
-      required this.recurrenceType});
+      required this.recurrenceType,
+      this.totalWeeklyCount,
+      this.completedWeeklyCount});
 
   @override
   int get hashCode =>

@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
+import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/components/progress_bar.dart';
 import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
@@ -65,7 +66,7 @@ class _ScheduleLoadingScreenState extends State<ScheduleLoadingScreen>
         _controller.forward().whenComplete(() {
           Navigator.of(context)
               .pushReplacement(MaterialPageRoute(builder: (context) {
-            return const HomeScreen();
+            return const AppNavigator();
           }));
         });
       }
