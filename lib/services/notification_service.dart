@@ -4,11 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:keep_up/screens/home_screen.dart';
 
 class NotificationService {
   static final _notificationService = NotificationService._internal();
-  late BuildContext _context;
 
   factory NotificationService() {
     return _notificationService;
@@ -18,50 +16,51 @@ class NotificationService {
 
   final _notificationsPlugin = FlutterLocalNotificationsPlugin();
 
-  Future notificationSelected(String? payload) async {
-    log('notification ${payload}');
-  }
-
-  Future<void> init(BuildContext context) async {
+  Future<void> init({required Function(String?) onNotificationSelected}) async {
     const androidInitialize = AndroidInitializationSettings('app_icon');
     const iOSInitialize = IOSInitializationSettings();
     const initilizationsSettings =
         InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
     _notificationsPlugin.initialize(initilizationsSettings,
-        onSelectNotification: notificationSelected);
-
-    _context = context;
+        onSelectNotification: onNotificationSelected);
 
     tz.initializeTimeZones();
 
-    // tz.setLocalLocation(tz.getLocation('Europe/Rome'));
-
-    _scheduleNotification();
+    tz.setLocalLocation(tz.getLocation('Europe/Rome'));
   }
 
-  Future _scheduleNotification() async {
+  Future scheduleNotification(
+      {required int id,
+      required int hour,
+      required int minute,
+      required String title,
+      required String body}) async {
     const androidDetails = AndroidNotificationDetails(
-        "Channel ID", "Desi programmer",
-        channelDescription: "This is my channel", importance: Importance.max);
+        "keepup.id", "keepup.notification.channel",
+        channelDescription: "KeepUp Notification channel",
+        importance: Importance.max);
     const iOSDetails = IOSNotificationDetails();
     const generalNotificationDetails =
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
-    final currentDateTime =
-        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 20));
+    final notificationTime = tz.TZDateTime.local(1, 1, 1, hour, minute);
 
     _notificationsPlugin.zonedSchedule(
-        1,
-        'Ehi, come va?',
-        'Raccontami come è andata la tua giornata!',
-        currentDateTime,
-        generalNotificationDetails,
+        id, title, body, notificationTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidAllowWhileIdle: true,
         matchDateTimeComponents: DateTimeComponents.time);
   }
 
+  Future<void> cancelNotification({required int id}) async {
+    await _notificationsPlugin.cancel(id);
+  }
+
   Future<void> cancelAllNotifications() async {
     await _notificationsPlugin.cancelAll();
   }
+}
+
+class NotificationServiceId {
+  static const dailySurveyIds = [0, 1, 2, 3, 4, 5, 6];
 }

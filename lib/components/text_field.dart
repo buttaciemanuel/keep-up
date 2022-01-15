@@ -13,6 +13,7 @@ class AppTextField extends StatefulWidget {
   final TextInputType? inputType;
   final bool? isTextArea;
   final TextInputAction? textInputAction;
+  final int? textAreaLines;
   const AppTextField(
       {Key? key,
       this.icon,
@@ -24,7 +25,8 @@ class AppTextField extends StatefulWidget {
       this.controller,
       this.inputType,
       this.isTextArea,
-      this.textInputAction})
+      this.textInputAction,
+      this.textAreaLines = 4})
       : super(key: key);
 
   @override
@@ -47,8 +49,8 @@ class _AppTextFieldState extends State<AppTextField> {
         width: size.width,
         child: TextFormField(
             textInputAction: widget.textInputAction,
-            maxLines: (widget.isTextArea ?? false) ? 4 : 1,
-            minLines: (widget.isTextArea ?? false) ? 4 : 1,
+            maxLines: (widget.isTextArea ?? false) ? widget.textAreaLines : 1,
+            minLines: (widget.isTextArea ?? false) ? widget.textAreaLines : 1,
             keyboardType: widget.inputType ??
                 ((widget.isTextArea ?? false)
                     ? TextInputType.multiline

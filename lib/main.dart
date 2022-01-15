@@ -37,7 +37,16 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    NotificationService().init(context);
+    NotificationService().init(onNotificationSelected: (payload) {
+      Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const DailySurveyScreen()));
+    });
+    NotificationService().scheduleNotification(
+        id: NotificationServiceId.dailySurveyIds[5],
+        hour: 23,
+        minute: 58,
+        title: 'Ehi, come va?',
+        body: 'Raccontami come è andata la tua giornata!');
   }
 
   @override
@@ -61,7 +70,7 @@ class _MyAppState extends State<MyApp> {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return const DailySurveyScreen(); //AppNavigator();
+                return const AppNavigator();
               } else {
                 // home screen
                 return const LoginScreen();

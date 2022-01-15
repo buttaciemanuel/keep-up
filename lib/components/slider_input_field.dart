@@ -7,13 +7,15 @@ class SliderInputField extends StatelessWidget {
   final double max;
   final double value;
   final Function(double)? onChanged;
+  final String Function(double)? displayBuilder;
   const SliderInputField(
       {Key? key,
       required this.label,
       required this.value,
       required this.min,
       required this.max,
-      this.onChanged})
+      this.onChanged,
+      this.displayBuilder})
       : super(key: key);
 
   @override
@@ -29,18 +31,29 @@ class SliderInputField extends StatelessWidget {
         Padding(
             padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Row(children: [
-              Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(label,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).hintColor,
-                          fontSize: 16))),
+              SizedBox(
+                  width: size.width * 0.5,
+                  child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: Theme.of(context).hintColor,
+                              fontSize: 16)))),
               const Expanded(child: SizedBox()),
-              Align(
-                  alignment: Alignment.centerRight,
-                  child: Text('${value.round()}',
-                      style: Theme.of(context).textTheme.bodyText1)),
+              SizedBox(
+                  width: size.width * 0.2,
+                  child: Align(
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                          '${displayBuilder != null ? displayBuilder!(value) : value.round()}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: false,
+                          style: Theme.of(context).textTheme.bodyText1))),
             ])),
         SizedBox(height: 0.01 * size.height),
         Slider(

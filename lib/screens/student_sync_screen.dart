@@ -206,7 +206,7 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                           });
                         }
                       },
-                      child: const Text('Avanti')),
+                      child: const Text('Continua')),
                 ),
               ]),
               SizedBox(height: 0.05 * size.height),

@@ -419,7 +419,9 @@ class KeepUp {
       ..set(KeepUpGoalDataModelKey.eventId,
           KeepUpEventDataModelKey.pointerTo(goal.id!))
       ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
-      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay);
+      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
+      ..set(KeepUpGoalDataModelKey.rating, goal.rating)
+      ..set(KeepUpGoalDataModelKey.ratingsCount, goal.ratingsCount);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -445,7 +447,9 @@ class KeepUp {
       ..set(KeepUpGoalDataModelKey.eventId,
           KeepUpEventDataModelKey.pointerTo(goal.id!))
       ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
-      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay);
+      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
+      ..set(KeepUpGoalDataModelKey.rating, goal.rating)
+      ..set(KeepUpGoalDataModelKey.ratingsCount, goal.ratingsCount);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -508,6 +512,9 @@ class KeepUp {
             category: event.category,
             daysPerWeek: goalObjects[i][KeepUpGoalDataModelKey.daysPerWeek],
             hoursPerDay: goalObjects[i][KeepUpGoalDataModelKey.hoursPerDay],
+            rating: (goalObjects[i][KeepUpGoalDataModelKey.rating] as int)
+                .toDouble(),
+            ratingsCount: goalObjects[i][KeepUpGoalDataModelKey.ratingsCount],
             metadataId: goalObjects[i][KeepUpGoalDataModelKey.id]));
         result.last.recurrences = event.recurrences;
         ++i;
@@ -542,6 +549,8 @@ class KeepUp {
         category: response.result!.category,
         daysPerWeek: goalObjects.first[KeepUpGoalDataModelKey.daysPerWeek],
         hoursPerDay: goalObjects.first[KeepUpGoalDataModelKey.hoursPerDay],
+        rating: goalObjects.first[KeepUpGoalDataModelKey.rating],
+        ratingsCount: goalObjects.first[KeepUpGoalDataModelKey.ratingsCount],
         metadataId: goalObjects.first[KeepUpGoalDataModelKey.id]);
 
     result.recurrences = response.result!.recurrences;
@@ -743,7 +752,11 @@ class KeepUp {
               final eventId = result.first[KeepUpRecurrenceDataModelKey.eventId]
                   [KeepUpEventDataModelKey.id];
               recurrenceToEventMap.putIfAbsent(recurrenceId, () => eventId);
-              completedEventTasksMap.putIfAbsent(eventId, () => 1);
+              if (completedEventTasksMap.containsKey(eventId)) {
+                completedEventTasksMap.update(eventId, (value) => ++value);
+              } else {
+                completedEventTasksMap.putIfAbsent(eventId, () => 1);
+              }
             }
           }
         }
@@ -980,6 +993,8 @@ class KeepUpGoal extends KeepUpEvent {
   int daysPerWeek;
   int hoursPerDay;
   String? metadataId;
+  int? ratingsCount;
+  double? rating;
 
   KeepUpGoal(
       {String? id,
@@ -991,7 +1006,9 @@ class KeepUpGoal extends KeepUpEvent {
       String category = KeepUpEventCategory.other,
       this.daysPerWeek = 3,
       this.hoursPerDay = 1,
-      this.metadataId})
+      this.metadataId,
+      this.ratingsCount = 0,
+      this.rating = 0})
       : super(
             id: id,
             title: title,
@@ -1193,6 +1210,8 @@ abstract class KeepUpGoalDataModelKey {
   static const eventId = 'eventId';
   static const daysPerWeek = 'daysPerWeek';
   static const hoursPerDay = 'hoursPerDay';
+  static const ratingsCount = 'ratingsCount';
+  static const rating = 'rating';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};

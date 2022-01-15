@@ -2,11 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:keep_up/style.dart';
 
 class AppProgressBar extends StatelessWidget {
-  double value;
-  Color valueColor;
-  Color backgroundColor;
+  final double value;
+  final Color valueColor;
+  final Color backgroundColor;
 
-  AppProgressBar(
+  const AppProgressBar(
       {Key? key,
       required this.value,
       this.valueColor = AppColors.primaryColor,

@@ -59,6 +59,7 @@ class _HomeScreenState extends State<HomeScreen> {
               iconSize: 32.0,
               padding: EdgeInsets.zero,
               tooltip: 'Aggiungi',
+              constraints: const BoxConstraints(),
               onPressed: () {
                 Navigator.of(context)
                     .push(MaterialPageRoute(
