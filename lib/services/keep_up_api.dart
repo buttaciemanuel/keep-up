@@ -512,8 +512,7 @@ class KeepUp {
             category: event.category,
             daysPerWeek: goalObjects[i][KeepUpGoalDataModelKey.daysPerWeek],
             hoursPerDay: goalObjects[i][KeepUpGoalDataModelKey.hoursPerDay],
-            rating: (goalObjects[i][KeepUpGoalDataModelKey.rating] as int)
-                .toDouble(),
+            rating: goalObjects[i][KeepUpGoalDataModelKey.rating],
             ratingsCount: goalObjects[i][KeepUpGoalDataModelKey.ratingsCount],
             metadataId: goalObjects[i][KeepUpGoalDataModelKey.id]));
         result.last.recurrences = event.recurrences;
@@ -994,7 +993,7 @@ class KeepUpGoal extends KeepUpEvent {
   int hoursPerDay;
   String? metadataId;
   int? ratingsCount;
-  double? rating;
+  num? rating;
 
   KeepUpGoal(
       {String? id,

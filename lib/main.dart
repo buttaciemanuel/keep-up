@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:keep_up/components/navigator.dart';
@@ -17,17 +19,46 @@ import 'package:keep_up/style.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/services/polito_api.dart';
 import 'package:keep_up/screens/student_sync_screen.dart';
+import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
+
+final navigatorKey = GlobalKey<NavigatorState>();
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  KeepUp.instance.init();
+  await KeepUp.instance.init();
 
-  runApp(const MyApp());
+  await NotificationService()
+      .init(onNotificationSelected: onNotificationTapped);
+
+  /*NotificationService().scheduleNotification(
+      id: NotificationServiceConstant.dailySurveyIds[5],
+      hour: 11,
+      minute: 12,
+      title: 'Ehi, come va?',
+      body: 'Raccontami come è andata la tua giornata!',
+      payload: NotificationServiceConstant.surveyPayload);*/
+
+  final launchDetails = await NotificationService()
+      .notificationsPlugin
+      .getNotificationAppLaunchDetails();
+
+  runApp(MyApp(payload: launchDetails?.payload));
+}
+
+void onNotificationTapped(String? payload) {
+  if (payload == NotificationServiceConstant.surveyPayload) {
+    navigatorKey.currentState!
+        .pushReplacement(MaterialPageRoute(builder: (context) {
+      return const DailySurveyScreen();
+    }));
+  }
 }
 
 class MyApp extends StatefulWidget {
-  const MyApp({Key? key}) : super(key: key);
+  final String? payload;
+  const MyApp({Key? key, this.payload}) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -37,21 +68,13 @@ class _MyAppState extends State<MyApp> {
   @override
   void initState() {
     super.initState();
-    NotificationService().init(onNotificationSelected: (payload) {
-      Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const DailySurveyScreen()));
-    });
-    NotificationService().scheduleNotification(
-        id: NotificationServiceId.dailySurveyIds[5],
-        hour: 23,
-        minute: 58,
-        title: 'Ehi, come va?',
-        body: 'Raccontami come è andata la tua giornata!');
   }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+        navigatorKey: navigatorKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
         builder: (context, child) => MediaQuery(
             data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
             child: child!),
@@ -70,7 +93,12 @@ class _MyAppState extends State<MyApp> {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                return const AppNavigator();
+                if (widget.payload ==
+                    NotificationServiceConstant.surveyPayload) {
+                  return const DailySurveyScreen();
+                } else {
+                  return const AppNavigator();
+                }
               } else {
                 // home screen
                 return const LoginScreen();

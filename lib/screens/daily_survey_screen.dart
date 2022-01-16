@@ -74,7 +74,6 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
           (goal.rating! * goal.ratingsCount! + _taskRatings[goal.id!]!) /
               newCount;
       goal.ratingsCount = newCount;
-      log('${goal.title} ${goal.rating} ${goal.ratingsCount}');
       // aggiorna
       KeepUp.instance.updateGoal(goal);
     }
@@ -129,68 +128,88 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
     const double maxRating = 4;
     const double defaultRating = 2;
     final ratingValues = ['Pessimo', 'Male', 'Okay', 'Bene', 'Ottimo'];
-    return Column(key: const ValueKey(1), children: [
-      Align(
-          alignment: Alignment.centerLeft,
-          child: Text('Come valuti queste attività, oggi?',
-              style: Theme.of(context).textTheme.headline3)),
-      SizedBox(height: 0.03 * size.height),
-      FutureBuilder<bool>(
-          future: _fetchTodayInfo(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return Column(
-                  children: List.generate(_todayTasks!.length, (index) {
-                _taskRatings.putIfAbsent(
-                    _todayTasks![index].eventId, () => defaultRating);
-                return Container(
-                    margin: EdgeInsets.symmetric(vertical: 0.01 * size.height),
-                    child: SliderTheme(
-                        data: SliderThemeData.fromPrimaryColors(
-                            primaryColor: _todayTasks![index].color,
-                            primaryColorDark: Colors.black,
-                            primaryColorLight: Colors.white,
-                            valueIndicatorTextStyle: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 20)),
-                        child: SliderInputField(
-                            displayBuilder: (value) =>
-                                ratingValues[value.round()],
-                            label: _todayTasks![index].title,
-                            value: _taskRatings[_todayTasks![index].eventId]!,
-                            min: 0,
-                            max: maxRating,
-                            onChanged: (newValue) => setState(() {
-                                  _taskRatings.update(
-                                      _todayTasks![index].eventId,
-                                      (_) => newValue);
-                                }))));
-              }));
-            } else {
-              return Column(children: [
-                SkeletonLoader(
-                  child: SliderInputField(
-                      label: '',
-                      value: 0,
-                      min: 0,
-                      max: maxRating,
-                      onChanged: (_) {}),
-                ),
+
+    return FutureBuilder<bool>(
+        key: const ValueKey(1),
+        future: _fetchTodayInfo(),
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return Column(children: [
+              if (_todayTasks!.isEmpty) ...[
+                SizedBox(height: 0.05 * size.height),
+                Image.asset('assets/images/no_tasks.png',
+                    height: 0.25 * size.height, width: 0.7 * size.width),
+                SizedBox(height: 0.05 * size.height),
+                Text('Giornata libera!',
+                    style: Theme.of(context).textTheme.headline3),
                 SizedBox(height: 0.02 * size.height),
-                SkeletonLoader(
-                  child: SliderInputField(
-                      label: '',
-                      value: 0,
-                      min: 0,
-                      max: maxRating,
-                      onChanged: (_) {}),
-                ),
-                SizedBox(height: 0.02 * size.height)
-              ]);
-            }
-          })
-    ]);
+                Text('Oggi nessun evento da valutare.',
+                    style: Theme.of(context).textTheme.subtitle2)
+              ] else ...[
+                Align(
+                    alignment: Alignment.centerLeft,
+                    child: Text('Come valuti queste attività, oggi?',
+                        style: Theme.of(context).textTheme.headline3)),
+                SizedBox(height: 0.03 * size.height),
+                Column(
+                    children: List.generate(_todayTasks!.length, (index) {
+                  _taskRatings.putIfAbsent(
+                      _todayTasks![index].eventId, () => defaultRating);
+                  return Container(
+                      margin:
+                          EdgeInsets.symmetric(vertical: 0.01 * size.height),
+                      child: SliderTheme(
+                          data: SliderThemeData.fromPrimaryColors(
+                              primaryColor: _todayTasks![index].color,
+                              primaryColorDark: Colors.black,
+                              primaryColorLight: Colors.white,
+                              valueIndicatorTextStyle: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w500,
+                                  fontSize: 20)),
+                          child: SliderInputField(
+                              displayBuilder: (value) =>
+                                  ratingValues[value.round()],
+                              label: _todayTasks![index].title,
+                              value: _taskRatings[_todayTasks![index].eventId]!,
+                              min: 0,
+                              max: maxRating,
+                              onChanged: (newValue) => setState(() {
+                                    _taskRatings.update(
+                                        _todayTasks![index].eventId,
+                                        (_) => newValue);
+                                  }))));
+                }))
+              ]
+            ]);
+          } else {
+            return Column(children: [
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('Come valuti queste attività, oggi?',
+                      style: Theme.of(context).textTheme.headline3)),
+              SizedBox(height: 0.03 * size.height),
+              SkeletonLoader(
+                child: SliderInputField(
+                    label: '',
+                    value: 0,
+                    min: 0,
+                    max: maxRating,
+                    onChanged: (_) {}),
+              ),
+              SizedBox(height: 0.02 * size.height),
+              SkeletonLoader(
+                child: SliderInputField(
+                    label: '',
+                    value: 0,
+                    min: 0,
+                    max: maxRating,
+                    onChanged: (_) {}),
+              ),
+              SizedBox(height: 0.02 * size.height)
+            ]);
+          }
+        });
   }
 
   Widget _thirdPage() {
@@ -253,6 +272,7 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
             onPressed: () async {
               await _saveDataInBackground();
               Navigator.of(context).pushReplacement(MaterialPageRoute(
+                  fullscreenDialog: true,
                   builder: (context) => const AppNavigator()));
             },
             icon: const Icon(Icons.close, color: AppColors.grey))
@@ -334,6 +354,7 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
               } else {
                 await _saveDataInBackground();
                 Navigator.of(context).pushReplacement(MaterialPageRoute(
+                    fullscreenDialog: true,
                     builder: (context) => const AppNavigator(
                         initialPage: AppNavigator.personalGrowthPage)));
               }

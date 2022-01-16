@@ -14,14 +14,14 @@ class NotificationService {
 
   NotificationService._internal();
 
-  final _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  final notificationsPlugin = FlutterLocalNotificationsPlugin();
 
   Future<void> init({required Function(String?) onNotificationSelected}) async {
     const androidInitialize = AndroidInitializationSettings('app_icon');
     const iOSInitialize = IOSInitializationSettings();
     const initilizationsSettings =
         InitializationSettings(android: androidInitialize, iOS: iOSInitialize);
-    _notificationsPlugin.initialize(initilizationsSettings,
+    notificationsPlugin.initialize(initilizationsSettings,
         onSelectNotification: onNotificationSelected);
 
     tz.initializeTimeZones();
@@ -34,7 +34,8 @@ class NotificationService {
       required int hour,
       required int minute,
       required String title,
-      required String body}) async {
+      required String body,
+      required String payload}) async {
     const androidDetails = AndroidNotificationDetails(
         "keepup.id", "keepup.notification.channel",
         channelDescription: "KeepUp Notification channel",
@@ -44,23 +45,25 @@ class NotificationService {
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
     final notificationTime = tz.TZDateTime.local(1, 1, 1, hour, minute);
 
-    _notificationsPlugin.zonedSchedule(
+    notificationsPlugin.zonedSchedule(
         id, title, body, notificationTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidAllowWhileIdle: true,
-        matchDateTimeComponents: DateTimeComponents.time);
+        matchDateTimeComponents: DateTimeComponents.time,
+        payload: payload);
   }
 
   Future<void> cancelNotification({required int id}) async {
-    await _notificationsPlugin.cancel(id);
+    await notificationsPlugin.cancel(id);
   }
 
   Future<void> cancelAllNotifications() async {
-    await _notificationsPlugin.cancelAll();
+    await notificationsPlugin.cancelAll();
   }
 }
 
-class NotificationServiceId {
+abstract class NotificationServiceConstant {
   static const dailySurveyIds = [0, 1, 2, 3, 4, 5, 6];
+  static const surveyPayload = 'daily-survey-payload';
 }

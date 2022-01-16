@@ -63,7 +63,7 @@ class _AppChartState extends State<AppChart> {
     final xAxisWidth = widget.points.length * _xPointWidth;
     const yAxisHeight = 250.0;
     WidgetsBinding.instance!.addPostFrameCallback((_) {
-      if (!_init) {
+      if (!_init && _controller.hasClients) {
         _controller.jumpTo(_controller.position.maxScrollExtent);
         _init = true;
       }
