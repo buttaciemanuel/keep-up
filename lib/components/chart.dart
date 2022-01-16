@@ -1,4 +1,5 @@
 import 'dart:developer';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -15,6 +16,12 @@ class AppChartDataPoint {
   AppChartDataPoint({required this.x, required this.y});
 }
 
+abstract class AppChartDisplayMode {
+  static const daily = 0;
+  static const weekly = 1;
+  static const monthly = 2;
+}
+
 typedef AppChartDataSet = List<AppChartDataPoint>;
 
 class AppChart extends StatefulWidget {
@@ -22,14 +29,18 @@ class AppChart extends StatefulWidget {
   final String? description;
   final Color? backgroundColor;
   final bool? isLoading;
-  List<AppChartDataPoint> points;
+  final int? displayMode;
+  final List<AppChartDataPoint> points;
+  bool? scrollToLast;
   AppChart(
       {Key? key,
       required this.title,
       this.description,
       this.backgroundColor = AppColors.primaryColor,
       this.isLoading = false,
-      required this.points})
+      required this.points,
+      this.displayMode = AppChartDisplayMode.daily,
+      this.scrollToLast = true})
       : super(key: key);
 
   @override
@@ -37,37 +48,48 @@ class AppChart extends StatefulWidget {
 }
 
 class _AppChartState extends State<AppChart> {
-  static const _xPointWidth = 1.5 * 35;
+  static const defaultPointWidth = 1.5 * 35;
+  var _xPointWidth = 0.0;
+  late final _yearFormatter =
+      DateFormat.y(Localizations.localeOf(context).toLanguageTag());
+  late final _monthYearFormatter =
+      DateFormat.yMMMM(Localizations.localeOf(context).toLanguageTag());
   late final List<Color> _gradientColors = [widget.backgroundColor!];
+  static const _weekOrdinal = ['I', 'II', 'III', 'IV', 'V'];
   final _controller = ScrollController();
   late DateTime _currentDate = widget.points.last.x;
   bool _init = false;
 
-  @override
-  void initState() {
-    super.initState();
-    _controller.addListener(() {
-      setState(() {
-        final index = (_controller.offset ~/ _xPointWidth)
-            .clamp(0, widget.points.length - 1);
-        _currentDate = widget.points[index].x;
-      });
+  void _scrollListener() {
+    setState(() {
+      final index = (_controller.offset ~/ _xPointWidth)
+          .clamp(0, widget.points.length - 1);
+      _currentDate = widget.points[index].x;
     });
   }
 
   @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_scrollListener);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final _monthYearFormatter =
-        DateFormat.yMMMM(Localizations.localeOf(context).toLanguageTag());
     final size = MediaQuery.of(context).size;
-    final xAxisWidth = widget.points.length * _xPointWidth;
+    final xAxisWidth = max(
+        widget.points.length * defaultPointWidth * (1 << widget.displayMode!),
+        size.width);
     const yAxisHeight = 250.0;
+    _xPointWidth = xAxisWidth / widget.points.length;
+
     WidgetsBinding.instance!.addPostFrameCallback((_) {
-      if (!_init && _controller.hasClients) {
+      if (widget.scrollToLast! && _controller.hasClients) {
         _controller.jumpTo(_controller.position.maxScrollExtent);
-        _init = true;
+        widget.scrollToLast = false;
       }
     });
+
     return Column(children: [
       Align(
           alignment: Alignment.centerLeft,
@@ -103,13 +125,16 @@ class _AppChartState extends State<AppChart> {
                     width: xAxisWidth,
                     child: AspectRatio(
                       aspectRatio: 1.70,
-                      child: LineChart(buildData()),
+                      child: LineChart(_buildData()),
                     ))),
           ),
         ),
         Align(
             alignment: Alignment.center,
-            child: Text(_monthYearFormatter.format(_currentDate).capitalize(),
+            child: Text(
+                widget.displayMode == AppChartDisplayMode.monthly
+                    ? _yearFormatter.format(_currentDate).capitalize()
+                    : _monthYearFormatter.format(_currentDate).capitalize(),
                 style: Theme.of(context).textTheme.bodyText1!.copyWith(
                     color: AppColors.fieldTextColor,
                     fontWeight: FontWeight.bold))),
@@ -117,7 +142,18 @@ class _AppChartState extends State<AppChart> {
     ]);
   }
 
-  LineChartData buildData() {
+  String _buildPointTitle(double x) {
+    if (x.round() <= 0 || x.round() >= widget.points.length - 1) return '';
+    return widget.displayMode == AppChartDisplayMode.daily
+        ? widget.points[x.round()].x.day.toString()
+        : widget.displayMode == AppChartDisplayMode.weekly
+            ? _weekOrdinal[widget.points[x.round()].x.day ~/ 7]
+            : _monthYearFormatter
+                .format(widget.points[x.round()].x)
+                .substring(0, 3);
+  }
+
+  LineChartData _buildData() {
     final textStyle = Theme.of(context)
         .textTheme
         .bodyText1!
@@ -148,20 +184,10 @@ class _AppChartState extends State<AppChart> {
           reservedSize: 22,
           interval: 1,
           getTextStyles: (context, value) => textStyle,
-          getTitles: (value) =>
-              (value.toInt() == 0 || value.toInt() == widget.points.length - 1)
-                  ? ''
-                  : widget.points[value.round()].x.day.toString(),
+          getTitles: _buildPointTitle,
           margin: 20,
         ),
-        leftTitles: SideTitles(
-          showTitles: false,
-          interval: 10,
-          getTextStyles: (context, value) => textStyle,
-          getTitles: (value) => widget.points[value.round()].x.day.toString(),
-          reservedSize: 32,
-          margin: 20,
-        ),
+        leftTitles: SideTitles(showTitles: false),
       ),
       borderData: FlBorderData(show: false),
       minX: 0,

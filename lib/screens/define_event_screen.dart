@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:keep_up/components/category_selector.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/components/color_selector.dart';
@@ -198,7 +199,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                         AppTimeTextField(hint: 'Fine', width: size.width / 2.5))
               ]),
               SizedBox(height: 0.03 * size.height),
-              AppCategorySelector(
+              AppScrollCategorySelector(
                   categories: KeepUpEventCategory.values, onClicked: (_) {}),
               SizedBox(height: 0.02 * size.height),
               const SkeletonLoader(
@@ -424,7 +425,7 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
                     })
               ]),
               SizedBox(height: 0.03 * size.height),
-              AppCategorySelector(
+              AppScrollCategorySelector(
                   value: _category,
                   categories: KeepUpEventCategory.values,
                   onClicked: (category) {

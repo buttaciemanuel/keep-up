@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:keep_up/components/category_selector.dart';
 import 'package:keep_up/components/color_selector.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/slider_input_field.dart';
@@ -100,49 +101,6 @@ class AppDateTextField extends StatelessWidget {
   }
 }
 
-class AppCategorySelector extends StatelessWidget {
-  final List<String> categories;
-  final String? value;
-  final Function(String) onClicked;
-  const AppCategorySelector(
-      {Key? key, required this.categories, this.value, required this.onClicked})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-          children: categories.map((category) {
-        return Container(
-            margin: const EdgeInsets.symmetric(horizontal: 5),
-            child: TextButton(
-                style: TextButton.styleFrom(
-                    animationDuration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 15, vertical: 15),
-                    primary: category == value
-                        ? AppColors.primaryColor
-                        : AppColors.fieldBackgroundColor,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    backgroundColor: category == value
-                        ? AppColors.primaryColor
-                        : AppColors.fieldBackgroundColor),
-                onPressed: () => onClicked(category),
-                child: Text(category,
-                    style: TextStyle(
-                        color: category == value
-                            ? Colors.white
-                            : AppColors.fieldTextColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600))));
-      }).toList()),
-    );
-  }
-}
-
 class DefineGoalScreen extends StatefulWidget {
   final KeepUpGoal? fromGoal;
   const DefineGoalScreen({Key? key, this.fromGoal}) : super(key: key);
@@ -235,7 +193,7 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
         Form(
             key: _formKey,
             child: Column(children: [
-              AppCategorySelector(
+              AppScrollCategorySelector(
                   categories: KeepUpEventCategory.values, onClicked: (_) {}),
               SizedBox(height: 0.02 * size.height),
               SkeletonLoader(
@@ -325,7 +283,7 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
         Form(
             key: _formKey,
             child: Column(children: [
-              AppCategorySelector(
+              AppScrollCategorySelector(
                   value: _category,
                   categories: KeepUpEventCategory.values,
                   onClicked: (category) {
