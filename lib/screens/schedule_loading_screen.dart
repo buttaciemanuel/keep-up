@@ -126,8 +126,8 @@ class _ScheduleLoadingScreenState extends State<ScheduleLoadingScreen>
                   const Expanded(child: SizedBox()),
                 ]);
           } else {
-            return AppLayout(
-                backgroundColor: AppColors.primaryColor, children: const []);
+            return const AppLayout(
+                backgroundColor: AppColors.primaryColor, children: []);
           }
         });
   }

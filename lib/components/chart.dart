@@ -147,7 +147,8 @@ class _AppChartState extends State<AppChart> {
     return widget.displayMode == AppChartDisplayMode.daily
         ? widget.points[x.round()].x.day.toString()
         : widget.displayMode == AppChartDisplayMode.weekly
-            ? _weekOrdinal[widget.points[x.round()].x.day ~/ 7]
+            ? widget.points[x.round()].x.weekOfYear
+                .toString() //_weekOrdinal[widget.points[x.round()].x.day ~/ 7]
             : _monthYearFormatter
                 .format(widget.points[x.round()].x)
                 .substring(0, 3);
@@ -215,5 +216,20 @@ class _AppChartState extends State<AppChart> {
         ),
       ],
     );
+  }
+}
+
+extension MyDateTimeExtension on DateTime {
+  int get weekOfYear {
+    int daysToAdd = DateTime.thursday - weekday;
+    DateTime thursdayDate = daysToAdd > 0
+        ? add(Duration(days: daysToAdd))
+        : subtract(Duration(days: daysToAdd.abs()));
+    int dayOfYearThursday = thursdayDate.dayOfYear;
+    return 1 + ((dayOfYearThursday - 1) / 7).floor();
+  }
+
+  int get dayOfYear {
+    return difference(DateTime(year, 1, 1)).inDays;
   }
 }

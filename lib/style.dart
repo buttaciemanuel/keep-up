@@ -23,6 +23,8 @@ abstract class AppThemes {
                 color: Colors.black, fontWeight: FontWeight.w900, fontSize: 32),
             headline3: TextStyle(
                 color: Colors.black, fontWeight: FontWeight.w900, fontSize: 24),
+            headline4: TextStyle(
+                color: Colors.black, fontWeight: FontWeight.w900, fontSize: 18),
             subtitle1: TextStyle(
                 color: Colors.black, fontWeight: FontWeight.w300, fontSize: 20),
             subtitle2: TextStyle(

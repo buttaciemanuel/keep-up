@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:keep_up/screens/goals_screen.dart';
 import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/style.dart';
 
 class AppNavigator extends StatefulWidget {
   static const homePage = 0;
-  static const personalGrowthPage = 1;
+  static const goalsPage = 1;
+  static const communityPage = 2;
+  static const accountPage = 3;
+  static const personalGrowthPage = 4;
   final int? initialPage;
   const AppNavigator({Key? key, this.initialPage = homePage}) : super(key: key);
 
@@ -15,7 +19,13 @@ class AppNavigator extends StatefulWidget {
 
 class _AppNavigatorState extends State<AppNavigator> {
   late int _selectedIndex = widget.initialPage!;
-  final _pages = const [HomeScreen(), PersonalGrowthScreen()];
+  final _pages = const [
+    HomeScreen(),
+    GoalsScreen(),
+    Text('Community'),
+    Text('Me'),
+    PersonalGrowthScreen()
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -27,32 +37,89 @@ class _AppNavigatorState extends State<AppNavigator> {
           children: _pages,
         ),
         //_pages[_selectedIndex],
-        bottomNavigationBar: BottomAppBar(
-          elevation: 25,
-          color: Colors.white,
-          notchMargin: 16,
-          child: BottomNavigationBar(
-            elevation: 0,
-            backgroundColor: Theme.of(context).primaryColor.withAlpha(0),
-            items: const [
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.home, size: 30), label: 'Oggi'),
-              BottomNavigationBarItem(
-                  icon: Icon(Icons.person, size: 30), label: 'Io')
-            ],
-            currentIndex: _selectedIndex,
-            onTap: (value) {
-              setState(() => _selectedIndex = value);
-            },
+        floatingActionButton: SizedBox(
+          height: 65,
+          width: 65,
+          child: FittedBox(
+            child: FloatingActionButton(
+              backgroundColor: _selectedIndex == AppNavigator.personalGrowthPage
+                  ? AppColors.primaryColor
+                  : Colors.black,
+              splashColor: Colors.transparent,
+              hoverColor: Colors.transparent,
+              focusColor: Colors.transparent,
+              onPressed: () {
+                setState(
+                    () => _selectedIndex = AppNavigator.personalGrowthPage);
+              },
+              child: const Icon(
+                Icons.bar_chart,
+                color: Colors.white,
+              ),
+            ),
           ),
         ),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
-        floatingActionButton: Transform.scale(
-            scale: 1.3,
-            child: FloatingActionButton(
-              backgroundColor: AppColors.primaryColor,
-              child: const Icon(Icons.bar_chart, size: 35),
-              onPressed: () {},
+        bottomNavigationBar: BottomAppBar(
+            elevation: 25,
+            shape: const CircularNotchedRectangle(),
+            notchMargin: 6,
+            child: SizedBox(
+              height: 75,
+              child: Row(
+                mainAxisSize: MainAxisSize.max,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: <Widget>[
+                  IconButton(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    iconSize: 30,
+                    padding: const EdgeInsets.only(left: 28),
+                    icon: Icon(Icons.home,
+                        color: _selectedIndex == AppNavigator.homePage
+                            ? AppColors.primaryColor
+                            : Colors.black),
+                    onPressed: () =>
+                        setState(() => _selectedIndex = AppNavigator.homePage),
+                  ),
+                  IconButton(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    iconSize: 30,
+                    padding: const EdgeInsets.only(right: 28),
+                    icon: Icon(Icons.flag,
+                        color: _selectedIndex == AppNavigator.goalsPage
+                            ? AppColors.primaryColor
+                            : Colors.black),
+                    onPressed: () =>
+                        setState(() => _selectedIndex = AppNavigator.goalsPage),
+                  ),
+                  IconButton(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    iconSize: 30,
+                    padding: const EdgeInsets.only(left: 28),
+                    icon: Icon(Icons.people,
+                        color: _selectedIndex == AppNavigator.communityPage
+                            ? AppColors.primaryColor
+                            : Colors.black),
+                    onPressed: () => setState(
+                        () => _selectedIndex = AppNavigator.communityPage),
+                  ),
+                  IconButton(
+                    splashColor: Colors.transparent,
+                    highlightColor: Colors.transparent,
+                    iconSize: 30,
+                    padding: const EdgeInsets.only(right: 28),
+                    icon: Icon(Icons.person,
+                        color: _selectedIndex == AppNavigator.accountPage
+                            ? AppColors.primaryColor
+                            : Colors.black),
+                    onPressed: () => setState(
+                        () => _selectedIndex = AppNavigator.accountPage),
+                  )
+                ],
+              ),
             )));
   }
 }
