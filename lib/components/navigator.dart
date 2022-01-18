@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:keep_up/screens/goals_screen.dart';
 import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/screens/personal_growth_screen.dart';
+import 'package:keep_up/screens/profile_screen.dart';
 import 'package:keep_up/style.dart';
 
 class AppNavigator extends StatefulWidget {
@@ -23,7 +24,7 @@ class _AppNavigatorState extends State<AppNavigator> {
     HomeScreen(),
     GoalsScreen(),
     Text('Community'),
-    Text('Me'),
+    ProfileScreen(),
     PersonalGrowthScreen()
   ];
 

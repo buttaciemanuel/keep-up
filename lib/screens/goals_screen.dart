@@ -19,6 +19,34 @@ class _GoalsScreenState extends State<GoalsScreen> {
       padding: EdgeInsets.all(20),
       content: Text('Ci sono dei problemi nello scaricare i dati'));
 
+  askForRescheduling() async {
+    final choice = showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title:
+                Text('Pianifica', style: Theme.of(context).textTheme.headline3),
+            content: Text('Vuoi ripianificare i tuoi obiettivi?',
+                style: Theme.of(context).textTheme.bodyText1),
+            actions: [
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child:
+                      Text('Annulla', style: TextStyle(color: AppColors.grey))),
+              TextButton(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  child: Text('Si')),
+            ],
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          );
+        });
+  }
+
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
@@ -36,6 +64,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
               iconSize: 32.0,
               padding: EdgeInsets.zero,
               tooltip: 'Aggiungi',
+              constraints: const BoxConstraints(),
               onPressed: () {
                 Navigator.of(context)
                     .push(MaterialPageRoute(
@@ -43,7 +72,9 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         builder: (context) {
                           return const DefineGoalScreen();
                         }))
-                    .then((_) => setState(() {}));
+                    .then((_) => setState(() {
+                          askForRescheduling();
+                        }));
               },
               icon: const Icon(Icons.add, color: AppColors.primaryColor))
         ]),
