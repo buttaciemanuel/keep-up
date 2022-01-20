@@ -18,34 +18,18 @@ class _GoalsScreenState extends State<GoalsScreen> {
   static const _downloadSnackbar = SnackBar(
       padding: EdgeInsets.all(20),
       content: Text('Ci sono dei problemi nello scaricare i dati'));
-
-  askForRescheduling() async {
-    final choice = showDialog(
-        context: context,
-        builder: (context) {
-          return AlertDialog(
-            title:
-                Text('Pianifica', style: Theme.of(context).textTheme.headline3),
-            content: Text('Vuoi ripianificare i tuoi obiettivi?',
-                style: Theme.of(context).textTheme.bodyText1),
-            actions: [
-              TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child:
-                      Text('Annulla', style: TextStyle(color: AppColors.grey))),
-              TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text('Si')),
-            ],
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-          );
-        });
-  }
+  late final _rescheduleSnackbar = SnackBar(
+      action: SnackBarAction(
+          label: 'Si',
+          onPressed: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                fullscreenDialog: true,
+                builder: (context) {
+                  return const ScheduleLoadingScreen(popWhenCompleted: true);
+                }));
+          }),
+      padding: EdgeInsets.all(20),
+      content: Text('Vuoi pianificare qualche obiettivo?'));
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +57,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           return const DefineGoalScreen();
                         }))
                     .then((_) => setState(() {
-                          askForRescheduling();
+                          ScaffoldMessenger.of(context)
+                              .showSnackBar(_rescheduleSnackbar);
                         }));
               },
               icon: const Icon(Icons.add, color: AppColors.primaryColor))

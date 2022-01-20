@@ -11,8 +11,10 @@ import 'package:keep_up/style.dart';
 
 class ScheduleLoadingScreen extends StatefulWidget {
   final backgrounColor = AppColors.primaryColor;
+  final bool? popWhenCompleted;
 
-  const ScheduleLoadingScreen({Key? key}) : super(key: key);
+  const ScheduleLoadingScreen({Key? key, this.popWhenCompleted = false})
+      : super(key: key);
 
   @override
   _ScheduleLoadingScreenState createState() => _ScheduleLoadingScreenState();
@@ -49,13 +51,17 @@ class _ScheduleLoadingScreenState extends State<ScheduleLoadingScreen>
       // ottiene tutti gli eventi
       final allEvents = await KeepUp.instance.getAllEvents(getMetadata: true);
       // ottiene tutti i goal creati
-      final allGoals = await KeepUp.instance.getAllGoals(getMetadata: false);
+      final allGoals = await KeepUp.instance.getAllUnscheduledGoals();
       // errore nello scaricare i dati
       if (allEvents.error || allGoals.error) {
         ScaffoldMessenger.of(context).showSnackBar(_downloadSnackbar);
       }
       // salva i dati
       else {
+        for (final g in allGoals.result!) {
+          log('goal ${g.title}');
+        }
+
         _events = allEvents.result;
         _goals = allGoals.result;
         // avvia l'animazione
@@ -64,10 +70,14 @@ class _ScheduleLoadingScreenState extends State<ScheduleLoadingScreen>
         KeepUpScheduler.fromTimeTable(_events!).scheduleGoals(_goals!);
         // prosegue l'animazione
         _controller.forward().whenComplete(() {
-          Navigator.of(context)
-              .pushReplacement(MaterialPageRoute(builder: (context) {
-            return const AppNavigator();
-          }));
+          if (widget.popWhenCompleted!) {
+            Navigator.of(context).pop();
+          } else {
+            Navigator.of(context)
+                .pushReplacement(MaterialPageRoute(builder: (context) {
+              return const AppNavigator();
+            }));
+          }
         });
       }
     }

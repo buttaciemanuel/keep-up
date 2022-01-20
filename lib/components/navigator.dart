@@ -9,7 +9,7 @@ class AppNavigator extends StatefulWidget {
   static const homePage = 0;
   static const goalsPage = 1;
   static const communityPage = 2;
-  static const accountPage = 3;
+  static const profilePage = 3;
   static const personalGrowthPage = 4;
   final int? initialPage;
   const AppNavigator({Key? key, this.initialPage = homePage}) : super(key: key);
@@ -113,11 +113,11 @@ class _AppNavigatorState extends State<AppNavigator> {
                     iconSize: 30,
                     padding: const EdgeInsets.only(right: 28),
                     icon: Icon(Icons.person,
-                        color: _selectedIndex == AppNavigator.accountPage
+                        color: _selectedIndex == AppNavigator.profilePage
                             ? AppColors.primaryColor
                             : Colors.black),
                     onPressed: () => setState(
-                        () => _selectedIndex = AppNavigator.accountPage),
+                        () => _selectedIndex = AppNavigator.profilePage),
                   )
                 ],
               ),

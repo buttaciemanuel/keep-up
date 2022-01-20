@@ -52,7 +52,7 @@ class KeepUp {
     }
   }
 
-  Future<KeepUpResponse> logout(String email, String password) async {
+  Future<KeepUpResponse> logout() async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     final response = await currentUser!.logout();
 
@@ -521,6 +521,26 @@ class KeepUp {
     }
 
     return KeepUpResponse.result(result);
+  }
+
+  /// ottiene tutti i goal non ancora pianificati
+  Future<KeepUpResponse<List<KeepUpGoal>>> getAllUnscheduledGoals() async {
+    // ottiene tutti i goal
+    final response = await getAllGoals(getMetadata: true);
+
+    if (response.error) return response;
+
+    // filtra eliminando tutti gli obiettivi già pianificati
+    final goals = response.result!.where((goal) {
+      return goal.recurrences.isEmpty &&
+          (goal.endDate == null ||
+              goal.endDate!
+                      .getDateOnly()
+                      .compareTo(DateTime.now().getDateOnly()) >
+                  0);
+    }).toList();
+
+    return KeepUpResponse.result(goals);
   }
 
   /// legge un obiettivo (evento esteso) dal database
