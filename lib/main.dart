@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/screens/daily_survey_screen.dart';
+import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/services/notification_service.dart';
 import 'package:keep_up/screens/goal_choice_screen.dart';

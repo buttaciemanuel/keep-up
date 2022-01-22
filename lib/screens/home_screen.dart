@@ -6,6 +6,7 @@ import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/constant.dart';
 import 'package:keep_up/screens/define_event_screen.dart';
+import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
@@ -41,11 +42,19 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Widget _loadingPage() {
+    return Column(
+        mainAxisSize: MainAxisSize.max,
+        children: List.generate(
+            3,
+            (index) => SkeletonLoader(
+                child: AppTaskCard(
+                    title: '', time: const TimeOfDay(hour: 0, minute: 0)))));
+  }
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    final dateFormatter =
-        DateFormat.MMMMEEEEd(Localizations.localeOf(context).toLanguageTag());
     return AppNavigationPageLayout(
       children: [
         SizedBox(height: 0.05 * size.height),
@@ -89,7 +98,12 @@ class _HomeScreenState extends State<HomeScreen> {
             child: FutureBuilder<KeepUpResponse>(
                 future: KeepUp.instance.getTasks(inDate: _selectedDate),
                 builder: (context, snapshot) {
-                  if (snapshot.hasData && _todayTrace != null) {
+                  if (snapshot.hasError) {
+                    OopsScreen.show(context);
+                    return _loadingPage();
+                  } else if (!snapshot.hasData) {
+                    return _loadingPage();
+                  } else if (snapshot.hasData && _todayTrace != null) {
                     final tasks = snapshot.data!.result as List<KeepUpTask>;
 
                     if (tasks.isEmpty) {
@@ -166,15 +180,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                   }));
                         }).toList());
                   } else {
-                    return Column(
-                        mainAxisSize: MainAxisSize.max,
-                        children: List.generate(
-                            3,
-                            (index) => SkeletonLoader(
-                                child: AppTaskCard(
-                                    title: '',
-                                    time:
-                                        const TimeOfDay(hour: 0, minute: 0)))));
+                    return _loadingPage();
                   }
                 }))
       ],

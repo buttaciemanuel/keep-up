@@ -14,6 +14,7 @@ class AppTextField extends StatefulWidget {
   final bool? isTextArea;
   final TextInputAction? textInputAction;
   final int? textAreaLines;
+  final bool? enabled;
   const AppTextField(
       {Key? key,
       this.icon,
@@ -26,7 +27,8 @@ class AppTextField extends StatefulWidget {
       this.inputType,
       this.isTextArea,
       this.textInputAction,
-      this.textAreaLines = 4})
+      this.textAreaLines = 4,
+      this.enabled})
       : super(key: key);
 
   @override
@@ -48,6 +50,7 @@ class _AppTextFieldState extends State<AppTextField> {
     return SizedBox(
         width: size.width,
         child: TextFormField(
+            enabled: widget.enabled,
             textInputAction: widget.textInputAction,
             maxLines: (widget.isTextArea ?? false) ? widget.textAreaLines : 1,
             minLines: (widget.isTextArea ?? false) ? widget.textAreaLines : 1,
@@ -55,7 +58,10 @@ class _AppTextFieldState extends State<AppTextField> {
                 ((widget.isTextArea ?? false)
                     ? TextInputType.multiline
                     : TextInputType.text),
-            style: Theme.of(context).textTheme.bodyText1,
+            style: Theme.of(context).textTheme.bodyText1!.copyWith(
+                color: (widget.enabled ?? true)
+                    ? Colors.black
+                    : Theme.of(context).disabledColor),
             validator: widget.validator,
             controller: widget.controller,
             obscureText: _obscureText,
@@ -69,14 +75,19 @@ class _AppTextFieldState extends State<AppTextField> {
                 helperText: widget.helper,
                 labelText: widget.label,
                 alignLabelWithHint: (widget.isTextArea ?? false),
-                floatingLabelStyle:
-                    const TextStyle(color: AppColors.primaryColor),
+                floatingLabelStyle: TextStyle(
+                    color: (widget.enabled ?? true)
+                        ? AppColors.primaryColor
+                        : Theme.of(context).disabledColor),
                 hintText: widget.hint,
                 border: UnderlineInputBorder(
                     borderSide: BorderSide.none,
                     borderRadius: BorderRadius.circular(10)),
                 prefixIcon: widget.icon != null
-                    ? Icon(widget.icon, color: AppColors.fieldTextColor)
+                    ? Icon(widget.icon,
+                        color: (widget.enabled ?? true)
+                            ? AppColors.fieldTextColor
+                            : Theme.of(context).disabledColor)
                     : null,
                 suffixIcon: widget.isPassword ?? false
                     ? IconButton(

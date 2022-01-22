@@ -83,6 +83,30 @@ class KeepUp {
     }
   }
 
+  Future<KeepUpResponse> updateUser(KeepUpUser updatedUser) async {
+    // Controlla che ci sia un utente salvato in cache
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+    if (currentUser == null) {
+      return KeepUpResponse.error('no user logged in');
+    }
+    // Controlla che il token di sessione associato sia ancora valido
+    final parseResponse =
+        await ParseUser.getCurrentUserFromServer(currentUser.sessionToken!);
+    if (parseResponse?.success == null || !parseResponse!.success) {
+      await currentUser.logout();
+      return KeepUpResponse.error('no user logged in');
+    } else {
+      currentUser.set(KeepUpUserDataModelKey.fullName, updatedUser.fullname);
+      final response = await currentUser.save();
+      if (response.success) {
+        return KeepUpResponse();
+      }
+
+      return KeepUpResponse.error(
+          'user update failure: ${response.error!.message}');
+    }
+  }
+
   Future<bool> _eventAlreadyExists(String eventName) async {
     final query = QueryBuilder.name(KeepUpEventDataModelKey.className);
     query.whereEqualTo(KeepUpEventDataModelKey.title, eventName);
