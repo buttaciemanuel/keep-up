@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/components/category_selector.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
+import 'package:keep_up/components/switch_input_field.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/components/color_selector.dart';
+import 'package:keep_up/components/time_text_field.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
@@ -522,52 +524,6 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
   }
 }
 
-class AppTimeTextField extends StatelessWidget {
-  final String? initialText;
-  final String? hint;
-  final double? width;
-  final Function()? onTap;
-  final TextEditingController? controller;
-  const AppTimeTextField(
-      {Key? key,
-      this.hint,
-      this.onTap,
-      this.controller,
-      this.initialText,
-      this.width})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
-    return SizedBox(
-        width: width ?? size.width,
-        child: TextFormField(
-            initialValue: initialText,
-            controller: controller,
-            onTap: onTap,
-            textAlign: TextAlign.start,
-            readOnly: true,
-            style: Theme.of(context).textTheme.bodyText1,
-            decoration: InputDecoration(
-                contentPadding:
-                    const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-                filled: true,
-                fillColor: AppColors.fieldBackgroundColor,
-                hintText: hint,
-                labelText: controller != null && controller!.text.isEmpty
-                    ? null
-                    : hint,
-                floatingLabelStyle:
-                    const TextStyle(color: AppColors.primaryColor),
-                border: UnderlineInputBorder(
-                    borderSide: BorderSide.none,
-                    borderRadius: BorderRadius.circular(10)),
-                prefixIcon:
-                    Icon(Icons.timer, color: Theme.of(context).hintColor))));
-  }
-}
-
 class AppWeekDaySelector extends StatelessWidget {
   final int selectedDay;
   final bool Function(int) isScheduled;
@@ -610,54 +566,5 @@ class AppWeekDaySelector extends StatelessWidget {
                               ? Colors.white
                               : AppColors.fieldTextColor))));
         })));
-  }
-}
-
-class SwitchInputField extends StatelessWidget {
-  final String label;
-  final bool value;
-  final Function(bool?)? onChanged;
-  const SwitchInputField(
-      {Key? key, required this.label, required this.value, this.onChanged})
-      : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      alignment: Alignment.centerLeft,
-      padding: const EdgeInsets.symmetric(vertical: 25, horizontal: 15),
-      decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(10),
-          color: AppColors.fieldBackgroundColor),
-      child: Column(children: [
-        Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 5),
-            child: Row(children: [
-              Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(label,
-                      style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: Theme.of(context).hintColor,
-                          fontSize: 16))),
-              const Expanded(child: SizedBox(width: 10)),
-              SizedBox(
-                height: 24.0,
-                width: 24.0,
-                child: Transform.scale(
-                    scale: 1.3,
-                    child: Checkbox(
-                        fillColor: value
-                            ? MaterialStateProperty.all(AppColors.primaryColor)
-                            : Theme.of(context).checkboxTheme.fillColor,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(2),
-                        ),
-                        value: value,
-                        onChanged: onChanged)),
-              )
-            ])),
-      ]),
-    );
   }
 }

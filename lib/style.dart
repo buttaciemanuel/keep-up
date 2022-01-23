@@ -45,11 +45,12 @@ abstract class AppThemes {
             fillColor: MaterialStateProperty.all(AppColors.lightGrey),
             shape: const CircleBorder(),
             materialTapTargetSize: MaterialTapTargetSize.shrinkWrap),
-        snackBarTheme: const SnackBarThemeData(
-            contentTextStyle: TextStyle(color: Colors.white, fontSize: 16),
+        snackBarTheme: SnackBarThemeData(
+            contentTextStyle: const TextStyle(color: Colors.white),
             behavior: SnackBarBehavior.floating,
             actionTextColor: AppColors.primaryColor,
-            shape: RoundedRectangleBorder(
+            backgroundColor: ThemeData.fallback().errorColor,
+            shape: const RoundedRectangleBorder(
               borderRadius: BorderRadius.all(Radius.circular(10.0)),
             )),
         sliderTheme: SliderThemeData.fromPrimaryColors(

@@ -5,9 +5,11 @@ import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/components/text_field.dart';
+import 'package:keep_up/screens/change_password_screen.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/screens/edit_profile.dart';
 import 'package:keep_up/screens/login_screen.dart';
+import 'package:keep_up/screens/notification_settings.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/screens/schedule_loading_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
@@ -106,7 +108,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(child: SizedBox(width: 10)),
           Icon(Icons.keyboard_arrow_right, color: Colors.black),
         ]),
-        //SizedBox(height: 0.02 * size.height),
+        Divider(
+            height: 0.03 * size.height,
+            color: Colors.black,
+            thickness: 0.1,
+            indent: 48,
+            endIndent: 48),
+        Row(children: [
+          Icon(Icons.lock, color: Colors.black),
+          SizedBox(width: 24),
+          Text('Cambia password',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyText1
+                  ?.copyWith(color: Colors.black)),
+          Expanded(child: SizedBox(width: 10)),
+          Icon(Icons.keyboard_arrow_right, color: Colors.black),
+        ]),
         Divider(
             height: 0.03 * size.height,
             color: Colors.black,
@@ -124,7 +142,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(child: SizedBox(width: 10)),
           Icon(Icons.keyboard_arrow_right, color: Colors.black),
         ]),
-        //SizedBox(height: 0.02 * size.height),
         Divider(
             height: 0.03 * size.height,
             color: Colors.black,
@@ -142,7 +159,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Expanded(child: SizedBox(width: 10)),
           Icon(Icons.keyboard_arrow_right, color: Colors.black)
         ]),
-        //SizedBox(height: 0.02 * size.height),
         Divider(
             height: 0.03 * size.height,
             color: Colors.black,
@@ -260,17 +276,54 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     thickness: 0.1,
                     indent: 48,
                     endIndent: 48),
-                Row(children: [
-                  Icon(Icons.notifications, color: Colors.black),
-                  SizedBox(width: 24),
-                  Text('Notifiche',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyText1
-                          ?.copyWith(color: Colors.black)),
-                  Expanded(child: SizedBox(width: 10)),
-                  Icon(Icons.keyboard_arrow_right, color: Colors.black),
-                ]),
+                GestureDetector(
+                    onTap: () {
+                      Navigator.of(context)
+                          .push(MaterialPageRoute(
+                              fullscreenDialog: true,
+                              builder: (context) {
+                                return const ChangePasswordScreen();
+                              }))
+                          .then((_) => setState(() {}));
+                    },
+                    child: Row(children: [
+                      Icon(Icons.lock, color: Colors.black),
+                      SizedBox(width: 24),
+                      Text('Cambia password',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyText1
+                              ?.copyWith(color: Colors.black)),
+                      Expanded(child: SizedBox(width: 10)),
+                      Icon(Icons.keyboard_arrow_right, color: Colors.black),
+                    ])),
+                Divider(
+                    height: 0.03 * size.height,
+                    color: Colors.black,
+                    thickness: 0.1,
+                    indent: 48,
+                    endIndent: 48),
+                GestureDetector(
+                    onTap: () {
+                      Navigator.of(context)
+                          .push(MaterialPageRoute(
+                              fullscreenDialog: true,
+                              builder: (context) {
+                                return const NotificationSettingsScreen();
+                              }))
+                          .then((_) => setState(() {}));
+                    },
+                    child: Row(children: [
+                      Icon(Icons.notifications, color: Colors.black),
+                      SizedBox(width: 24),
+                      Text('Notifiche',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyText1
+                              ?.copyWith(color: Colors.black)),
+                      Expanded(child: SizedBox(width: 10)),
+                      Icon(Icons.keyboard_arrow_right, color: Colors.black),
+                    ])),
                 Divider(
                     height: 0.03 * size.height,
                     color: Colors.black,

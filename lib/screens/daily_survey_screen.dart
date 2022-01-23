@@ -55,6 +55,15 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
       _ratedGoals = goalResponse.result
           ?.where((goal) => goalSet.contains(goal.id))
           .toList();
+      // scrive le informazioni
+      setState(() {
+        if (_todayTrace!.mood != null) {
+          _selectedMood = _todayTrace!.mood!.toDouble();
+        }
+        if (_todayTrace!.notes != null) {
+          _personalReflectionController.text = _todayTrace!.notes!;
+        }
+      });
     }
 
     return true;

@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:keep_up/services/notification_service.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
 class KeepUp {
@@ -27,6 +28,8 @@ class KeepUp {
     final user = ParseUser.createUser(email, password, email);
 
     user.set(KeepUpUserDataModelKey.fullName, fullName);
+    user.set(KeepUpUserDataModelKey.notifySurveyTime, null);
+    user.set(KeepUpUserDataModelKey.notifyTasks, false);
 
     final response = await user.signUp();
 
@@ -48,7 +51,7 @@ class KeepUp {
       return KeepUpResponse();
     } else {
       return KeepUpResponse.error(
-          'KeepUp: user registration failure: ${response.error!.message}');
+          'KeepUp: user login failure: ${response.error!.message}');
     }
   }
 
@@ -65,6 +68,51 @@ class KeepUp {
     }
   }
 
+  Future<KeepUpResponse> changePassword(
+      String oldPassword, String newPassword) async {
+    // Controlla che ci sia un utente salvato in cache
+    final currentUser = await ParseUser.currentUser() as ParseUser?;
+    if (currentUser == null) {
+      return KeepUpResponse.error('KeepUp: no user logged in');
+    }
+    // Controlla che il token di sessione associato sia ancora valido
+    final parseResponse =
+        await ParseUser.getCurrentUserFromServer(currentUser.sessionToken!);
+    if (parseResponse?.success == null || !parseResponse!.success) {
+      await currentUser.logout();
+      return KeepUpResponse.error('KeepUp: no user logged in');
+    }
+    // effettua login per verificare che la vecchia password sia corretta
+    final loginResponse = await ParseUser(
+            currentUser.emailAddress, oldPassword, currentUser.emailAddress)
+        .login();
+
+    if (!loginResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: user login failure: ${loginResponse.error!.message}');
+    }
+    // setta la nuova password
+    currentUser.password = newPassword;
+    // salva la nuova password
+    final updateResponse = await currentUser.save();
+
+    if (!updateResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: user update failure: ${updateResponse.error!.message}');
+    }
+    // effettua nuovamente il login, altrimenti sembra causare sessione invalida
+    final newLoginResponse = await ParseUser(
+            currentUser.emailAddress, newPassword, currentUser.emailAddress)
+        .login();
+
+    if (!newLoginResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: user login failure: ${loginResponse.error!.message}');
+    }
+
+    return KeepUpResponse();
+  }
+
   Future<KeepUpUser?> getUser() async {
     // Controlla che ci sia un utente salvato in cache
     final currentUser = await ParseUser.currentUser() as ParseUser?;
@@ -78,8 +126,16 @@ class KeepUp {
       await currentUser.logout();
       return null;
     } else {
-      return KeepUpUser(currentUser.get(KeepUpUserDataModelKey.fullName),
-          currentUser.emailAddress!, currentUser.sessionToken!);
+      return KeepUpUser(
+        currentUser.get(KeepUpUserDataModelKey.fullName),
+        currentUser.emailAddress!,
+        currentUser.sessionToken!,
+        currentUser.get(KeepUpUserDataModelKey.notifySurveyTime) != null
+            ? KeepUpDayTime.fromJson(
+                currentUser.get(KeepUpUserDataModelKey.notifySurveyTime))
+            : null,
+        currentUser.get(KeepUpUserDataModelKey.notifyTasks),
+      );
     }
   }
 
@@ -96,14 +152,105 @@ class KeepUp {
       await currentUser.logout();
       return KeepUpResponse.error('no user logged in');
     } else {
+      final oldNotifySurveyTime =
+          currentUser.get(KeepUpUserDataModelKey.notifySurveyTime);
+      final oldNotifyTasks =
+          currentUser.get(KeepUpUserDataModelKey.notifyTasks);
+      // setta i nuovi valori
       currentUser.set(KeepUpUserDataModelKey.fullName, updatedUser.fullname);
+      currentUser.set(KeepUpUserDataModelKey.notifySurveyTime,
+          updatedUser.notifySurveyTime);
+      currentUser.set(
+          KeepUpUserDataModelKey.notifyTasks, updatedUser.notifyTasks);
+      // salva l'utente
       final response = await currentUser.save();
-      if (response.success) {
-        return KeepUpResponse();
+      if (!response.success) {
+        return KeepUpResponse.error(
+            'user update failure: ${response.error!.message}');
+      }
+      // programma le notifiche
+      if (updatedUser.notifySurveyTime != null) {
+        _enableSurveyNotification(time: updatedUser.notifySurveyTime!);
+      }
+      // elimina le notifiche
+      else {
+        _cancelSurveyNotification();
+      }
+      // programma le notifiche per le attività
+      if (updatedUser.notifyTasks) {
+        _enableTasksNotification();
+      }
+      // elimina le notifiche per le attività
+      else {
+        _cancelTasksNotification();
       }
 
-      return KeepUpResponse.error(
-          'user update failure: ${response.error!.message}');
+      return KeepUpResponse();
+    }
+  }
+
+  Future _enableSurveyNotification({required KeepUpDayTime time}) async {
+    NotificationService().scheduleDailyNotification(
+        id: NotificationServiceConstant.dailySurveyId,
+        hour: time.hour,
+        minute: time.minute,
+        title: 'Ehi, come va?',
+        body: 'Raccontami come è andata la tua giornata!',
+        payload: NotificationServiceConstant.surveyPayload);
+  }
+
+  Future _cancelSurveyNotification() async {
+    NotificationService()
+        .cancelNotification(id: NotificationServiceConstant.dailySurveyId);
+  }
+
+  Future _enableTasksNotification() async {
+    var now = DateTime.now().getDateOnly();
+
+    for (int i = 0; i < 7; ++i, now = now.add(const Duration(days: 1))) {
+      final response = await getTasks(inDate: now);
+
+      if (response.error) continue;
+
+      for (final task in response.result!) {
+        if (task.recurrenceType == KeepUpRecurrenceType.none) {
+          NotificationService().scheduleDayNotification(
+              id: task.recurrenceId.hashCode + 7,
+              hour: task.startTime.hour,
+              minute: task.startTime.minute,
+              date: task.date.toLocal(),
+              title: task.title,
+              body: 'Hai questa attività in programma ora!',
+              payload: NotificationServiceConstant.taskPayload);
+        } else if (task.recurrenceType == KeepUpRecurrenceType.weekly) {
+          NotificationService().scheduleWeekDayNotification(
+              id: task.recurrenceId.hashCode + 7,
+              hour: task.startTime.hour,
+              minute: task.startTime.minute,
+              weekDay: task.date.weekday,
+              title: task.title,
+              body: 'Hai questa attività in programma ora!',
+              payload: NotificationServiceConstant.taskPayload);
+        } else if (task.recurrenceType == KeepUpRecurrenceType.daily) {
+          NotificationService().scheduleDailyNotification(
+              id: task.recurrenceId.hashCode + 7,
+              hour: task.startTime.hour,
+              minute: task.startTime.minute,
+              title: task.title,
+              body: 'Hai questa attività in programma ora!',
+              payload: NotificationServiceConstant.taskPayload);
+        }
+      }
+    }
+  }
+
+  Future _cancelTasksNotification() async {
+    final query = QueryBuilder.name(KeepUpRecurrenceDataModelKey.className);
+    final recurrences = await query.find();
+
+    for (final recurrence in recurrences) {
+      NotificationService()
+          .cancelNotification(id: recurrence.objectId.hashCode + 7);
     }
   }
 
@@ -924,8 +1071,11 @@ class KeepUpUser {
   String fullname;
   String email;
   String sessionToken;
+  KeepUpDayTime? notifySurveyTime;
+  bool notifyTasks;
 
-  KeepUpUser(this.fullname, this.email, this.sessionToken);
+  KeepUpUser(this.fullname, this.email, this.sessionToken,
+      this.notifySurveyTime, this.notifyTasks);
 }
 
 class KeepUpEvent {
@@ -962,37 +1112,57 @@ class KeepUpEvent {
       {required KeepUpDayTime startTime, KeepUpDayTime? endTime}) {
     recurrences
         .removeWhere((element) => element.type == KeepUpRecurrenceType.daily);
-    recurrences.add(KeepUpRecurrence(
-        type: KeepUpRecurrenceType.daily,
-        startTime: startTime,
-        endTime: endTime));
+    final any = recurrences
+        .where((element) => element.type == KeepUpRecurrenceType.daily);
+
+    if (any.isNotEmpty) {
+      any.first.startTime = startTime;
+      any.first.endTime = endTime;
+    } else {
+      recurrences.add(KeepUpRecurrence(
+          type: KeepUpRecurrenceType.daily,
+          startTime: startTime,
+          endTime: endTime));
+    }
   }
 
   void addWeeklySchedule(
       {required int weekDay,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
-    recurrences.removeWhere((element) =>
+    final any = recurrences.where((element) =>
         element.type == KeepUpRecurrenceType.weekly &&
         element.weekDay == weekDay);
-    recurrences.add(KeepUpRecurrence(
-        type: KeepUpRecurrenceType.weekly,
-        weekDay: weekDay,
-        startTime: startTime,
-        endTime: endTime));
+
+    if (any.isNotEmpty) {
+      any.first.startTime = startTime;
+      any.first.endTime = endTime;
+    } else {
+      recurrences.add(KeepUpRecurrence(
+          type: KeepUpRecurrenceType.weekly,
+          weekDay: weekDay,
+          startTime: startTime,
+          endTime: endTime));
+    }
   }
 
   void addMonthlySchedule(
       {required int day,
       required KeepUpDayTime startTime,
       KeepUpDayTime? endTime}) {
-    recurrences.removeWhere((element) =>
+    final any = recurrences.where((element) =>
         element.type == KeepUpRecurrenceType.monthly && element.day == day);
-    recurrences.add(KeepUpRecurrence(
-        type: KeepUpRecurrenceType.monthly,
-        day: day,
-        startTime: startTime,
-        endTime: endTime));
+
+    if (any.isNotEmpty) {
+      any.first.startTime = startTime;
+      any.first.endTime = endTime;
+    } else {
+      recurrences.add(KeepUpRecurrence(
+          type: KeepUpRecurrenceType.monthly,
+          day: day,
+          startTime: startTime,
+          endTime: endTime));
+    }
   }
 
   void addSchedule(
@@ -1196,6 +1366,8 @@ abstract class KeepUpUserDataModelKey {
   static const email = 'email';
   static const password = 'password';
   static const fullName = 'fullName';
+  static const notifySurveyTime = 'notifySurveyTime';
+  static const notifyTasks = 'notifyTasks';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': '_User', 'objectId': objectId};

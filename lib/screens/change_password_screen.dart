@@ -1,4 +1,3 @@
-import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
@@ -6,44 +5,44 @@ import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
-class EditProfileScreen extends StatefulWidget {
-  const EditProfileScreen({Key? key}) : super(key: key);
+class ChangePasswordScreen extends StatefulWidget {
+  const ChangePasswordScreen({Key? key}) : super(key: key);
 
   @override
-  _EditProfileScreenState createState() => _EditProfileScreenState();
+  _ChangePasswordScreenState createState() => _ChangePasswordScreenState();
 }
 
-class _EditProfileScreenState extends State<EditProfileScreen> {
+class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   static const _updateErrorSnackbar = SnackBar(
       padding: EdgeInsets.all(20),
-      content: Text('Sembra ci sia un errore nel modificare il profilo'));
+      content: Text('Sembra ci sia un errore nel modificare la password'));
 
   final _formKey = GlobalKey<FormState>();
-  final _fullnameController = TextEditingController();
-  final _emailController = TextEditingController();
+  final _oldPasswordController = TextEditingController();
+  final _newPasswordController = TextEditingController();
 
-  String? _fullnameValidator(String? text) {
+  String? _oldPasswordValidator(String? text) {
     if (text == null || text.isEmpty) {
-      return 'Inserisci il tuo nome';
-    } else if (!RegExp(r'^[a-z A-Z,.\-]+$').hasMatch(text)) {
-      return 'Inserisci un nome valido';
-    }
+      return 'Inserisci la tua password attuale';
+    } else {}
     return null;
   }
 
-  String? _emailValidator(String? text) {
+  String? _newPasswordValidator(String? text) {
     if (text == null || text.isEmpty) {
-      return 'Inserisci la tua email';
-    } else if (!EmailValidator.validate(text)) {
-      return 'Inserisci una email valida';
+      return 'Scegli la tua nuova password';
+    } else if (!RegExp(
+            r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[!@#\$&*~]).{8,}$')
+        .hasMatch(text)) {
+      return 'Scegli una password di almeno 8 caratteri';
     }
     return null;
   }
 
   @override
   void dispose() {
-    _fullnameController.dispose();
-    _emailController.dispose();
+    _oldPasswordController.dispose();
+    _newPasswordController.dispose();
     super.dispose();
   }
 
@@ -53,12 +52,12 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       SizedBox(height: 0.05 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Modifica profilo',
+          child: Text('Cambia password',
               style: Theme.of(context).textTheme.headline2)),
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Aggiorna i tuoi dati.',
+          child: Text('Scegli una nuova password.',
               style: Theme.of(context).textTheme.subtitle1)),
       SizedBox(height: 0.05 * size.height),
       Form(
@@ -66,23 +65,23 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: Column(children: [
             SkeletonLoader(
                 child: AppTextField(
-                    validator: _fullnameValidator,
-                    hint: 'Il tuo nome e cognome',
-                    label: 'Nome e cognome',
-                    textInputAction: TextInputAction.next,
-                    icon: Icons.person,
-                    inputType: TextInputType.name,
-                    controller: _fullnameController)),
+                    validator: _oldPasswordValidator,
+                    hint: 'Almeno 8 caratteri',
+                    label: 'Password',
+                    textInputAction: TextInputAction.done,
+                    icon: Icons.lock,
+                    isPassword: true,
+                    controller: _oldPasswordController)),
             SizedBox(height: 0.02 * size.height),
             SkeletonLoader(
                 child: AppTextField(
-                    validator: _emailValidator,
-                    hint: 'La tua email',
-                    label: 'Email',
-                    textInputAction: TextInputAction.next,
-                    inputType: TextInputType.emailAddress,
-                    icon: Icons.email,
-                    controller: _emailController)),
+                    validator: _newPasswordValidator,
+                    hint: 'Almeno 8 caratteri',
+                    label: 'Nuova password',
+                    textInputAction: TextInputAction.done,
+                    icon: Icons.lock,
+                    isPassword: true,
+                    controller: _newPasswordController)),
           ])),
       Expanded(child: SizedBox(height: size.height * 0.03)),
       Row(children: [
@@ -110,10 +109,6 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
   _form(KeepUpUser user) {
     final size = MediaQuery.of(context).size;
-
-    _fullnameController.text = user.fullname;
-    _emailController.text = user.email;
-
     return AppLayout(children: [
       SizedBox(height: 0.05 * size.height),
       Align(
@@ -130,23 +125,22 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           key: _formKey,
           child: Column(children: [
             AppTextField(
-                validator: _fullnameValidator,
-                hint: 'Il tuo nome e cognome',
-                label: 'Nome e cognome',
-                textInputAction: TextInputAction.next,
-                icon: Icons.person,
-                inputType: TextInputType.name,
-                controller: _fullnameController),
+                validator: _oldPasswordValidator,
+                hint: 'Almeno 8 caratteri',
+                label: 'Password',
+                textInputAction: TextInputAction.done,
+                icon: Icons.lock,
+                isPassword: true,
+                controller: _oldPasswordController),
             SizedBox(height: 0.02 * size.height),
             AppTextField(
-                enabled: false,
-                validator: _emailValidator,
-                hint: 'La tua email',
-                label: 'Email',
-                textInputAction: TextInputAction.next,
-                inputType: TextInputType.emailAddress,
-                icon: Icons.email,
-                controller: _emailController),
+                validator: _newPasswordValidator,
+                hint: 'Almeno 8 caratteri',
+                label: 'Nuova password',
+                textInputAction: TextInputAction.done,
+                icon: Icons.lock,
+                isPassword: true,
+                controller: _newPasswordController),
           ])),
       Expanded(child: SizedBox(height: size.height * 0.03)),
       Row(children: [
@@ -164,8 +158,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           child: TextButton(
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
-                user.fullname = _fullnameController.text.trim();
-                final response = await KeepUp.instance.updateUser(user);
+                final response = await KeepUp.instance.changePassword(
+                    _oldPasswordController.text.trim(),
+                    _newPasswordController.text.trim());
                 if (response.error) {
                   ScaffoldMessenger.of(context)
                       .showSnackBar(_updateErrorSnackbar);
