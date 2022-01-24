@@ -2,6 +2,7 @@ import 'dart:developer';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -43,10 +44,10 @@ class NotificationService {
     const iOSDetails = IOSNotificationDetails();
     const generalNotificationDetails =
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
-    final notificationTime = tz.TZDateTime.local(1, 1, 1, hour, minute);
+    final scheduleTime = tz.TZDateTime.local(1, 1, 1, hour, minute);
 
     notificationsPlugin.zonedSchedule(
-        id, title, body, notificationTime, generalNotificationDetails,
+        id, title, body, scheduleTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidAllowWhileIdle: true,
@@ -69,13 +70,13 @@ class NotificationService {
     const iOSDetails = IOSNotificationDetails();
     const generalNotificationDetails =
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
-    var notificationTime = tz.TZDateTime.local(1, 1, 1, hour, minute);
-    notificationTime = notificationTime
-        .subtract(Duration(days: notificationTime.weekday))
-        .add(Duration(days: weekDay));
+    var now = tz.TZDateTime.now(tz.local);
+    now.add(Duration(days: weekDay - now.weekday));
+    final scheduleTime =
+        tz.TZDateTime.local(now.year, now.month, now.day, hour, minute);
 
     notificationsPlugin.zonedSchedule(
-        id, title, body, notificationTime, generalNotificationDetails,
+        id, title, body, scheduleTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidAllowWhileIdle: true,
@@ -98,15 +99,15 @@ class NotificationService {
     const iOSDetails = IOSNotificationDetails();
     const generalNotificationDetails =
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
-    var notificationTime =
-        tz.TZDateTime.local(date.day, date.month, date.year, hour, minute);
+    final scheduleTime =
+        tz.TZDateTime.local(date.year, date.month, date.day, hour, minute);
 
     notificationsPlugin.zonedSchedule(
-        id, title, body, notificationTime, generalNotificationDetails,
+        id, title, body, scheduleTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         androidAllowWhileIdle: true,
-        matchDateTimeComponents: DateTimeComponents.dateAndTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
         payload: payload);
   }
 

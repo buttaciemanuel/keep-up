@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:keep_up/constant.dart';
 import 'package:keep_up/services/notification_service.dart';
 import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
@@ -220,7 +221,8 @@ class KeepUp {
               minute: task.startTime.minute,
               date: task.date.toLocal(),
               title: task.title,
-              body: 'Hai questa attività in programma ora!',
+              body:
+                  'Hai questa attività in programma alle ${task.startTime.toString()}.',
               payload: NotificationServiceConstant.taskPayload);
         } else if (task.recurrenceType == KeepUpRecurrenceType.weekly) {
           NotificationService().scheduleWeekDayNotification(
@@ -229,7 +231,8 @@ class KeepUp {
               minute: task.startTime.minute,
               weekDay: task.date.weekday,
               title: task.title,
-              body: 'Hai questa attività in programma ora!',
+              body:
+                  'Hai questa attività in programma alle ${task.startTime.toString()}.',
               payload: NotificationServiceConstant.taskPayload);
         } else if (task.recurrenceType == KeepUpRecurrenceType.daily) {
           NotificationService().scheduleDailyNotification(
@@ -237,7 +240,8 @@ class KeepUp {
               hour: task.startTime.hour,
               minute: task.startTime.minute,
               title: task.title,
-              body: 'Hai questa attività in programma ora!',
+              body:
+                  'Hai questa attività in programma alle ${task.startTime.toString()}.',
               payload: NotificationServiceConstant.taskPayload);
         }
       }
@@ -1490,6 +1494,11 @@ class KeepUpDayTime {
   @override
   bool operator ==(Object other) {
     return (other as KeepUpDayTime).hour == hour && other.minute == minute;
+  }
+
+  @override
+  String toString() {
+    return '${hour < 10 ? '0$hour' : hour}:${minute < 10 ? '0$minute' : minute}';
   }
 }
 
