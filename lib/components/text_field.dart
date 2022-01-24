@@ -185,3 +185,60 @@ class _AppDropDownTextFieldState extends State<AppDropDownTextField> {
             )));
   }
 }
+
+class AppSearchTextField extends StatelessWidget {
+  final String? hint;
+  final String? helper;
+  final TextEditingController controller;
+  final TextInputAction? textInputAction;
+  final bool? enabled;
+  final Function(String)? onChanged;
+  const AppSearchTextField(
+      {Key? key,
+      this.hint,
+      this.helper,
+      required this.controller,
+      this.textInputAction = TextInputAction.search,
+      this.onChanged,
+      this.enabled})
+      : super(key: key);
+
+  @override
+  Widget build(BuildContext context) {
+    final Size size = MediaQuery.of(context).size;
+    return SizedBox(
+        width: size.width,
+        child: TextFormField(
+            enabled: enabled,
+            textInputAction: textInputAction,
+            style: Theme.of(context).textTheme.bodyText1!.copyWith(
+                color: (enabled ?? true)
+                    ? Colors.black
+                    : Theme.of(context).disabledColor),
+            controller: controller,
+            cursorColor: AppColors.primaryColor,
+            textAlignVertical: TextAlignVertical.top,
+            onChanged: onChanged,
+            decoration: InputDecoration(
+                contentPadding:
+                    const EdgeInsets.symmetric(vertical: 18, horizontal: 15),
+                filled: true,
+                fillColor: AppColors.fieldBackgroundColor,
+                helperText: helper,
+                hintText: hint,
+                border: UnderlineInputBorder(
+                    borderSide: BorderSide.none,
+                    borderRadius: BorderRadius.circular(10)),
+                prefixIcon:
+                    const Icon(Icons.search, color: AppColors.fieldTextColor),
+                suffixIcon: controller.text.isNotEmpty
+                    ? IconButton(
+                        onPressed: () {
+                          controller.clear();
+                          if (onChanged != null) onChanged!('');
+                        },
+                        icon: const Icon(Icons.clear,
+                            color: AppColors.fieldTextColor))
+                    : null)));
+  }
+}

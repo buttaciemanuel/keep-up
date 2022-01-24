@@ -46,6 +46,9 @@ class NotificationService {
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
     final scheduleTime = tz.TZDateTime.local(1, 1, 1, hour, minute);
 
+    // un quarto d'ora di anticipo
+    scheduleTime.subtract(const Duration(minutes: 15));
+
     notificationsPlugin.zonedSchedule(
         id, title, body, scheduleTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
@@ -75,6 +78,9 @@ class NotificationService {
     final scheduleTime =
         tz.TZDateTime.local(now.year, now.month, now.day, hour, minute);
 
+    // un quarto d'ora di anticipo
+    scheduleTime.subtract(const Duration(minutes: 15));
+
     notificationsPlugin.zonedSchedule(
         id, title, body, scheduleTime, generalNotificationDetails,
         uiLocalNotificationDateInterpretation:
@@ -101,6 +107,9 @@ class NotificationService {
         NotificationDetails(android: androidDetails, iOS: iOSDetails);
     final scheduleTime =
         tz.TZDateTime.local(date.year, date.month, date.day, hour, minute);
+
+    // un quarto d'ora di anticipo
+    scheduleTime.subtract(const Duration(minutes: 15));
 
     notificationsPlugin.zonedSchedule(
         id, title, body, scheduleTime, generalNotificationDetails,

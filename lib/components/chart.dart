@@ -58,7 +58,6 @@ class _AppChartState extends State<AppChart> {
   static const _weekOrdinal = ['I', 'II', 'III', 'IV', 'V'];
   final _controller = ScrollController();
   late DateTime _currentDate = widget.points.last.x;
-  bool _init = false;
 
   void _scrollListener() {
     setState(() {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:keep_up/screens/community_screen.dart';
 import 'package:keep_up/screens/goals_screen.dart';
 import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/screens/personal_growth_screen.dart';
@@ -23,7 +24,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   final _pages = const [
     HomeScreen(),
     GoalsScreen(),
-    Text('Community'),
+    CommunityScreen(),
     ProfileScreen(),
     PersonalGrowthScreen()
   ];
@@ -31,6 +32,7 @@ class _AppNavigatorState extends State<AppNavigator> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        resizeToAvoidBottomInset: false,
         extendBody: true,
         backgroundColor: Colors.white,
         body: IndexedStack(

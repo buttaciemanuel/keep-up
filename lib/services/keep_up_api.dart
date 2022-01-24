@@ -28,9 +28,9 @@ class KeepUp {
       String fullName, String email, String password) async {
     final user = ParseUser.createUser(email, password, email);
 
-    user.set(KeepUpUserDataModelKey.fullName, fullName);
-    user.set(KeepUpUserDataModelKey.notifySurveyTime, null);
-    user.set(KeepUpUserDataModelKey.notifyTasks, false);
+    user.set(KeepUpUserDataModel.fullName, fullName);
+    user.set(KeepUpUserDataModel.notifySurveyTime, null);
+    user.set(KeepUpUserDataModel.notifyTasks, false);
 
     final response = await user.signUp();
 
@@ -128,14 +128,14 @@ class KeepUp {
       return null;
     } else {
       return KeepUpUser(
-        currentUser.get(KeepUpUserDataModelKey.fullName),
+        currentUser.get(KeepUpUserDataModel.fullName),
         currentUser.emailAddress!,
         currentUser.sessionToken!,
-        currentUser.get(KeepUpUserDataModelKey.notifySurveyTime) != null
+        currentUser.get(KeepUpUserDataModel.notifySurveyTime) != null
             ? KeepUpDayTime.fromJson(
-                currentUser.get(KeepUpUserDataModelKey.notifySurveyTime))
+                currentUser.get(KeepUpUserDataModel.notifySurveyTime))
             : null,
-        currentUser.get(KeepUpUserDataModelKey.notifyTasks),
+        currentUser.get(KeepUpUserDataModel.notifyTasks),
       );
     }
   }
@@ -154,15 +154,13 @@ class KeepUp {
       return KeepUpResponse.error('no user logged in');
     } else {
       final oldNotifySurveyTime =
-          currentUser.get(KeepUpUserDataModelKey.notifySurveyTime);
-      final oldNotifyTasks =
-          currentUser.get(KeepUpUserDataModelKey.notifyTasks);
+          currentUser.get(KeepUpUserDataModel.notifySurveyTime);
+      final oldNotifyTasks = currentUser.get(KeepUpUserDataModel.notifyTasks);
       // setta i nuovi valori
-      currentUser.set(KeepUpUserDataModelKey.fullName, updatedUser.fullname);
-      currentUser.set(KeepUpUserDataModelKey.notifySurveyTime,
-          updatedUser.notifySurveyTime);
+      currentUser.set(KeepUpUserDataModel.fullName, updatedUser.fullname);
       currentUser.set(
-          KeepUpUserDataModelKey.notifyTasks, updatedUser.notifyTasks);
+          KeepUpUserDataModel.notifySurveyTime, updatedUser.notifySurveyTime);
+      currentUser.set(KeepUpUserDataModel.notifyTasks, updatedUser.notifyTasks);
       // salva l'utente
       final response = await currentUser.save();
       if (!response.success) {
@@ -249,7 +247,7 @@ class KeepUp {
   }
 
   Future _cancelTasksNotification() async {
-    final query = QueryBuilder.name(KeepUpRecurrenceDataModelKey.className);
+    final query = QueryBuilder.name(KeepUpRecurrenceDataModel.className);
     final recurrences = await query.find();
 
     for (final recurrence in recurrences) {
@@ -259,8 +257,8 @@ class KeepUp {
   }
 
   Future<bool> _eventAlreadyExists(String eventName) async {
-    final query = QueryBuilder.name(KeepUpEventDataModelKey.className);
-    query.whereEqualTo(KeepUpEventDataModelKey.title, eventName);
+    final query = QueryBuilder.name(KeepUpEventDataModel.className);
+    query.whereEqualTo(KeepUpEventDataModel.title, eventName);
     final response = await query.count();
     return response.count > 0;
   }
@@ -276,14 +274,14 @@ class KeepUp {
 
     final currentUser = await ParseUser.currentUser() as ParseUser?;
 
-    final eventObject = ParseObject(KeepUpEventDataModelKey.className)
-      ..set(KeepUpEventDataModelKey.title, event.title)
-      ..set(KeepUpEventDataModelKey.startDate, event.startDate.getDateOnly())
-      ..set(KeepUpEventDataModelKey.endDate, event.endDate?.getDateOnly())
-      ..set(KeepUpEventDataModelKey.description, event.description)
-      ..set(KeepUpEventDataModelKey.color, event.color.value)
-      ..set(KeepUpEventDataModelKey.category, event.category)
-      ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
+    final eventObject = ParseObject(KeepUpEventDataModel.className)
+      ..set(KeepUpEventDataModel.title, event.title)
+      ..set(KeepUpEventDataModel.startDate, event.startDate.getDateOnly())
+      ..set(KeepUpEventDataModel.endDate, event.endDate?.getDateOnly())
+      ..set(KeepUpEventDataModel.description, event.description)
+      ..set(KeepUpEventDataModel.color, event.color.value)
+      ..set(KeepUpEventDataModel.category, event.category)
+      ..set(KeepUpEventDataModel.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
 
@@ -297,45 +295,42 @@ class KeepUp {
     log('KeepUp: event creation success ${eventObject.objectId}');
 
     for (final recurrence in event.recurrences) {
-      final recurrenceObject =
-          ParseObject(KeepUpRecurrenceDataModelKey.className)
-            ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.toPointer())
-            ..set(KeepUpRecurrenceDataModelKey.startTime, recurrence.startTime)
-            ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime)
-            ..set(KeepUpRecurrenceDataModelKey.type, recurrence.type.index);
+      final recurrenceObject = ParseObject(KeepUpRecurrenceDataModel.className)
+        ..set(KeepUpRecurrenceDataModel.eventId, eventObject.toPointer())
+        ..set(KeepUpRecurrenceDataModel.startTime, recurrence.startTime)
+        ..set(KeepUpRecurrenceDataModel.endTime, recurrence.endTime)
+        ..set(KeepUpRecurrenceDataModel.type, recurrence.type.index);
 
       switch (recurrence.type) {
         case KeepUpRecurrenceType.none:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
-            ..set(
-                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
-            ..set(KeepUpRecurrenceDataModelKey.year, recurrence.year.toString())
-            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+            ..set(KeepUpRecurrenceDataModel.day, recurrence.day.toString())
+            ..set(KeepUpRecurrenceDataModel.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModel.year, recurrence.year.toString())
+            ..set(KeepUpRecurrenceDataModel.weekDay,
                 recurrence.weekDay.toString());
           break;
         case KeepUpRecurrenceType.daily:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, '*')
-            ..set(KeepUpRecurrenceDataModelKey.month, '*')
-            ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay, '*');
+            ..set(KeepUpRecurrenceDataModel.day, '*')
+            ..set(KeepUpRecurrenceDataModel.month, '*')
+            ..set(KeepUpRecurrenceDataModel.year, '*')
+            ..set(KeepUpRecurrenceDataModel.weekDay, '*');
           break;
         case KeepUpRecurrenceType.weekly:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, null)
-            ..set(KeepUpRecurrenceDataModelKey.month, '*')
-            ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+            ..set(KeepUpRecurrenceDataModel.day, null)
+            ..set(KeepUpRecurrenceDataModel.month, '*')
+            ..set(KeepUpRecurrenceDataModel.year, '*')
+            ..set(KeepUpRecurrenceDataModel.weekDay,
                 recurrence.weekDay.toString());
           break;
         case KeepUpRecurrenceType.monthly:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
-            ..set(
-                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
-            ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay, null);
+            ..set(KeepUpRecurrenceDataModel.day, recurrence.day.toString())
+            ..set(KeepUpRecurrenceDataModel.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModel.year, '*')
+            ..set(KeepUpRecurrenceDataModel.weekDay, null);
           break;
         default:
       }
@@ -353,12 +348,11 @@ class KeepUp {
       log('KeepUp: recurrence creation success');
 
       for (final exception in recurrence.exceptions) {
-        final exceptionObject = ParseObject(
-            KeepUpExceptionDataModelKey.className)
-          ..set(KeepUpExceptionDataModelKey.eventId, eventObject.toPointer())
-          ..set(KeepUpExceptionDataModelKey.recurrenceId,
+        final exceptionObject = ParseObject(KeepUpExceptionDataModel.className)
+          ..set(KeepUpExceptionDataModel.eventId, eventObject.toPointer())
+          ..set(KeepUpExceptionDataModel.recurrenceId,
               recurrenceObject.toPointer())
-          ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
+          ..set(KeepUpExceptionDataModel.onDate, exception.onDate);
 
         final response = await exceptionObject.save();
 
@@ -382,15 +376,15 @@ class KeepUp {
   Future<KeepUpResponse> updateEvent(KeepUpEvent event) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
 
-    final eventObject = ParseObject(KeepUpEventDataModelKey.className)
+    final eventObject = ParseObject(KeepUpEventDataModel.className)
       ..objectId = event.id
-      ..set(KeepUpEventDataModelKey.title, event.title)
-      ..set(KeepUpEventDataModelKey.startDate, event.startDate.getDateOnly())
-      ..set(KeepUpEventDataModelKey.endDate, event.endDate?.getDateOnly())
-      ..set(KeepUpEventDataModelKey.description, event.description)
-      ..set(KeepUpEventDataModelKey.color, event.color.value)
-      ..set(KeepUpEventDataModelKey.category, event.category)
-      ..set(KeepUpEventDataModelKey.creatorId, currentUser!.toPointer());
+      ..set(KeepUpEventDataModel.title, event.title)
+      ..set(KeepUpEventDataModel.startDate, event.startDate.getDateOnly())
+      ..set(KeepUpEventDataModel.endDate, event.endDate?.getDateOnly())
+      ..set(KeepUpEventDataModel.description, event.description)
+      ..set(KeepUpEventDataModel.color, event.color.value)
+      ..set(KeepUpEventDataModel.category, event.category)
+      ..set(KeepUpEventDataModel.creatorId, currentUser!.toPointer());
 
     final response = await eventObject.save();
 
@@ -402,47 +396,44 @@ class KeepUp {
     log('KeepUp: event update success ${eventObject.objectId}');
 
     for (final recurrence in event.recurrences) {
-      final recurrenceObject =
-          ParseObject(KeepUpRecurrenceDataModelKey.className)
-            ..set(KeepUpRecurrenceDataModelKey.eventId, eventObject.toPointer())
-            ..set(KeepUpRecurrenceDataModelKey.startTime, recurrence.startTime)
-            ..set(KeepUpRecurrenceDataModelKey.endTime, recurrence.endTime)
-            ..set(KeepUpRecurrenceDataModelKey.type, recurrence.type.index);
+      final recurrenceObject = ParseObject(KeepUpRecurrenceDataModel.className)
+        ..set(KeepUpRecurrenceDataModel.eventId, eventObject.toPointer())
+        ..set(KeepUpRecurrenceDataModel.startTime, recurrence.startTime)
+        ..set(KeepUpRecurrenceDataModel.endTime, recurrence.endTime)
+        ..set(KeepUpRecurrenceDataModel.type, recurrence.type.index);
 
       if (recurrence.id != null) recurrenceObject.objectId = recurrence.id;
 
       switch (recurrence.type) {
         case KeepUpRecurrenceType.none:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
-            ..set(
-                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
-            ..set(KeepUpRecurrenceDataModelKey.year, recurrence.year.toString())
-            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+            ..set(KeepUpRecurrenceDataModel.day, recurrence.day.toString())
+            ..set(KeepUpRecurrenceDataModel.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModel.year, recurrence.year.toString())
+            ..set(KeepUpRecurrenceDataModel.weekDay,
                 recurrence.weekDay.toString());
           break;
         case KeepUpRecurrenceType.daily:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, '*')
-            ..set(KeepUpRecurrenceDataModelKey.month, '*')
-            ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay, '*');
+            ..set(KeepUpRecurrenceDataModel.day, '*')
+            ..set(KeepUpRecurrenceDataModel.month, '*')
+            ..set(KeepUpRecurrenceDataModel.year, '*')
+            ..set(KeepUpRecurrenceDataModel.weekDay, '*');
           break;
         case KeepUpRecurrenceType.weekly:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, null)
-            ..set(KeepUpRecurrenceDataModelKey.month, '*')
-            ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay,
+            ..set(KeepUpRecurrenceDataModel.day, null)
+            ..set(KeepUpRecurrenceDataModel.month, '*')
+            ..set(KeepUpRecurrenceDataModel.year, '*')
+            ..set(KeepUpRecurrenceDataModel.weekDay,
                 recurrence.weekDay.toString());
           break;
         case KeepUpRecurrenceType.monthly:
           recurrenceObject
-            ..set(KeepUpRecurrenceDataModelKey.day, recurrence.day.toString())
-            ..set(
-                KeepUpRecurrenceDataModelKey.month, recurrence.month.toString())
-            ..set(KeepUpRecurrenceDataModelKey.year, '*')
-            ..set(KeepUpRecurrenceDataModelKey.weekDay, null);
+            ..set(KeepUpRecurrenceDataModel.day, recurrence.day.toString())
+            ..set(KeepUpRecurrenceDataModel.month, recurrence.month.toString())
+            ..set(KeepUpRecurrenceDataModel.year, '*')
+            ..set(KeepUpRecurrenceDataModel.weekDay, null);
           break;
         default:
       }
@@ -457,12 +448,11 @@ class KeepUp {
       log('KeepUp: recurrence update success');
 
       for (final exception in recurrence.exceptions) {
-        final exceptionObject = ParseObject(
-            KeepUpExceptionDataModelKey.className)
-          ..set(KeepUpExceptionDataModelKey.eventId, eventObject.toPointer())
-          ..set(KeepUpExceptionDataModelKey.recurrenceId,
+        final exceptionObject = ParseObject(KeepUpExceptionDataModel.className)
+          ..set(KeepUpExceptionDataModel.eventId, eventObject.toPointer())
+          ..set(KeepUpExceptionDataModel.recurrenceId,
               recurrenceObject.toPointer())
-          ..set(KeepUpExceptionDataModelKey.onDate, exception.onDate);
+          ..set(KeepUpExceptionDataModel.onDate, exception.onDate);
 
         if (exception.id != null) exceptionObject.objectId = exception.id;
 
@@ -484,13 +474,13 @@ class KeepUp {
   Future<KeepUpResponse<List<KeepUpEvent>>> getAllEvents(
       {bool getMetadata = false}) async {
     // costruisce la query per ottenere l'evento
-    final mainQuery = QueryBuilder.name(KeepUpEventDataModelKey.className);
+    final mainQuery = QueryBuilder.name(KeepUpEventDataModel.className);
     // costruisce la lista delle ricorrenze
     final recurrencesQuery =
-        QueryBuilder.name(KeepUpRecurrenceDataModelKey.className);
+        QueryBuilder.name(KeepUpRecurrenceDataModel.className);
     // costruisce la lista delle eccezioni alle ricorrenze
     final exceptionsQuery =
-        QueryBuilder.name(KeepUpExceptionDataModelKey.className);
+        QueryBuilder.name(KeepUpExceptionDataModel.className);
 
     // effettua le query
     final events = (await mainQuery.find()).map((e) => KeepUpEvent.fromJson(e));
@@ -537,18 +527,18 @@ class KeepUp {
   Future<KeepUpResponse<KeepUpEvent>> getEvent(
       {required String eventId}) async {
     // costruisce la query per ottenere l'evento
-    final mainQuery = QueryBuilder.name(KeepUpEventDataModelKey.className)
-      ..whereEqualTo(KeepUpEventDataModelKey.id, eventId);
+    final mainQuery = QueryBuilder.name(KeepUpEventDataModel.className)
+      ..whereEqualTo(KeepUpEventDataModel.id, eventId);
     // costruisce la lista delle ricorrenze
     final recurrencesQuery =
-        QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
-          ..whereEqualTo(KeepUpRecurrenceDataModelKey.eventId,
-              KeepUpEventDataModelKey.pointerTo(eventId));
+        QueryBuilder.name(KeepUpRecurrenceDataModel.className)
+          ..whereEqualTo(KeepUpRecurrenceDataModel.eventId,
+              KeepUpEventDataModel.pointerTo(eventId));
     // costruisce la lista delle eccezioni alle ricorrenze
     final exceptionsQuery =
-        QueryBuilder.name(KeepUpExceptionDataModelKey.className)
-          ..whereEqualTo(KeepUpExceptionDataModelKey.eventId,
-              KeepUpEventDataModelKey.pointerTo(eventId));
+        QueryBuilder.name(KeepUpExceptionDataModel.className)
+          ..whereEqualTo(KeepUpExceptionDataModel.eventId,
+              KeepUpEventDataModel.pointerTo(eventId));
 
     // effettua le query
     final eventObjects = await mainQuery.find();
@@ -590,13 +580,13 @@ class KeepUp {
     if (response.error) return response;
 
     // crea i metadati
-    final goalMetadata = ParseObject(KeepUpGoalDataModelKey.className)
-      ..set(KeepUpGoalDataModelKey.eventId,
-          KeepUpEventDataModelKey.pointerTo(goal.id!))
-      ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
-      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
-      ..set(KeepUpGoalDataModelKey.rating, goal.rating)
-      ..set(KeepUpGoalDataModelKey.ratingsCount, goal.ratingsCount);
+    final goalMetadata = ParseObject(KeepUpGoalDataModel.className)
+      ..set(
+          KeepUpGoalDataModel.eventId, KeepUpEventDataModel.pointerTo(goal.id!))
+      ..set(KeepUpGoalDataModel.daysPerWeek, goal.daysPerWeek)
+      ..set(KeepUpGoalDataModel.hoursPerDay, goal.hoursPerDay)
+      ..set(KeepUpGoalDataModel.rating, goal.rating)
+      ..set(KeepUpGoalDataModel.ratingsCount, goal.ratingsCount);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -617,14 +607,14 @@ class KeepUp {
     if (response.error) return response;
 
     // aggiorna i metadati
-    final goalMetadata = ParseObject(KeepUpGoalDataModelKey.className)
+    final goalMetadata = ParseObject(KeepUpGoalDataModel.className)
       ..objectId = goal.metadataId
-      ..set(KeepUpGoalDataModelKey.eventId,
-          KeepUpEventDataModelKey.pointerTo(goal.id!))
-      ..set(KeepUpGoalDataModelKey.daysPerWeek, goal.daysPerWeek)
-      ..set(KeepUpGoalDataModelKey.hoursPerDay, goal.hoursPerDay)
-      ..set(KeepUpGoalDataModelKey.rating, goal.rating)
-      ..set(KeepUpGoalDataModelKey.ratingsCount, goal.ratingsCount);
+      ..set(
+          KeepUpGoalDataModel.eventId, KeepUpEventDataModel.pointerTo(goal.id!))
+      ..set(KeepUpGoalDataModel.daysPerWeek, goal.daysPerWeek)
+      ..set(KeepUpGoalDataModel.hoursPerDay, goal.hoursPerDay)
+      ..set(KeepUpGoalDataModel.rating, goal.rating)
+      ..set(KeepUpGoalDataModel.ratingsCount, goal.ratingsCount);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -641,17 +631,16 @@ class KeepUp {
   Future<KeepUpResponse<List<KeepUpGoal>>> getAllGoals(
       {bool getMetadata = false}) async {
     // costruisce la query per ottenere i goal
-    final goalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className);
+    final goalQuery = QueryBuilder.name(KeepUpGoalDataModel.className);
     // ottiene i metadata sui goal
     final goalObjects = await goalQuery.find();
 
     if (goalObjects.isEmpty) return KeepUpResponse.result([]);
 
     goalObjects.sort((a, b) {
-      return (a[KeepUpGoalDataModelKey.eventId][KeepUpEventDataModelKey.id]
-              as String)
-          .compareTo(b[KeepUpGoalDataModelKey.eventId]
-              [KeepUpEventDataModelKey.id] as String);
+      return (a[KeepUpGoalDataModel.eventId][KeepUpEventDataModel.id] as String)
+          .compareTo(b[KeepUpGoalDataModel.eventId][KeepUpEventDataModel.id]
+              as String);
     });
 
     // ora ottiene tutti gli eventi per poi effettuare il merge estraendo
@@ -675,8 +664,8 @@ class KeepUp {
     for (final event in events) {
       if (i >= goalObjects.length) break;
       if (event.id ==
-          goalObjects[i][KeepUpGoalDataModelKey.eventId]
-              [KeepUpEventDataModelKey.id]) {
+          goalObjects[i][KeepUpGoalDataModel.eventId]
+              [KeepUpEventDataModel.id]) {
         result.add(KeepUpGoal(
             id: event.id,
             title: event.title,
@@ -685,11 +674,11 @@ class KeepUp {
             endDate: event.endDate,
             color: event.color,
             category: event.category,
-            daysPerWeek: goalObjects[i][KeepUpGoalDataModelKey.daysPerWeek],
-            hoursPerDay: goalObjects[i][KeepUpGoalDataModelKey.hoursPerDay],
-            rating: goalObjects[i][KeepUpGoalDataModelKey.rating],
-            ratingsCount: goalObjects[i][KeepUpGoalDataModelKey.ratingsCount],
-            metadataId: goalObjects[i][KeepUpGoalDataModelKey.id]));
+            daysPerWeek: goalObjects[i][KeepUpGoalDataModel.daysPerWeek],
+            hoursPerDay: goalObjects[i][KeepUpGoalDataModel.hoursPerDay],
+            rating: goalObjects[i][KeepUpGoalDataModel.rating],
+            ratingsCount: goalObjects[i][KeepUpGoalDataModel.ratingsCount],
+            metadataId: goalObjects[i][KeepUpGoalDataModel.id]));
         result.last.recurrences = event.recurrences;
         ++i;
       }
@@ -723,9 +712,9 @@ class KeepUp {
     // effettua la query sull'evento associato
     final response = await getEvent(eventId: eventId);
     // costruisce la query per estrarre i metadati dell'obiettivo
-    final goalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className)
-      ..whereEqualTo(KeepUpGoalDataModelKey.eventId,
-          KeepUpEventDataModelKey.pointerTo(eventId));
+    final goalQuery = QueryBuilder.name(KeepUpGoalDataModel.className)
+      ..whereEqualTo(
+          KeepUpGoalDataModel.eventId, KeepUpEventDataModel.pointerTo(eventId));
 
     final goalObjects = await goalQuery.find();
 
@@ -741,11 +730,11 @@ class KeepUp {
         endDate: response.result!.endDate,
         color: response.result!.color,
         category: response.result!.category,
-        daysPerWeek: goalObjects.first[KeepUpGoalDataModelKey.daysPerWeek],
-        hoursPerDay: goalObjects.first[KeepUpGoalDataModelKey.hoursPerDay],
-        rating: goalObjects.first[KeepUpGoalDataModelKey.rating],
-        ratingsCount: goalObjects.first[KeepUpGoalDataModelKey.ratingsCount],
-        metadataId: goalObjects.first[KeepUpGoalDataModelKey.id]);
+        daysPerWeek: goalObjects.first[KeepUpGoalDataModel.daysPerWeek],
+        hoursPerDay: goalObjects.first[KeepUpGoalDataModel.hoursPerDay],
+        rating: goalObjects.first[KeepUpGoalDataModel.rating],
+        ratingsCount: goalObjects.first[KeepUpGoalDataModel.ratingsCount],
+        metadataId: goalObjects.first[KeepUpGoalDataModel.id]);
 
     result.recurrences = response.result!.recurrences;
 
@@ -754,18 +743,18 @@ class KeepUp {
 
   /// elimina un task, il che significa che cancella l'entry della sua ricorrenza
   Future<KeepUpResponse> cancelTask({required KeepUpTask task}) async {
-    final target = ParseObject(KeepUpRecurrenceDataModelKey.className)
+    final target = ParseObject(KeepUpRecurrenceDataModel.className)
       ..objectId = task.recurrenceId;
     final response = await target.delete();
 
     // elimina qualunque eccezione presente oggi se il task era solo per oggi
     if (task.recurrenceType == KeepUpRecurrenceType.none) {
       final cancelExceptionQuery =
-          QueryBuilder.name(KeepUpExceptionDataModelKey.className)
-            ..whereEqualTo(KeepUpExceptionDataModelKey.eventId,
-                KeepUpEventDataModelKey.pointerTo(task.eventId))
+          QueryBuilder.name(KeepUpExceptionDataModel.className)
+            ..whereEqualTo(KeepUpExceptionDataModel.eventId,
+                KeepUpEventDataModel.pointerTo(task.eventId))
             ..whereEqualTo(
-                KeepUpExceptionDataModelKey.onDate, task.date.getDateOnly());
+                KeepUpExceptionDataModel.onDate, task.date.getDateOnly());
 
       final results = await cancelExceptionQuery.find();
 
@@ -786,20 +775,20 @@ class KeepUp {
   Future<KeepUpResponse> deleteEvent({required String eventId}) async {
     // costruisce la query per eliminare le ricorrenze associate
     final deleteRecurrencesQuery =
-        QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
-          ..whereEqualTo(KeepUpRecurrenceDataModelKey.eventId,
-              KeepUpEventDataModelKey.pointerTo(eventId));
+        QueryBuilder.name(KeepUpRecurrenceDataModel.className)
+          ..whereEqualTo(KeepUpRecurrenceDataModel.eventId,
+              KeepUpEventDataModel.pointerTo(eventId));
     // costruisce la query per eliminare le eccezioni associate
     final deleteExceptionsQuery =
-        QueryBuilder.name(KeepUpExceptionDataModelKey.className)
-          ..whereEqualTo(KeepUpExceptionDataModelKey.eventId,
-              KeepUpEventDataModelKey.pointerTo(eventId));
+        QueryBuilder.name(KeepUpExceptionDataModel.className)
+          ..whereEqualTo(KeepUpExceptionDataModel.eventId,
+              KeepUpEventDataModel.pointerTo(eventId));
     // costruisce la query per eliminare il goal associato, se presente
-    final deleteGoalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className)
-      ..whereEqualTo(KeepUpGoalDataModelKey.eventId,
-          KeepUpEventDataModelKey.pointerTo(eventId));
+    final deleteGoalQuery = QueryBuilder.name(KeepUpGoalDataModel.className)
+      ..whereEqualTo(
+          KeepUpGoalDataModel.eventId, KeepUpEventDataModel.pointerTo(eventId));
     // costruisce la query per eliminare l'evento
-    final target = ParseObject(KeepUpEventDataModelKey.className)
+    final target = ParseObject(KeepUpEventDataModel.className)
       ..objectId = eventId;
 
     await deleteRecurrencesQuery.query();
@@ -822,45 +811,41 @@ class KeepUp {
       {required DateTime inDate}) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     // costruisce la lista di eventi appartenenti all'utente
-    final isUserEventQuery =
-        QueryBuilder.name(KeepUpEventDataModelKey.className)
-          ..whereEqualTo(KeepUpEventDataModelKey.creatorId,
-              KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!));
+    final isUserEventQuery = QueryBuilder.name(KeepUpEventDataModel.className)
+      ..whereEqualTo(KeepUpEventDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser!.objectId!));
     // questa query restituisce le eccezioni in tale data da escludere
     final exceptionsQuery = QueryBuilder.name(
-        KeepUpExceptionDataModelKey.className)
-      ..whereEqualTo(KeepUpExceptionDataModelKey.onDate, inDate.getDateOnly())
+        KeepUpExceptionDataModel.className)
+      ..whereEqualTo(KeepUpExceptionDataModel.onDate, inDate.getDateOnly())
       // seleziona solo le eccezioni di ricorrenze del'utente loggato
-      ..whereMatchesQuery(
-          KeepUpExceptionDataModelKey.eventId, isUserEventQuery);
+      ..whereMatchesQuery(KeepUpExceptionDataModel.eventId, isUserEventQuery);
     // effettua le query
     final exceptionObjects = await exceptionsQuery.find();
     // questa query restituisce gli eventi dell'utente in data
-    final eventsQuery = QueryBuilder.name(KeepUpEventDataModelKey.className)
+    final eventsQuery = QueryBuilder.name(KeepUpEventDataModel.className)
       // seleziona solo le eccezioni di ricorrenze del'utente loggato
-      ..whereEqualTo(KeepUpEventDataModelKey.creatorId,
-          KeepUpUserDataModelKey.pointerTo(currentUser.objectId!))
+      ..whereEqualTo(KeepUpEventDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!))
       // filtra le date
       ..whereLessThanOrEqualTo(
-          KeepUpEventDataModelKey.startDate, inDate.getDateOnly());
+          KeepUpEventDataModel.startDate, inDate.getDateOnly());
     // effettua la query
     final eventsObjects = await eventsQuery.find();
     // costruisce la query principale
-    final mainQuery = QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
+    final mainQuery = QueryBuilder.name(KeepUpRecurrenceDataModel.className)
       // seleziona le colonne relative al nome evento, ora fine e ora inizio
-      ..includeObject([
-        KeepUpEventDataModelKey.className,
-        KeepUpExceptionDataModelKey.className
-      ])
+      ..includeObject(
+          [KeepUpEventDataModel.className, KeepUpExceptionDataModel.className])
       // seleziona le ricorrenze degli eventi dell'utente loggato
-      ..whereContainedIn(KeepUpRecurrenceDataModelKey.eventId,
-          eventsObjects.map((e) => e[KeepUpEventDataModelKey.id]).toList())
+      ..whereContainedIn(KeepUpRecurrenceDataModel.eventId,
+          eventsObjects.map((e) => e[KeepUpEventDataModel.id]).toList())
       // scarta le eccezioni in quella data
       ..whereNotContainedIn(
-          KeepUpRecurrenceDataModelKey.id,
+          KeepUpRecurrenceDataModel.id,
           exceptionObjects
-              .map((e) => e[KeepUpExceptionDataModelKey.recurrenceId]
-                  [KeepUpRecurrenceDataModelKey.id])
+              .map((e) => e[KeepUpExceptionDataModel.recurrenceId]
+                  [KeepUpRecurrenceDataModel.id])
               .toList());
 
     // effettua la query principale
@@ -874,47 +859,46 @@ class KeepUp {
     final tasks = recurrenceObjects
         .where((recurrenceObject) {
           final endEventDate = eventsObjects.firstWhere((eventObject) {
-            return eventObject[KeepUpEventDataModelKey.id] ==
-                recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
-                    [KeepUpEventDataModelKey.id];
-          })[KeepUpEventDataModelKey.endDate];
+            return eventObject[KeepUpEventDataModel.id] ==
+                recurrenceObject[KeepUpRecurrenceDataModel.eventId]
+                    [KeepUpEventDataModel.id];
+          })[KeepUpEventDataModel.endDate];
 
           return (endEventDate != null
                   ? inDate.compareTo(endEventDate as DateTime) <= 0
                   : true) &&
-              (recurrenceObject[KeepUpRecurrenceDataModelKey.day] == '*' ||
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.day] ==
+              (recurrenceObject[KeepUpRecurrenceDataModel.day] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModel.day] ==
                       inDate.day.toString() ||
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.weekDay] ==
-                      '*' ||
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.weekDay] ==
+                  recurrenceObject[KeepUpRecurrenceDataModel.weekDay] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModel.weekDay] ==
                       inDate.weekday.toString()) &&
-              (recurrenceObject[KeepUpRecurrenceDataModelKey.month] == '*' ||
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.month] ==
+              (recurrenceObject[KeepUpRecurrenceDataModel.month] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModel.month] ==
                       inDate.month.toString()) &&
-              (recurrenceObject[KeepUpRecurrenceDataModelKey.year] == '*' ||
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.year] ==
+              (recurrenceObject[KeepUpRecurrenceDataModel.year] == '*' ||
+                  recurrenceObject[KeepUpRecurrenceDataModel.year] ==
                       inDate.year.toString());
         })
         .map((recurrenceObject) {
           final associatedEvent = eventsObjects.firstWhere((eventObject) {
-            return eventObject[KeepUpEventDataModelKey.id] ==
-                recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
-                    [KeepUpEventDataModelKey.id];
+            return eventObject[KeepUpEventDataModel.id] ==
+                recurrenceObject[KeepUpRecurrenceDataModel.eventId]
+                    [KeepUpEventDataModel.id];
           });
           return KeepUpTask(
-              eventId: recurrenceObject[KeepUpRecurrenceDataModelKey.eventId]
-                  [KeepUpEventDataModelKey.id],
-              recurrenceId: recurrenceObject[KeepUpRecurrenceDataModelKey.id],
-              color: Color(associatedEvent[KeepUpEventDataModelKey.color]),
-              title: associatedEvent[KeepUpEventDataModelKey.title],
+              eventId: recurrenceObject[KeepUpRecurrenceDataModel.eventId]
+                  [KeepUpEventDataModel.id],
+              recurrenceId: recurrenceObject[KeepUpRecurrenceDataModel.id],
+              color: Color(associatedEvent[KeepUpEventDataModel.color]),
+              title: associatedEvent[KeepUpEventDataModel.title],
               date: inDate,
               startTime: KeepUpDayTime.fromJson(
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.startTime]),
+                  recurrenceObject[KeepUpRecurrenceDataModel.startTime]),
               endTime: KeepUpDayTime.fromJson(
-                  recurrenceObject[KeepUpRecurrenceDataModelKey.endTime]),
+                  recurrenceObject[KeepUpRecurrenceDataModel.endTime]),
               recurrenceType: KeepUpRecurrenceType
-                  .values[recurrenceObject[KeepUpRecurrenceDataModelKey.type]]);
+                  .values[recurrenceObject[KeepUpRecurrenceDataModel.type]]);
         })
         .toSet()
         .toList();
@@ -938,13 +922,12 @@ class KeepUp {
               return ++value;
             });
           } else {
-            final query =
-                QueryBuilder.name(KeepUpRecurrenceDataModelKey.className)
-                  ..whereEqualTo(KeepUpRecurrenceDataModelKey.id, recurrenceId);
+            final query = QueryBuilder.name(KeepUpRecurrenceDataModel.className)
+              ..whereEqualTo(KeepUpRecurrenceDataModel.id, recurrenceId);
             final result = await query.find();
             if (result.isNotEmpty) {
-              final eventId = result.first[KeepUpRecurrenceDataModelKey.eventId]
-                  [KeepUpEventDataModelKey.id];
+              final eventId = result.first[KeepUpRecurrenceDataModel.eventId]
+                  [KeepUpEventDataModel.id];
               recurrenceToEventMap.putIfAbsent(recurrenceId, () => eventId);
               if (completedEventTasksMap.containsKey(eventId)) {
                 completedEventTasksMap.update(eventId, (value) => ++value);
@@ -957,14 +940,13 @@ class KeepUp {
       }
       // ora preleva il numero di occorrenze settimanali per goal
       for (final task in tasks) {
-        final isGoalQuery = QueryBuilder.name(KeepUpGoalDataModelKey.className)
-          ..whereEqualTo(KeepUpGoalDataModelKey.eventId,
-              KeepUpEventDataModelKey.pointerTo(task.eventId));
+        final isGoalQuery = QueryBuilder.name(KeepUpGoalDataModel.className)
+          ..whereEqualTo(KeepUpGoalDataModel.eventId,
+              KeepUpEventDataModel.pointerTo(task.eventId));
         final result = await isGoalQuery.find();
         // aggiorna l'evento associato al task e scrive la statistica
         if (result.isNotEmpty) {
-          task.totalWeeklyCount =
-              result.first[KeepUpGoalDataModelKey.daysPerWeek];
+          task.totalWeeklyCount = result.first[KeepUpGoalDataModel.daysPerWeek];
           task.completedWeeklyCount = completedEventTasksMap[task.eventId] ?? 0;
         }
       }
@@ -979,15 +961,15 @@ class KeepUp {
       {required DateTime until, DateTime? from}) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     // costruisce la query
-    final query = QueryBuilder.name(KeepUpDailyTraceDataModelKey.className)
-      ..whereEqualTo(KeepUpDailyTraceDataModelKey.userId,
-          KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
+    final query = QueryBuilder.name(KeepUpDailyTraceDataModel.className)
+      ..whereEqualTo(KeepUpDailyTraceDataModel.userId,
+          KeepUpUserDataModel.pointerTo(currentUser!.objectId!))
       ..whereLessThanOrEqualTo(
-          KeepUpDailyTraceDataModelKey.date, until.getDateOnly());
+          KeepUpDailyTraceDataModel.date, until.getDateOnly());
 
     if (from != null) {
       query.whereGreaterThanOrEqualsTo(
-          KeepUpDailyTraceDataModelKey.date, from.getDateOnly());
+          KeepUpDailyTraceDataModel.date, from.getDateOnly());
     }
     // effettua la query principale
     final objects = await query.find();
@@ -1006,10 +988,10 @@ class KeepUp {
       {required DateTime inDate}) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     // costruisce la query
-    final query = QueryBuilder.name(KeepUpDailyTraceDataModelKey.className)
-      ..whereEqualTo(KeepUpDailyTraceDataModelKey.userId,
-          KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
-      ..whereEqualTo(KeepUpDailyTraceDataModelKey.date, inDate.getDateOnly());
+    final query = QueryBuilder.name(KeepUpDailyTraceDataModel.className)
+      ..whereEqualTo(KeepUpDailyTraceDataModel.userId,
+          KeepUpUserDataModel.pointerTo(currentUser!.objectId!))
+      ..whereEqualTo(KeepUpDailyTraceDataModel.date, inDate.getDateOnly());
     // effettua la query principale
     final objects = await query.find();
 
@@ -1023,14 +1005,14 @@ class KeepUp {
   /// aggiorna o crea la daily trace nel determinato giorno
   Future<KeepUpResponse> updateDailyTrace(KeepUpDailyTrace trace) async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
-    final object = ParseObject(KeepUpDailyTraceDataModelKey.className)
+    final object = ParseObject(KeepUpDailyTraceDataModel.className)
       ..objectId = trace.id
-      ..set(KeepUpDailyTraceDataModelKey.userId,
-          KeepUpUserDataModelKey.pointerTo(currentUser!.objectId!))
-      ..set(KeepUpDailyTraceDataModelKey.completedTasks, trace.completedTasks)
-      ..set(KeepUpDailyTraceDataModelKey.date, trace.date.getDateOnly())
-      ..set(KeepUpDailyTraceDataModelKey.mood, trace.mood)
-      ..set(KeepUpDailyTraceDataModelKey.notes, trace.notes);
+      ..set(KeepUpDailyTraceDataModel.userId,
+          KeepUpUserDataModel.pointerTo(currentUser!.objectId!))
+      ..set(KeepUpDailyTraceDataModel.completedTasks, trace.completedTasks)
+      ..set(KeepUpDailyTraceDataModel.date, trace.date.getDateOnly())
+      ..set(KeepUpDailyTraceDataModel.mood, trace.mood)
+      ..set(KeepUpDailyTraceDataModel.notes, trace.notes);
 
     // salva i metadati
     final parseResponse = await object.save();
@@ -1044,6 +1026,53 @@ class KeepUp {
     }
 
     return KeepUpResponse();
+  }
+
+  /// l'utente può cominciare un nuovo thread e pubblica il primo messaggio
+  Future<KeepUpResponse> beginThread(
+      {required String title,
+      required List<String> tags,
+      required bool anonymous}) async {
+    return KeepUpResponse();
+  }
+
+  /// l'utente può pubblicare un messaggio nel thread ed è aggiunto eventualmente
+  /// ai partecipante
+  /// l'utente può cominciare un nuovo thread
+  Future<KeepUpResponse> pulishThreadMessage(
+      {required String threadId,
+      required String body,
+      required String tags,
+      required bool anonymous}) async {
+    return KeepUpResponse();
+  }
+
+  /// l'utente può dare un giudizio ad un messaggio di un thread
+  Future<KeepUpResponse> rateThreadMessage(
+      {required String threadId,
+      required String messageId,
+      required int rating}) async {
+    return KeepUpResponse();
+  }
+
+  /// restituisce i thread in cui l'utente loggato ha partecipato
+  Future<KeepUpResponse<List<KeepUpThread>>> getUserThreads(
+      {bool asCreator = false}) async {
+    return KeepUpResponse.result([]);
+  }
+
+  /// restituisce tutti i messaggi nel thread specificato,
+  /// specificando se l'utente li ha letti o meno, e quindi leggendoli
+  Future<KeepUpResponse<List<KeepUpThreadMessage>>> getThreadMessages(
+      {required String threadId}) async {
+    return KeepUpResponse.result([]);
+  }
+
+  /// restituisce i thread che corrispondono ai tag specificati
+  /// (and logico dei tag su ciascun thread)
+  Future<KeepUpResponse<List<KeepUpThread>>> getThreadsByTags(
+      {required List<String> tags, int limit = 30}) async {
+    return KeepUpResponse.result([]);
   }
 }
 
@@ -1103,13 +1132,13 @@ class KeepUpEvent {
 
   factory KeepUpEvent.fromJson(dynamic json) {
     return KeepUpEvent(
-        id: json[KeepUpEventDataModelKey.id],
-        title: json[KeepUpEventDataModelKey.title],
-        startDate: json[KeepUpEventDataModelKey.startDate],
-        endDate: json[KeepUpEventDataModelKey.endDate],
-        description: json[KeepUpEventDataModelKey.description],
-        color: Color(json[KeepUpEventDataModelKey.color]),
-        category: json[KeepUpEventDataModelKey.category]);
+        id: json[KeepUpEventDataModel.id],
+        title: json[KeepUpEventDataModel.title],
+        startDate: json[KeepUpEventDataModel.startDate],
+        endDate: json[KeepUpEventDataModel.endDate],
+        description: json[KeepUpEventDataModel.description],
+        color: Color(json[KeepUpEventDataModel.color]),
+        category: json[KeepUpEventDataModel.category]);
   }
 
   void addDailySchedule(
@@ -1276,30 +1305,30 @@ class KeepUpRecurrence {
 
   factory KeepUpRecurrence.fromJson(dynamic json) {
     final result = KeepUpRecurrence(
-        id: json[KeepUpRecurrenceDataModelKey.id],
-        eventId: json[KeepUpRecurrenceDataModelKey.eventId]
-            [KeepUpEventDataModelKey.id],
-        startTime: KeepUpDayTime.fromJson(
-            json[KeepUpRecurrenceDataModelKey.startTime]),
+        id: json[KeepUpRecurrenceDataModel.id],
+        eventId: json[KeepUpRecurrenceDataModel.eventId]
+            [KeepUpEventDataModel.id],
+        startTime:
+            KeepUpDayTime.fromJson(json[KeepUpRecurrenceDataModel.startTime]),
         endTime:
-            KeepUpDayTime.fromJson(json[KeepUpRecurrenceDataModelKey.endTime]),
-        type: KeepUpRecurrenceType
-            .values[json[KeepUpRecurrenceDataModelKey.type]]);
+            KeepUpDayTime.fromJson(json[KeepUpRecurrenceDataModel.endTime]),
+        type:
+            KeepUpRecurrenceType.values[json[KeepUpRecurrenceDataModel.type]]);
 
     switch (result.type) {
       case KeepUpRecurrenceType.none:
-        result.day = int.parse(json[KeepUpRecurrenceDataModelKey.day]);
-        result.month = int.parse(json[KeepUpRecurrenceDataModelKey.month]);
-        result.year = int.parse(json[KeepUpRecurrenceDataModelKey.year]);
+        result.day = int.parse(json[KeepUpRecurrenceDataModel.day]);
+        result.month = int.parse(json[KeepUpRecurrenceDataModel.month]);
+        result.year = int.parse(json[KeepUpRecurrenceDataModel.year]);
         break;
       case KeepUpRecurrenceType.daily:
         break;
       case KeepUpRecurrenceType.weekly:
-        result.weekDay = int.parse(json[KeepUpRecurrenceDataModelKey.weekDay]);
+        result.weekDay = int.parse(json[KeepUpRecurrenceDataModel.weekDay]);
         break;
       case KeepUpRecurrenceType.monthly:
-        result.day = int.parse(json[KeepUpRecurrenceDataModelKey.day]);
-        result.month = int.parse(json[KeepUpRecurrenceDataModelKey.month]);
+        result.day = int.parse(json[KeepUpRecurrenceDataModel.day]);
+        result.month = int.parse(json[KeepUpRecurrenceDataModel.month]);
         break;
       default:
     }
@@ -1325,12 +1354,12 @@ class KeepUpRecurrenceException {
 
   factory KeepUpRecurrenceException.fromJson(dynamic json) {
     return KeepUpRecurrenceException(
-        id: json[KeepUpExceptionDataModelKey.id],
-        eventId: json[KeepUpExceptionDataModelKey.eventId]
-            [KeepUpEventDataModelKey.id],
-        recurrenceId: json[KeepUpExceptionDataModelKey.recurrenceId]
-            [KeepUpEventDataModelKey.id],
-        onDate: json[KeepUpExceptionDataModelKey.onDate]);
+        id: json[KeepUpExceptionDataModel.id],
+        eventId: json[KeepUpExceptionDataModel.eventId]
+            [KeepUpEventDataModel.id],
+        recurrenceId: json[KeepUpExceptionDataModel.recurrenceId]
+            [KeepUpEventDataModel.id],
+        onDate: json[KeepUpExceptionDataModel.onDate]);
   }
 }
 
@@ -1352,102 +1381,13 @@ class KeepUpDailyTrace {
 
   factory KeepUpDailyTrace.fromJson(dynamic json) {
     return KeepUpDailyTrace(
-        id: json[KeepUpDailyTraceDataModelKey.id],
-        userId: json[KeepUpDailyTraceDataModelKey.userId]
-            [KeepUpUserDataModelKey.id],
-        date: json[KeepUpDailyTraceDataModelKey.date],
+        id: json[KeepUpDailyTraceDataModel.id],
+        userId: json[KeepUpDailyTraceDataModel.userId][KeepUpUserDataModel.id],
+        date: json[KeepUpDailyTraceDataModel.date],
         completedTasks:
-            List.from(json[KeepUpDailyTraceDataModelKey.completedTasks]),
-        mood: json[KeepUpDailyTraceDataModelKey.mood],
-        notes: json[KeepUpDailyTraceDataModelKey.notes]);
-  }
-}
-
-abstract class KeepUpUserDataModelKey {
-  static const className = 'User';
-  static const id = 'objectId';
-  static const username = 'username';
-  static const email = 'email';
-  static const password = 'password';
-  static const fullName = 'fullName';
-  static const notifySurveyTime = 'notifySurveyTime';
-  static const notifyTasks = 'notifyTasks';
-
-  static Map<String, dynamic> pointerTo(String objectId) {
-    return {'__type': 'Pointer', 'className': '_User', 'objectId': objectId};
-  }
-}
-
-abstract class KeepUpEventDataModelKey {
-  static const className = 'Event';
-  static const id = 'objectId';
-  static const title = 'title';
-  static const startDate = 'startDate';
-  static const endDate = 'endDate';
-  static const creatorId = 'creatorId';
-  static const description = 'description';
-  static const color = 'color';
-  static const category = 'category';
-
-  static Map<String, dynamic> pointerTo(String objectId) {
-    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
-  }
-}
-
-abstract class KeepUpRecurrenceDataModelKey {
-  static const className = 'Recurrence';
-  static const id = 'objectId';
-  static const eventId = 'eventId';
-  static const startTime = 'startTime';
-  static const endTime = 'endTime';
-  static const type = 'type';
-  static const day = 'day';
-  static const month = 'month';
-  static const year = 'year';
-  static const weekDay = 'weekDay';
-
-  static Map<String, dynamic> pointerTo(String objectId) {
-    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
-  }
-}
-
-abstract class KeepUpExceptionDataModelKey {
-  static const className = 'Exception';
-  static const id = 'objectId';
-  static const eventId = 'eventId';
-  static const recurrenceId = 'recurrenceId';
-  static const onDate = 'onDate';
-
-  static Map<String, dynamic> pointerTo(String objectId) {
-    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
-  }
-}
-
-abstract class KeepUpGoalDataModelKey {
-  static const className = 'Goal';
-  static const id = 'objectId';
-  static const eventId = 'eventId';
-  static const daysPerWeek = 'daysPerWeek';
-  static const hoursPerDay = 'hoursPerDay';
-  static const ratingsCount = 'ratingsCount';
-  static const rating = 'rating';
-
-  static Map<String, dynamic> pointerTo(String objectId) {
-    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
-  }
-}
-
-abstract class KeepUpDailyTraceDataModelKey {
-  static const className = 'DailyTrace';
-  static const id = 'objectId';
-  static const userId = 'userId';
-  static const completedTasks = 'completedTasks';
-  static const date = 'date';
-  static const mood = 'mood';
-  static const notes = 'notes';
-
-  static Map<String, dynamic> pointerTo(String objectId) {
-    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+            List.from(json[KeepUpDailyTraceDataModel.completedTasks]),
+        mood: json[KeepUpDailyTraceDataModel.mood],
+        notes: json[KeepUpDailyTraceDataModel.notes]);
   }
 }
 
@@ -1539,4 +1479,195 @@ class KeepUpTask {
 
 extension MyDateTimeExtension on DateTime {
   DateTime getDateOnly() => DateTime.utc(year, month, day);
+}
+
+class KeepUpThread {
+  String? id;
+  String? creatorId;
+  String title;
+  List<String> tags;
+  int viewsCount;
+  DateTime creationDate;
+
+  KeepUpThread(
+      {this.id,
+      this.creatorId,
+      required this.title,
+      required this.tags,
+      required this.viewsCount,
+      required this.creationDate});
+
+  factory KeepUpThread.fromJson(dynamic json) {
+    return KeepUpThread(
+        id: json[KeepUpThreadDataModel.id],
+        creatorId: json[KeepUpThreadDataModel.creatorId]
+            [KeepUpUserDataModel.id],
+        creationDate: json[KeepUpThreadDataModel.creationDate],
+        tags: List.from(json[KeepUpThreadDataModel.tags]),
+        viewsCount: json[KeepUpThreadDataModel.viewsCount],
+        title: json[KeepUpThreadDataModel.title]);
+  }
+}
+
+class KeepUpThreadMessage {
+  String? id;
+  String? senderId;
+  String? threadId;
+  String body;
+  bool anonymous;
+  int rating;
+  DateTime creationDate;
+  bool? isRead;
+
+  KeepUpThreadMessage(
+      {this.id,
+      this.senderId,
+      this.threadId,
+      required this.body,
+      required this.anonymous,
+      required this.rating,
+      required this.creationDate,
+      this.isRead = false});
+
+  factory KeepUpThreadMessage.fromJson(dynamic json) {
+    return KeepUpThreadMessage(
+        id: json[KeepUpThreadMessageDataModel.id],
+        senderId: json[KeepUpThreadMessageDataModel.senderId]
+            [KeepUpUserDataModel.id],
+        threadId: json[KeepUpThreadMessageDataModel.threadId]
+            [KeepUpThreadDataModel.id],
+        creationDate: json[KeepUpThreadDataModel.creationDate],
+        body: json[KeepUpThreadMessageDataModel.body],
+        rating: json[KeepUpThreadMessageDataModel.rating],
+        anonymous: json[KeepUpThreadMessageDataModel.anonymous]);
+  }
+}
+
+abstract class KeepUpUserDataModel {
+  static const className = 'User';
+  static const id = 'objectId';
+  static const username = 'username';
+  static const email = 'email';
+  static const password = 'password';
+  static const fullName = 'fullName';
+  static const notifySurveyTime = 'notifySurveyTime';
+  static const notifyTasks = 'notifyTasks';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': '_User', 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpEventDataModel {
+  static const className = 'Event';
+  static const id = 'objectId';
+  static const title = 'title';
+  static const startDate = 'startDate';
+  static const endDate = 'endDate';
+  static const creatorId = 'creatorId';
+  static const description = 'description';
+  static const color = 'color';
+  static const category = 'category';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpRecurrenceDataModel {
+  static const className = 'Recurrence';
+  static const id = 'objectId';
+  static const eventId = 'eventId';
+  static const startTime = 'startTime';
+  static const endTime = 'endTime';
+  static const type = 'type';
+  static const day = 'day';
+  static const month = 'month';
+  static const year = 'year';
+  static const weekDay = 'weekDay';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpExceptionDataModel {
+  static const className = 'Exception';
+  static const id = 'objectId';
+  static const eventId = 'eventId';
+  static const recurrenceId = 'recurrenceId';
+  static const onDate = 'onDate';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpGoalDataModel {
+  static const className = 'Goal';
+  static const id = 'objectId';
+  static const eventId = 'eventId';
+  static const daysPerWeek = 'daysPerWeek';
+  static const hoursPerDay = 'hoursPerDay';
+  static const ratingsCount = 'ratingsCount';
+  static const rating = 'rating';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpDailyTraceDataModel {
+  static const className = 'DailyTrace';
+  static const id = 'objectId';
+  static const userId = 'userId';
+  static const completedTasks = 'completedTasks';
+  static const date = 'date';
+  static const mood = 'mood';
+  static const notes = 'notes';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpThreadDataModel {
+  static const className = 'Thread';
+  static const id = 'objectId';
+  static const creatorId = 'creatorId';
+  static const title = 'title';
+  static const tags = 'tags';
+  static const viewsCount = 'viewsCount';
+  static const creationDate = 'createdAt';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpThreadPartecipantDataModel {
+  static const className = 'ThreadPartecipant';
+  static const id = 'objectId';
+  static const userId = 'userId';
+  static const threadId = 'threadId';
+  static const lastReadMessageDate = 'lastReadMessageDate';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpThreadMessageDataModel {
+  static const className = 'ThreadMessage';
+  static const id = 'objectId';
+  static const senderId = 'senderId';
+  static const threadId = 'threadId';
+  static const body = 'body';
+  static const anonymous = 'anonymous';
+  static const rating = 'rating';
+  static const creationDate = 'createdAt';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
 }
