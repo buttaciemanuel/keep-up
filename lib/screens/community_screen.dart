@@ -2,6 +2,7 @@ import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
+import 'package:keep_up/screens/begin_thread_screen.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
@@ -82,7 +83,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
             padding: EdgeInsets.zero,
             tooltip: 'Aggiungi',
             constraints: const BoxConstraints(),
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(
+                      fullscreenDialog: true,
+                      builder: (context) {
+                        return const BeginThreadScreen();
+                      }))
+                  .then((_) => setState(() {}));
+            },
             icon: const Icon(Icons.add, color: AppColors.primaryColor))
       ]),
       SizedBox(height: 0.03 * size.height),

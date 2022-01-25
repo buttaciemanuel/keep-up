@@ -256,6 +256,11 @@ class KeepUp {
     }
   }
 
+  Future _cancelTaskNotification(KeepUpTask task) async {
+    NotificationService()
+        .cancelNotification(id: task.recurrenceId.hashCode + 7);
+  }
+
   Future<bool> _eventAlreadyExists(String eventName) async {
     final query = QueryBuilder.name(KeepUpEventDataModel.className);
     query.whereEqualTo(KeepUpEventDataModel.title, eventName);
@@ -763,6 +768,9 @@ class KeepUp {
       }
     }
 
+    // elimina la notifica associata in ogni caso
+    _cancelTaskNotification(task);
+
     if (response.success) {
       return KeepUpResponse();
     } else {
@@ -1031,8 +1039,60 @@ class KeepUp {
   /// l'utente può cominciare un nuovo thread e pubblica il primo messaggio
   Future<KeepUpResponse> beginThread(
       {required String title,
+      required String body,
       required List<String> tags,
       required bool anonymous}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // costruisce le entry per il thread
+    final threadObject = ParseObject(KeepUpThreadDataModel.className)
+      ..set(KeepUpThreadDataModel.title, title)
+      ..set(KeepUpThreadDataModel.tags, tags)
+      ..set(KeepUpThreadDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!))
+      ..set(KeepUpThreadDataModel.viewsCount, 0);
+    // salva il thread per ottenere il suo id
+    var response = await threadObject.save();
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: thread creation failure: ${response.error!.message}');
+    }
+
+    // costruisce il primo messaggio, ovvero quello del creatore
+    final firstMessageObject =
+        ParseObject(KeepUpThreadMessageDataModel.className)
+          ..set(KeepUpThreadMessageDataModel.threadId,
+              KeepUpThreadDataModel.pointerTo(threadObject.objectId!))
+          ..set(KeepUpThreadMessageDataModel.senderId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!))
+          ..set(KeepUpThreadMessageDataModel.anonymous, anonymous)
+          ..set(KeepUpThreadMessageDataModel.body, body)
+          ..set(KeepUpThreadMessageDataModel.rating, 0);
+    // salva il primo messaggio
+    response = await firstMessageObject.save();
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: thread message creation failure: ${response.error!.message}');
+    }
+
+    // imposta il creatore come partecipante
+    final partecipantObject =
+        ParseObject(KeepUpThreadPartecipantDataModel.className)
+          ..set(KeepUpThreadPartecipantDataModel.threadId,
+              KeepUpThreadDataModel.pointerTo(threadObject.objectId!))
+          ..set(KeepUpThreadPartecipantDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!))
+          ..set(KeepUpThreadPartecipantDataModel.lastReadMessageDate,
+              firstMessageObject.createdAt);
+    // salva la relazione
+    response = await partecipantObject.save();
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: thread partecipant creation failure: ${response.error!.message}');
+    }
+
     return KeepUpResponse();
   }
 
@@ -1058,14 +1118,74 @@ class KeepUp {
   /// restituisce i thread in cui l'utente loggato ha partecipato
   Future<KeepUpResponse<List<KeepUpThread>>> getUserThreads(
       {bool asCreator = false}) async {
-    return KeepUpResponse.result([]);
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // costruisce la query per scaricare i thread in cui partecipa l'utente
+    final query = QueryBuilder.name(KeepUpThreadPartecipantDataModel.className)
+      ..whereEqualTo(KeepUpThreadPartecipantDataModel.userId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // effettua la query
+    var parseResults = await query.find();
+    // ottiene la lista dei thread in cui l'utente partecipa
+    final userThreadsIds = parseResults
+        .map((partecipant) =>
+            partecipant[KeepUpThreadPartecipantDataModel.threadId]
+                [KeepUpThreadDataModel.id])
+        .toList();
+    // costruisce la query per scaricare tali thread
+    final threadsQuery = QueryBuilder.name(KeepUpThreadDataModel.className)
+      ..whereContainedIn(KeepUpThreadDataModel.id, userThreadsIds);
+    // se specifica i thread creati da lui, allora filtra la query
+    if (asCreator) {
+      threadsQuery.whereEqualTo(KeepUpThreadDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    }
+    // effettua la query
+    parseResults = await threadsQuery.find();
+    // costruisce i thread ordinati per data di creazione
+    final threads = parseResults
+        .map((object) => KeepUpThread.fromJson(object))
+        .toList()
+      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+
+    return KeepUpResponse.result(threads);
   }
 
   /// restituisce tutti i messaggi nel thread specificato,
   /// specificando se l'utente li ha letti o meno, e quindi leggendoli
   Future<KeepUpResponse<List<KeepUpThreadMessage>>> getThreadMessages(
       {required String threadId}) async {
-    return KeepUpResponse.result([]);
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // costruisce la query per capire se l'utente partecipa al thread o meno
+    final partecipantQuery =
+        QueryBuilder.name(KeepUpThreadPartecipantDataModel.className)
+          ..whereEqualTo(KeepUpThreadPartecipantDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // effettua la query
+    var parseResults = await partecipantQuery.find();
+    DateTime? lastMessageReadDate;
+    // l'utente è partecipante
+    if (parseResults.isNotEmpty) {
+      lastMessageReadDate = parseResults
+          .first[KeepUpThreadPartecipantDataModel.lastReadMessageDate];
+    }
+    // costruisce la query per scaricare i messaggi del thread specificato
+    final query = QueryBuilder.name(KeepUpThreadMessageDataModel.className)
+      ..whereEqualTo(KeepUpThreadMessageDataModel.threadId,
+          KeepUpThreadDataModel.pointerTo(threadId));
+    // effettua la query
+    parseResults = await query.find();
+    // la lista dei messaggi è ordinati per data
+    final messages = parseResults
+        .map((object) => KeepUpThreadMessage.fromJson(object))
+        .toList()
+      ..forEach((message) {
+        message.isRead = lastMessageReadDate == null
+            ? null
+            : lastMessageReadDate.compareTo(message.creationDate) >= 0;
+      })
+      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+
+    return KeepUpResponse.result(messages);
   }
 
   /// restituisce i thread che corrispondono ai tag specificati
@@ -1670,4 +1790,25 @@ abstract class KeepUpThreadMessageDataModel {
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
   }
+}
+
+abstract class KeepUpTags {
+  static const computerScience = 'Informatica';
+  static const electronics = 'Elettronica';
+  static const physics = 'Fisica';
+  static const math = 'Matematica';
+  static const literature = 'Letturatura';
+  static const lifestyle = 'Lifestyle';
+  static const sport = 'Sport';
+  static const competition = 'Competizione';
+  static const values = [
+    computerScience,
+    electronics,
+    physics,
+    math,
+    literature,
+    lifestyle,
+    sport,
+    competition
+  ];
 }
