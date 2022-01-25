@@ -1,16 +1,9 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:keep_up/components/category_selector.dart';
-import 'package:keep_up/components/color_selector.dart';
-import 'package:keep_up/components/skeleton_loader.dart';
-import 'package:keep_up/components/slider_input_field.dart';
 import 'package:keep_up/components/switch_input_field.dart';
 import 'package:keep_up/components/tag_selector.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
-import 'package:keep_up/constant.dart';
 
 class BeginThreadScreen extends StatefulWidget {
   final KeepUpGoal? fromGoal;
