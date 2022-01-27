@@ -37,7 +37,7 @@ class AppScrollCategorySelector extends StatelessWidget {
                         color: category == value
                             ? Colors.white
                             : AppColors.fieldTextColor,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600))));
       }).toList()),
     );
@@ -79,13 +79,15 @@ class AppCategorySelector extends StatelessWidget {
                             ? AppColors.primaryColor
                             : AppColors.fieldBackgroundColor),
                     onPressed: () => onClicked(category),
-                    child: Text(category,
-                        style: TextStyle(
-                            color: category == value
-                                ? Colors.white
-                                : AppColors.fieldTextColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600)))));
+                    child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(category,
+                            style: TextStyle(
+                                color: category == value
+                                    ? Colors.white
+                                    : AppColors.fieldTextColor,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600))))));
       }).toList()),
     );
   }

@@ -97,6 +97,13 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
 
     _event = response.result as KeepUpEvent;
 
+    _eventNameController.text = _event.title;
+    _category = _event.category;
+
+    if (_event.description != null) {
+      _eventDescriptionController.text = _event.description!;
+    }
+
     return true;
   }
 
@@ -135,13 +142,6 @@ class _DefineEventScreenState extends State<DefineEventScreen> {
         future: _getExistingEvent(widget.fromTask!.eventId),
         builder: (context, snapshot) {
           if (snapshot.hasData) {
-            _eventNameController.text = _event.title;
-            _category = _event.category;
-
-            if (_event.description != null) {
-              _eventDescriptionController.text = _event.description!;
-            }
-
             return _form(context, screenTitle: screenTitle);
           } else {
             return _loadingSkeleton(context, screenTitle: screenTitle);

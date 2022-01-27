@@ -1,46 +1,32 @@
 import 'package:flutter/material.dart';
-import 'package:keep_up/components/category_selector.dart';
+import 'package:async/async.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
-import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/components/thread_card.dart';
-import 'package:keep_up/screens/begin_thread_screen.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/screens/view_thread_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
-class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({Key? key}) : super(key: key);
+class UserThreadsScreen extends StatefulWidget {
+  const UserThreadsScreen({Key? key}) : super(key: key);
 
   @override
-  _CommunityScreenState createState() => _CommunityScreenState();
+  _UserThreadsScreenState createState() => _UserThreadsScreenState();
 }
 
-class _CommunityScreenState extends State<CommunityScreen> {
-  final _searchTextController = TextEditingController();
-  var _selectedTag = KeepUpThreadTags.values.first;
+class _UserThreadsScreenState extends State<UserThreadsScreen> {
+  final _memoizer = AsyncMemoizer();
+  late List<KeepUpThread> _userThreads;
 
-  @override
-  void initState() {
-    super.initState();
-    _searchTextController.addListener(() {});
-  }
+  _fetchUserThreads() => _memoizer.runOnce(() async {
+        final response = await KeepUp.instance.getUserThreads(asCreator: true);
 
-  @override
-  void dispose() {
-    _searchTextController.dispose();
-    super.dispose();
-  }
+        if (response.error) return Future.error('');
 
-  static Future<List<KeepUpThread>> _fetchSearchTagThreads(
-      {required String tag, required String filter}) async {
-    final response =
-        await KeepUp.instance.getThreadsByTags(tags: [tag], filter: filter);
+        _userThreads = response.result!;
 
-    if (response.error) throw Future.error('');
-
-    return response.result!;
-  }
+        return true;
+      });
 
   _loadingUserThreads() {
     return SingleChildScrollView(
@@ -62,77 +48,50 @@ class _CommunityScreenState extends State<CommunityScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return AppNavigationPageLayout(children: [
+    return AppLayout(children: [
       SizedBox(height: 0.05 * size.height),
-      Row(children: [
-        Expanded(
-            child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text('Community',
-                    style: Theme.of(context).textTheme.headline1))),
+      Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('I tuoi thread',
+                style: Theme.of(context).textTheme.headline1)),
         IconButton(
             iconSize: 32.0,
             padding: EdgeInsets.zero,
-            tooltip: 'Aggiungi',
+            tooltip: 'Chiudi',
             constraints: const BoxConstraints(),
-            onPressed: () {
-              Navigator.of(context)
-                  .push(MaterialPageRoute(
-                      fullscreenDialog: true,
-                      builder: (context) {
-                        return const BeginThreadScreen();
-                      }))
-                  .then((_) => setState(() {}));
-            },
-            icon: const Icon(Icons.add, color: AppColors.primaryColor))
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close, color: AppColors.grey))
       ]),
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Trova le risposte che cerchi.',
+          child: Text('Dai uno sguardo alle tue domande.',
               style: Theme.of(context).textTheme.subtitle1)),
       SizedBox(height: 0.03 * size.height),
-      AppSearchTextField(
-        onChanged: (value) {
-          setState(() {});
-        },
-        hint: 'Cerca',
-        controller: _searchTextController,
-      ),
-      SizedBox(height: 0.05 * size.height),
-      Align(
-          alignment: Alignment.centerLeft,
-          child:
-              Text('Popolari', style: Theme.of(context).textTheme.headline3)),
-      SizedBox(height: 0.03 * size.height),
-      AppScrollCategorySelector(
-          value: _selectedTag,
-          categories: KeepUpThreadTags.values,
-          onClicked: (tag) {
-            setState(() => _selectedTag = tag);
-          }),
-      SizedBox(height: 0.03 * size.height),
-      FutureBuilder<List<KeepUpThread>>(
-        future: _fetchSearchTagThreads(
-            tag: _selectedTag, filter: _searchTextController.text),
+      FutureBuilder(
+        future: _fetchUserThreads(),
         builder: (context, snapshot) {
-          if (snapshot.hasError) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return _loadingUserThreads();
+          } else if (snapshot.hasError) {
             OopsScreen.show(context);
             return _loadingUserThreads();
           } else if (!snapshot.hasData) {
             return _loadingUserThreads();
-          } else if (snapshot.data!.isEmpty) {
+          } else if (_userThreads.isEmpty) {
             return Column(
                 crossAxisAlignment: CrossAxisAlignment.center,
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
+                  SizedBox(height: 0.05 * size.height),
                   Image.asset('assets/images/question.png',
                       height: 0.3 * size.height, width: 0.7 * size.width),
                   SizedBox(height: 0.01 * size.height),
                   Text('Nessun thread',
                       style: Theme.of(context).textTheme.headline4),
                   SizedBox(height: 0.01 * size.height),
-                  Text('Nulla corrisponde alla ricerca...',
+                  Text('Fai qualche domanda ora!',
                       style: Theme.of(context).textTheme.subtitle2)
                 ]);
           } else {
@@ -140,7 +99,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               physics: const BouncingScrollPhysics(),
               scrollDirection: Axis.vertical,
               child: Column(
-                children: snapshot.data!.map((t) {
+                children: _userThreads.map((t) {
                   return AppThreadCard(
                       author: t.authorName!,
                       creationDate: t.creationDate,

@@ -1,18 +1,12 @@
-import 'dart:collection';
-import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
-import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
-import 'package:keep_up/components/task_card.dart';
-import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/screens/change_password_screen.dart';
-import 'package:keep_up/screens/community_screen.dart';
-import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/screens/edit_profile.dart';
 import 'package:keep_up/screens/login_screen.dart';
 import 'package:keep_up/screens/notification_settings.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/screens/schedule_loading_screen.dart';
+import 'package:keep_up/screens/user_threads_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 

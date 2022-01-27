@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
@@ -9,14 +11,25 @@ import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
 
 class TimetableScreen extends StatefulWidget {
-  const TimetableScreen({Key? key}) : super(key: key);
+  final bool skipStudent;
+  const TimetableScreen({Key? key, required this.skipStudent})
+      : super(key: key);
 
   @override
   _TimetableScreenState createState() => _TimetableScreenState();
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
+  late DateTime _weekStartDate;
   var _currentPageIndex = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _weekStartDate = DateTime.now().getDateOnly();
+    _weekStartDate =
+        _weekStartDate.subtract(Duration(days: _weekStartDate.weekday - 1));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,8 +67,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
           height: 0,
           child: FutureBuilder<KeepUpResponse>(
               future: KeepUp.instance.getTasks(
-                  inDate: DateTime(2022, 1, 3)
-                      .add(Duration(days: _currentPageIndex))),
+                  inDate:
+                      _weekStartDate.add(Duration(days: _currentPageIndex))),
               builder: (context, snapshot) {
                 if (snapshot.hasData) {
                   final tasks = snapshot.data!.result as List<KeepUpTask>;
@@ -138,6 +151,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
             onPressed: () {
               Navigator.of(context)
                   .pushReplacement(MaterialPageRoute(builder: (context) {
+                if (widget.skipStudent) return const GoalChoiceScreen();
                 return const StudentGoalChoiceScreen();
               }));
             },

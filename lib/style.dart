@@ -86,14 +86,21 @@ abstract class AppThemes {
 /// Utilizzato per le schermate prive di navigation bar, ovvero contenti uno
 /// scaffold a se stante
 class AppLayout extends StatelessWidget {
+  final Widget? floatingActionButton;
   final Color? backgroundColor;
   final List<Widget> children;
-  const AppLayout({Key? key, required this.children, this.backgroundColor})
+  const AppLayout(
+      {Key? key,
+      this.floatingActionButton,
+      required this.children,
+      this.backgroundColor})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+        floatingActionButton: floatingActionButton,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         backgroundColor: backgroundColor ?? Colors.white,
         body: SafeArea(
           child: LayoutBuilder(builder: (context, constraint) {

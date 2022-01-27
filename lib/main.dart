@@ -1,6 +1,7 @@
 import 'dart:developer';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/screens/daily_survey_screen.dart';
@@ -32,14 +33,6 @@ void main() async {
 
   await NotificationService()
       .init(onNotificationSelected: onNotificationTapped);
-
-  /*NotificationService().scheduleNotification(
-      id: NotificationServiceConstant.dailySurveyIds[5],
-      hour: 11,
-      minute: 12,
-      title: 'Ehi, come va?',
-      body: 'Raccontami come è andata la tua giornata!',
-      payload: NotificationServiceConstant.surveyPayload);*/
 
   final launchDetails = await NotificationService()
       .notificationsPlugin

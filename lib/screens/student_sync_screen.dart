@@ -186,7 +186,8 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                   child: TextButton(
                     onPressed: () {
                       Navigator.of(context).pushReplacement(MaterialPageRoute(
-                          builder: (context) => const TimetableScreen()));
+                          builder: (context) =>
+                              const TimetableScreen(skipStudent: true)));
                     },
                     child: const Text('Salta'),
                     style: TextButton.styleFrom(primary: AppColors.grey),
@@ -201,8 +202,8 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
                           _downloadUniversitySchedule(onComplete: () {
                             Navigator.of(context).pushReplacement(
                                 MaterialPageRoute(
-                                    builder: (context) =>
-                                        const TimetableScreen()));
+                                    builder: (context) => const TimetableScreen(
+                                        skipStudent: false)));
                           });
                         }
                       },

@@ -28,8 +28,8 @@ class _GoalsScreenState extends State<GoalsScreen> {
                   return const ScheduleLoadingScreen(popWhenCompleted: true);
                 }));
           }),
-      padding: EdgeInsets.all(20),
-      content: Text('Vuoi pianificare qualche obiettivo?'));
+      padding: const EdgeInsets.all(20),
+      content: const Text('Vuoi pianificare qualche obiettivo?'));
 
   @override
   Widget build(BuildContext context) {

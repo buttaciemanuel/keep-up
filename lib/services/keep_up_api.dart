@@ -478,14 +478,24 @@ class KeepUp {
   /// legge tutti gli eventi dell'utente dal database
   Future<KeepUpResponse<List<KeepUpEvent>>> getAllEvents(
       {bool getMetadata = false}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // query per verificare appartenenza all'utente loggato
+    final isUserEventQuery = QueryBuilder.name(KeepUpEventDataModel.className)
+      ..whereEqualTo(KeepUpEventDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!));
     // costruisce la query per ottenere l'evento
-    final mainQuery = QueryBuilder.name(KeepUpEventDataModel.className);
+    final mainQuery = QueryBuilder.name(KeepUpEventDataModel.className)
+      ..whereEqualTo(KeepUpEventDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!));
     // costruisce la lista delle ricorrenze
-    final recurrencesQuery =
-        QueryBuilder.name(KeepUpRecurrenceDataModel.className);
+    final recurrencesQuery = QueryBuilder.name(
+        KeepUpRecurrenceDataModel.className)
+      ..whereMatchesQuery(KeepUpRecurrenceDataModel.eventId, isUserEventQuery);
     // costruisce la lista delle eccezioni alle ricorrenze
-    final exceptionsQuery =
-        QueryBuilder.name(KeepUpExceptionDataModel.className);
+    final exceptionsQuery = QueryBuilder.name(
+        KeepUpExceptionDataModel.className)
+      // seleziona solo le eccezioni di ricorrenze del'utente loggato
+      ..whereMatchesQuery(KeepUpExceptionDataModel.eventId, isUserEventQuery);
 
     // effettua le query
     final events = (await mainQuery.find()).map((e) => KeepUpEvent.fromJson(e));
@@ -635,8 +645,14 @@ class KeepUp {
   /// legge tutti i goal (eventi estesi) dal database
   Future<KeepUpResponse<List<KeepUpGoal>>> getAllGoals(
       {bool getMetadata = false}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // query per verificare appartenenza all'utente loggato
+    final isUserEventQuery = QueryBuilder.name(KeepUpEventDataModel.className)
+      ..whereEqualTo(KeepUpEventDataModel.creatorId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!));
     // costruisce la query per ottenere i goal
-    final goalQuery = QueryBuilder.name(KeepUpGoalDataModel.className);
+    final goalQuery = QueryBuilder.name(KeepUpGoalDataModel.className)
+      ..whereMatchesQuery(KeepUpGoalDataModel.eventId, isUserEventQuery);
     // ottiene i metadata sui goal
     final goalObjects = await goalQuery.find();
 
@@ -1036,6 +1052,94 @@ class KeepUp {
     return KeepUpResponse();
   }
 
+  _addThreadView(String threadId, String userId) async {
+    // costruisce la query per verificare l'unicità della entry
+    final query = QueryBuilder.name(KeepUpThreadViewerDataModel.className)
+      ..whereEqualTo(KeepUpThreadViewerDataModel.threadId,
+          KeepUpThreadDataModel.pointerTo(threadId))
+      ..whereEqualTo(KeepUpThreadViewerDataModel.userId,
+          KeepUpUserDataModel.pointerTo(userId));
+    // ottiene la risposta
+    final response = await query.count();
+    // se non presente, allora la aggiunge
+    if (response.count == 0) {
+      final object = ParseObject(KeepUpThreadViewerDataModel.className)
+        ..set(KeepUpThreadViewerDataModel.threadId,
+            KeepUpThreadDataModel.pointerTo(threadId))
+        ..set(KeepUpThreadViewerDataModel.userId,
+            KeepUpUserDataModel.pointerTo(userId));
+      // lo salva
+      await object.save();
+    }
+  }
+
+  Future<int> _getThreadViewsCount(String threadId) async {
+    // costruisce la query per verificare l'unicità della entry
+    final query = QueryBuilder.name(KeepUpThreadViewerDataModel.className)
+      ..whereEqualTo(KeepUpThreadViewerDataModel.threadId,
+          KeepUpThreadDataModel.pointerTo(threadId));
+    // ottiene la risposta
+    final response = await query.count();
+    // se non presente, allora la aggiunge
+    return response.count;
+  }
+
+  _flipThreadMessageLike(String messageId, String userId) async {
+    // costruisce la query per verificare l'unicità della entry
+    final query = QueryBuilder.name(KeepUpThreadMessageLikeDataModel.className)
+      ..whereEqualTo(KeepUpThreadMessageLikeDataModel.messageId,
+          KeepUpThreadMessageDataModel.pointerTo(messageId))
+      ..whereEqualTo(KeepUpThreadMessageLikeDataModel.userId,
+          KeepUpUserDataModel.pointerTo(userId));
+    // ottiene la risposta
+    final response = await query.find();
+    // se il like è assente, lo inserisce
+    if (response.isEmpty) {
+      final object = ParseObject(KeepUpThreadMessageLikeDataModel.className)
+        ..set(KeepUpThreadMessageLikeDataModel.messageId,
+            KeepUpThreadMessageDataModel.pointerTo(messageId))
+        ..set(KeepUpThreadMessageLikeDataModel.userId,
+            KeepUpUserDataModel.pointerTo(userId));
+      // lo salva
+      await object.save();
+    }
+    // se il like è presente, lo rimuove
+    else {
+      await response.first.delete();
+    }
+  }
+
+  Future<bool> _userLikesThreadMessage(String messageId, String userId) async {
+    // costruisce la query per verificare l'unicità della entry
+    final query = QueryBuilder.name(KeepUpThreadMessageLikeDataModel.className)
+      ..whereEqualTo(KeepUpThreadMessageLikeDataModel.messageId,
+          KeepUpThreadMessageDataModel.pointerTo(messageId))
+      ..whereEqualTo(KeepUpThreadMessageLikeDataModel.userId,
+          KeepUpUserDataModel.pointerTo(userId));
+    // ottiene la risposta
+    final response = await query.count();
+    // restituisce il risultato
+    return response.count > 0;
+  }
+
+  Future<int> _getThreadMessageLikesCount(String messageId) async {
+    // costruisce la query per verificare l'unicità della entry
+    final query = QueryBuilder.name(KeepUpThreadMessageLikeDataModel.className)
+      ..whereEqualTo(KeepUpThreadMessageLikeDataModel.messageId,
+          KeepUpThreadMessageDataModel.pointerTo(messageId));
+    // ottiene la risposta
+    final response = await query.count();
+    // se non presente, allora la aggiunge
+    return response.count;
+  }
+
+  Future<String?> _getUserName(String userId) async {
+    final response =
+        await ParseObject(KeepUpUserDataModel.className).getObject(userId);
+    // restituisce null in caso di errore o il nome
+    return response.results?.first[KeepUpUserDataModel.fullName];
+  }
+
   /// l'utente può cominciare un nuovo thread e pubblica il primo messaggio
   Future<KeepUpResponse> beginThread(
       {required String title,
@@ -1048,10 +1152,11 @@ class KeepUp {
       ..set(KeepUpThreadDataModel.title, title)
       ..set(KeepUpThreadDataModel.tags, tags)
       ..set(KeepUpThreadDataModel.creatorId,
-          KeepUpUserDataModel.pointerTo(currentUser.objectId!))
-      ..set(KeepUpThreadDataModel.viewsCount, 0);
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!));
     // salva il thread per ottenere il suo id
     var response = await threadObject.save();
+    // aggiunge la visualizzazione
+    _addThreadView(threadObject.objectId!, currentUser.objectId!);
 
     if (!response.success) {
       return KeepUpResponse.error(
@@ -1066,8 +1171,7 @@ class KeepUp {
           ..set(KeepUpThreadMessageDataModel.senderId,
               KeepUpUserDataModel.pointerTo(currentUser.objectId!))
           ..set(KeepUpThreadMessageDataModel.anonymous, anonymous)
-          ..set(KeepUpThreadMessageDataModel.body, body)
-          ..set(KeepUpThreadMessageDataModel.rating, 0);
+          ..set(KeepUpThreadMessageDataModel.body, body);
     // salva il primo messaggio
     response = await firstMessageObject.save();
 
@@ -1102,16 +1206,69 @@ class KeepUp {
   Future<KeepUpResponse> pulishThreadMessage(
       {required String threadId,
       required String body,
-      required String tags,
       required bool anonymous}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // costruisce il messaggio
+    final messageObject = ParseObject(KeepUpThreadMessageDataModel.className)
+      ..set(KeepUpThreadMessageDataModel.threadId,
+          KeepUpThreadDataModel.pointerTo(threadId))
+      ..set(KeepUpThreadMessageDataModel.senderId,
+          KeepUpUserDataModel.pointerTo(currentUser.objectId!))
+      ..set(KeepUpThreadMessageDataModel.anonymous, anonymous)
+      ..set(KeepUpThreadMessageDataModel.body, body);
+    // salva il primo messaggio
+    var response = await messageObject.save();
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: thread message creation failure: ${response.error!.message}');
+    }
+
+    // aggiunge il partecipante se non è presente
+    final partecipantQuery =
+        QueryBuilder.name(KeepUpThreadPartecipantDataModel.className)
+          ..whereEqualTo(KeepUpThreadPartecipantDataModel.threadId,
+              KeepUpThreadDataModel.pointerTo(threadId))
+          ..whereEqualTo(KeepUpThreadPartecipantDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // effettua la ricerca
+    final partecipantResponse = await partecipantQuery.find();
+    // se non presente, lo aggiunge
+    if (partecipantResponse.isEmpty) {
+      final partecipantObject =
+          ParseObject(KeepUpThreadPartecipantDataModel.className)
+            ..set(KeepUpThreadPartecipantDataModel.threadId,
+                KeepUpThreadDataModel.pointerTo(threadId))
+            ..set(KeepUpThreadPartecipantDataModel.userId,
+                KeepUpUserDataModel.pointerTo(currentUser.objectId!))
+            ..set(KeepUpThreadPartecipantDataModel.lastReadMessageDate,
+                messageObject.createdAt);
+      // salva la relazione
+      response = await partecipantObject.save();
+    }
+    // altrimenti aggiorna
+    else {
+      final partecipantObject = partecipantResponse.first;
+      partecipantObject.set(
+          KeepUpThreadPartecipantDataModel.lastReadMessageDate,
+          messageObject.createdAt);
+      // salva la relazione
+      response = await partecipantObject.save();
+    }
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: thread partecipant creation failure: ${response.error!.message}');
+    }
+
     return KeepUpResponse();
   }
 
   /// l'utente può dare un giudizio ad un messaggio di un thread
-  Future<KeepUpResponse> rateThreadMessage(
-      {required String threadId,
-      required String messageId,
-      required int rating}) async {
+  Future<KeepUpResponse> likeThreadMessage({required String messageId}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // chiama la funzione che flippa il like a seconda che sia presente o meno
+    await _flipThreadMessageLike(messageId, currentUser.objectId!);
     return KeepUpResponse();
   }
 
@@ -1149,9 +1306,6 @@ class KeepUp {
       ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
     // ottiene le informazioni sui vari thread
     for (final t in threads) {
-      // query per il nome dell'utente
-      final authorQuery = QueryBuilder.name(KeepUpUserDataModel.className)
-        ..whereEqualTo(KeepUpUserDataModel.id, t.creatorId!);
       // query per il numero di messaggi
       final messagesQuery =
           QueryBuilder.name(KeepUpThreadMessageDataModel.className)
@@ -1163,7 +1317,7 @@ class KeepUp {
             ..whereEqualTo(KeepUpThreadPartecipantDataModel.threadId,
                 KeepUpThreadDataModel.pointerTo(t.id!));
       // effettua la query
-      final authorResponse = await authorQuery.find();
+      final authorResponse = await _getUserName(t.creatorId!);
       final messagesResponse = await messagesQuery.count();
       final partecipantsResponse = await partecipantsQuery.count();
       // query per ottenere il primo messaggio
@@ -1173,6 +1327,7 @@ class KeepUp {
       // effettua la query sul primo messaggio
       final messages = await messagesQuery.find();
       // setta i valori
+      t.viewsCount = await _getThreadViewsCount(t.id!);
       t.messagesCount = messagesResponse.count;
       t.partecipantsCount = partecipantsResponse.count;
       // ottiene il primo messaggio
@@ -1180,7 +1335,7 @@ class KeepUp {
         t.question = KeepUpThreadMessage.fromJson(messages.first);
       }
       // ottiene il nome dell'autore
-      if (authorResponse.isNotEmpty) {
+      if (authorResponse != null) {
         // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
         if (t.question != null &&
             t.question!.senderId != currentUser.objectId &&
@@ -1189,7 +1344,7 @@ class KeepUp {
         }
         // il nome può essere mostrato
         else {
-          t.authorName = authorResponse.first[KeepUpUserDataModel.fullName];
+          t.authorName = authorResponse;
         }
       }
     }
@@ -1225,12 +1380,38 @@ class KeepUp {
     final messages = parseResults
         .map((object) => KeepUpThreadMessage.fromJson(object))
         .toList()
-      ..forEach((message) {
+      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+    // i nome degli autori dei messaggi sono tenuti in cache
+    final usersNames = <String, String>{};
+    // per ogni messaggio
+    for (final message in messages) {
+      // ottiene il nome dell'autore
+      if (!usersNames.containsKey(message.senderId)) {
+        final name = await _getUserName(message.senderId!);
+        // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
+        if (message.senderId != currentUser.objectId && message.anonymous) {
+          usersNames.putIfAbsent(message.senderId!, () => 'Anonimo');
+        }
+        // il nome può essere mostrato
+        else {
+          usersNames.putIfAbsent(message.senderId!, () => name ?? 'Anonimo');
+        }
+        // setta la visualizzazione o meno sul messaggio
         message.isRead = lastMessageReadDate == null
             ? null
             : lastMessageReadDate.compareTo(message.creationDate) >= 0;
-      })
-      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+      }
+      // setta il valore
+      message.senderName = usersNames[message.senderId]!;
+      // ottiene il numero di likes
+      message.likes = await _getThreadMessageLikesCount(message.id!);
+      log('likes = ${message.likes}');
+      // ottiene se l'utente loggato ha messo o meno like al messaggio
+      message.isLiked =
+          await _userLikesThreadMessage(message.id!, currentUser.objectId!);
+    }
+    // siccome scarica i messaggi del thread, aggiunge la visualizzazione
+    _addThreadView(threadId, currentUser.objectId!);
 
     return KeepUpResponse.result(messages);
   }
@@ -1264,10 +1445,6 @@ class KeepUp {
       ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
     // ottiene le informazioni sui vari thread
     for (final t in threads) {
-      // query per il nome dell'utente
-      final authorQuery = QueryBuilder.name(KeepUpUserDataModel.className)
-        ..whereEqualTo(KeepUpUserDataModel.id, t.creatorId!);
-      // query per il numero di messaggi
       final messagesQuery =
           QueryBuilder.name(KeepUpThreadMessageDataModel.className)
             ..whereEqualTo(KeepUpThreadMessageDataModel.threadId,
@@ -1278,7 +1455,7 @@ class KeepUp {
             ..whereEqualTo(KeepUpThreadPartecipantDataModel.threadId,
                 KeepUpThreadDataModel.pointerTo(t.id!));
       // effettua la query
-      final authorResponse = await authorQuery.find();
+      final authorResponse = await _getUserName(t.creatorId!);
       final messagesResponse = await messagesQuery.count();
       final partecipantsResponse = await partecipantsQuery.count();
       // query per ottenere il primo messaggio
@@ -1288,6 +1465,7 @@ class KeepUp {
       // effettua la query sul primo messaggio
       final messages = await messagesQuery.find();
       // setta i valori
+      t.viewsCount = await _getThreadViewsCount(t.id!);
       t.messagesCount = messagesResponse.count;
       t.partecipantsCount = partecipantsResponse.count;
       // ottiene il primo messaggio
@@ -1295,7 +1473,7 @@ class KeepUp {
         t.question = KeepUpThreadMessage.fromJson(messages.first);
       }
       // ottiene il nome dell'autore
-      if (authorResponse.isNotEmpty) {
+      if (authorResponse != null) {
         // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
         if (t.question != null &&
             t.question!.senderId != currentUser.objectId &&
@@ -1304,7 +1482,7 @@ class KeepUp {
         }
         // il nome può essere mostrato
         else {
-          t.authorName = authorResponse.first[KeepUpUserDataModel.fullName];
+          t.authorName = authorResponse;
         }
       }
     }
@@ -1724,7 +1902,7 @@ class KeepUpThread {
   String title;
   List<String> tags;
   DateTime creationDate;
-  int viewsCount;
+  int? viewsCount;
   int? messagesCount;
   int? partecipantsCount;
   String? authorName;
@@ -1735,7 +1913,6 @@ class KeepUpThread {
       this.creatorId,
       required this.title,
       required this.tags,
-      required this.viewsCount,
       required this.creationDate});
 
   factory KeepUpThread.fromJson(dynamic json) {
@@ -1745,7 +1922,6 @@ class KeepUpThread {
             [KeepUpUserDataModel.id],
         creationDate: json[KeepUpThreadDataModel.creationDate],
         tags: List.from(json[KeepUpThreadDataModel.tags]),
-        viewsCount: json[KeepUpThreadDataModel.viewsCount],
         title: json[KeepUpThreadDataModel.title]);
   }
 }
@@ -1756,9 +1932,11 @@ class KeepUpThreadMessage {
   String? threadId;
   String body;
   bool anonymous;
-  int rating;
   DateTime creationDate;
+  int? likes;
+  String? senderName;
   bool? isRead;
+  bool? isLiked;
 
   KeepUpThreadMessage(
       {this.id,
@@ -1766,7 +1944,6 @@ class KeepUpThreadMessage {
       this.threadId,
       required this.body,
       required this.anonymous,
-      required this.rating,
       required this.creationDate,
       this.isRead = false});
 
@@ -1779,7 +1956,6 @@ class KeepUpThreadMessage {
             [KeepUpThreadDataModel.id],
         creationDate: json[KeepUpThreadDataModel.creationDate],
         body: json[KeepUpThreadMessageDataModel.body],
-        rating: json[KeepUpThreadMessageDataModel.rating],
         anonymous: json[KeepUpThreadMessageDataModel.anonymous]);
   }
 }
@@ -1878,7 +2054,6 @@ abstract class KeepUpThreadDataModel {
   static const creatorId = 'creatorId';
   static const title = 'title';
   static const tags = 'tags';
-  static const viewsCount = 'viewsCount';
   static const creationDate = 'createdAt';
 
   static Map<String, dynamic> pointerTo(String objectId) {
@@ -1898,6 +2073,28 @@ abstract class KeepUpThreadPartecipantDataModel {
   }
 }
 
+abstract class KeepUpThreadViewerDataModel {
+  static const className = 'ThreadViewer';
+  static const id = 'objectId';
+  static const userId = 'userId';
+  static const threadId = 'threadId';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpThreadMessageLikeDataModel {
+  static const className = 'ThreadMessageLike';
+  static const id = 'objectId';
+  static const userId = 'userId';
+  static const messageId = 'messageId';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
+  }
+}
+
 abstract class KeepUpThreadMessageDataModel {
   static const className = 'ThreadMessage';
   static const id = 'objectId';
@@ -1905,7 +2102,6 @@ abstract class KeepUpThreadMessageDataModel {
   static const threadId = 'threadId';
   static const body = 'body';
   static const anonymous = 'anonymous';
-  static const rating = 'rating';
   static const creationDate = 'createdAt';
 
   static Map<String, dynamic> pointerTo(String objectId) {
