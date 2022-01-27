@@ -90,7 +90,7 @@ class _BeginThreadScreenState extends State<BeginThreadScreen> {
                       })),
               SizedBox(height: 0.02 * size.height),
               AppTagSelector(
-                tags: KeepUpTags.values,
+                tags: KeepUpThreadTags.values,
                 controller: _tagsController,
                 maxSelectionCount: 3,
               ),

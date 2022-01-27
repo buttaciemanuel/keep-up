@@ -1142,10 +1142,57 @@ class KeepUp {
     // effettua la query
     parseResults = await threadsQuery.find();
     // costruisce i thread ordinati per data di creazione
+    // e ottiene il numero di messaggi associati
     final threads = parseResults
         .map((object) => KeepUpThread.fromJson(object))
         .toList()
       ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+    // ottiene le informazioni sui vari thread
+    for (final t in threads) {
+      // query per il nome dell'utente
+      final authorQuery = QueryBuilder.name(KeepUpUserDataModel.className)
+        ..whereEqualTo(KeepUpUserDataModel.id, t.creatorId!);
+      // query per il numero di messaggi
+      final messagesQuery =
+          QueryBuilder.name(KeepUpThreadMessageDataModel.className)
+            ..whereEqualTo(KeepUpThreadMessageDataModel.threadId,
+                KeepUpThreadDataModel.pointerTo(t.id!));
+      // query per il numero di partecipanti
+      final partecipantsQuery =
+          QueryBuilder.name(KeepUpThreadPartecipantDataModel.className)
+            ..whereEqualTo(KeepUpThreadPartecipantDataModel.threadId,
+                KeepUpThreadDataModel.pointerTo(t.id!));
+      // effettua la query
+      final authorResponse = await authorQuery.find();
+      final messagesResponse = await messagesQuery.count();
+      final partecipantsResponse = await partecipantsQuery.count();
+      // query per ottenere il primo messaggio
+      messagesQuery
+        ..orderByAscending(KeepUpThreadMessageDataModel.creationDate)
+        ..setLimit(1);
+      // effettua la query sul primo messaggio
+      final messages = await messagesQuery.find();
+      // setta i valori
+      t.messagesCount = messagesResponse.count;
+      t.partecipantsCount = partecipantsResponse.count;
+      // ottiene il primo messaggio
+      if (messages.isNotEmpty) {
+        t.question = KeepUpThreadMessage.fromJson(messages.first);
+      }
+      // ottiene il nome dell'autore
+      if (authorResponse.isNotEmpty) {
+        // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
+        if (t.question != null &&
+            t.question!.senderId != currentUser.objectId &&
+            t.question!.anonymous) {
+          t.authorName = 'Anonimo';
+        }
+        // il nome può essere mostrato
+        else {
+          t.authorName = authorResponse.first[KeepUpUserDataModel.fullName];
+        }
+      }
+    }
 
     return KeepUpResponse.result(threads);
   }
@@ -1191,8 +1238,78 @@ class KeepUp {
   /// restituisce i thread che corrispondono ai tag specificati
   /// (and logico dei tag su ciascun thread)
   Future<KeepUpResponse<List<KeepUpThread>>> getThreadsByTags(
-      {required List<String> tags, int limit = 30}) async {
-    return KeepUpResponse.result([]);
+      {required List<String> tags, String? filter, int limit = 30}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // costruisce la query per scaricare tali thread
+    final threadsQuery = QueryBuilder.name(KeepUpThreadDataModel.className);
+    // se i tags sono vuoti o contiene all, allora il match avviene con tutti
+    if (tags.isNotEmpty && !tags.contains(KeepUpThreadTags.all)) {
+      threadsQuery.whereArrayContainsAll(KeepUpThreadDataModel.tags, tags);
+    }
+    // applica il filtro se presente
+    if (filter != null) {
+      threadsQuery.whereContains(KeepUpThreadDataModel.title, filter);
+    }
+    // li ordina dal più recente al meno
+    threadsQuery.orderByDescending(KeepUpThreadDataModel.className);
+    // limita il numero
+    threadsQuery.setLimit(limit);
+    // effettua la query
+    final parseResults = await threadsQuery.find();
+    // costruisce i thread ordinati per data di creazione
+    // e ottiene il numero di messaggi associati
+    final threads = parseResults
+        .map((object) => KeepUpThread.fromJson(object))
+        .toList()
+      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+    // ottiene le informazioni sui vari thread
+    for (final t in threads) {
+      // query per il nome dell'utente
+      final authorQuery = QueryBuilder.name(KeepUpUserDataModel.className)
+        ..whereEqualTo(KeepUpUserDataModel.id, t.creatorId!);
+      // query per il numero di messaggi
+      final messagesQuery =
+          QueryBuilder.name(KeepUpThreadMessageDataModel.className)
+            ..whereEqualTo(KeepUpThreadMessageDataModel.threadId,
+                KeepUpThreadDataModel.pointerTo(t.id!));
+      // query per il numero di partecipanti
+      final partecipantsQuery =
+          QueryBuilder.name(KeepUpThreadPartecipantDataModel.className)
+            ..whereEqualTo(KeepUpThreadPartecipantDataModel.threadId,
+                KeepUpThreadDataModel.pointerTo(t.id!));
+      // effettua la query
+      final authorResponse = await authorQuery.find();
+      final messagesResponse = await messagesQuery.count();
+      final partecipantsResponse = await partecipantsQuery.count();
+      // query per ottenere il primo messaggio
+      messagesQuery
+        ..orderByAscending(KeepUpThreadMessageDataModel.creationDate)
+        ..setLimit(1);
+      // effettua la query sul primo messaggio
+      final messages = await messagesQuery.find();
+      // setta i valori
+      t.messagesCount = messagesResponse.count;
+      t.partecipantsCount = partecipantsResponse.count;
+      // ottiene il primo messaggio
+      if (messages.isNotEmpty) {
+        t.question = KeepUpThreadMessage.fromJson(messages.first);
+      }
+      // ottiene il nome dell'autore
+      if (authorResponse.isNotEmpty) {
+        // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
+        if (t.question != null &&
+            t.question!.senderId != currentUser.objectId &&
+            t.question!.anonymous) {
+          t.authorName = 'Anonimo';
+        }
+        // il nome può essere mostrato
+        else {
+          t.authorName = authorResponse.first[KeepUpUserDataModel.fullName];
+        }
+      }
+    }
+
+    return KeepUpResponse.result(threads);
   }
 }
 
@@ -1606,8 +1723,12 @@ class KeepUpThread {
   String? creatorId;
   String title;
   List<String> tags;
-  int viewsCount;
   DateTime creationDate;
+  int viewsCount;
+  int? messagesCount;
+  int? partecipantsCount;
+  String? authorName;
+  KeepUpThreadMessage? question;
 
   KeepUpThread(
       {this.id,
@@ -1664,7 +1785,7 @@ class KeepUpThreadMessage {
 }
 
 abstract class KeepUpUserDataModel {
-  static const className = 'User';
+  static const className = '_User';
   static const id = 'objectId';
   static const username = 'username';
   static const email = 'email';
@@ -1792,7 +1913,8 @@ abstract class KeepUpThreadMessageDataModel {
   }
 }
 
-abstract class KeepUpTags {
+abstract class KeepUpThreadTags {
+  static const all = 'Tutti';
   static const computerScience = 'Informatica';
   static const electronics = 'Elettronica';
   static const physics = 'Fisica';
@@ -1802,6 +1924,7 @@ abstract class KeepUpTags {
   static const sport = 'Sport';
   static const competition = 'Competizione';
   static const values = [
+    all,
     computerScience,
     electronics,
     physics,

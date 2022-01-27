@@ -6,6 +6,7 @@ import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/components/text_field.dart';
 import 'package:keep_up/screens/change_password_screen.dart';
+import 'package:keep_up/screens/community_screen.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/screens/edit_profile.dart';
 import 'package:keep_up/screens/login_screen.dart';
@@ -29,16 +30,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   KeepUpUser? _user;
   List<KeepUpGoal>? _goals;
-  List<int>? _threads = [];
+  List<KeepUpThread>? _threads;
 
   Future<bool> _fetchData() async {
     final goalsResponse = await KeepUp.instance.getAllGoals();
-    // FIXME: read user active threads
+    final threadsResponse =
+        await KeepUp.instance.getUserThreads(asCreator: true);
 
     if (goalsResponse.error) {
       return Future.error('');
     } else {
       _goals = goalsResponse.result;
+    }
+
+    if (threadsResponse.error) {
+      return Future.error('');
+    } else {
+      _threads = threadsResponse.result;
     }
 
     _user = await KeepUp.instance.getUser();
@@ -60,14 +68,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SkeletonLoader(
               child: Image.asset('assets/images/avatar_man1.png',
                   width: size.width * 0.3)),
-          Expanded(child: SizedBox(width: 10)),
+          const Expanded(child: SizedBox(width: 10)),
           Column(children: [
             Align(
                 alignment: Alignment.centerRight,
                 child: SkeletonLoader(
                     child: Text('',
                         style: Theme.of(context).textTheme.headline3))),
-            SizedBox(height: 5),
+            const SizedBox(height: 5),
             SkeletonLoader(
                 child: Align(
                     alignment: Alignment.centerRight,
@@ -98,15 +106,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ]),
         SizedBox(height: 0.05 * size.height),
         Row(children: [
-          Icon(Icons.edit, color: Colors.black),
-          SizedBox(width: 24),
+          const Icon(Icons.edit, color: Colors.black),
+          const SizedBox(width: 24),
           Text('Modifica profilo',
               style: Theme.of(context)
                   .textTheme
                   .bodyText1
                   ?.copyWith(color: Colors.black)),
-          Expanded(child: SizedBox(width: 10)),
-          Icon(Icons.keyboard_arrow_right, color: Colors.black),
+          const Expanded(child: SizedBox(width: 10)),
+          const Icon(Icons.keyboard_arrow_right, color: Colors.black),
         ]),
         Divider(
             height: 0.03 * size.height,
@@ -115,15 +123,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             indent: 48,
             endIndent: 48),
         Row(children: [
-          Icon(Icons.lock, color: Colors.black),
-          SizedBox(width: 24),
+          const Icon(Icons.lock, color: Colors.black),
+          const SizedBox(width: 24),
           Text('Cambia password',
               style: Theme.of(context)
                   .textTheme
                   .bodyText1
                   ?.copyWith(color: Colors.black)),
-          Expanded(child: SizedBox(width: 10)),
-          Icon(Icons.keyboard_arrow_right, color: Colors.black),
+          const Expanded(child: SizedBox(width: 10)),
+          const Icon(Icons.keyboard_arrow_right, color: Colors.black),
         ]),
         Divider(
             height: 0.03 * size.height,
@@ -132,15 +140,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             indent: 48,
             endIndent: 48),
         Row(children: [
-          Icon(Icons.notifications, color: Colors.black),
-          SizedBox(width: 24),
+          const Icon(Icons.notifications, color: Colors.black),
+          const SizedBox(width: 24),
           Text('Notifiche',
               style: Theme.of(context)
                   .textTheme
                   .bodyText1
                   ?.copyWith(color: Colors.black)),
-          Expanded(child: SizedBox(width: 10)),
-          Icon(Icons.keyboard_arrow_right, color: Colors.black),
+          const Expanded(child: SizedBox(width: 10)),
+          const Icon(Icons.keyboard_arrow_right, color: Colors.black),
         ]),
         Divider(
             height: 0.03 * size.height,
@@ -149,15 +157,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             indent: 48,
             endIndent: 48),
         Row(children: [
-          Icon(Icons.flag, color: Colors.black),
-          SizedBox(width: 24),
+          const Icon(Icons.flag, color: Colors.black),
+          const SizedBox(width: 24),
           Text('Pianifica obiettivi',
               style: Theme.of(context)
                   .textTheme
                   .bodyText1
                   ?.copyWith(color: Colors.black)),
-          Expanded(child: SizedBox(width: 10)),
-          Icon(Icons.keyboard_arrow_right, color: Colors.black)
+          const Expanded(child: SizedBox(width: 10)),
+          const Icon(Icons.keyboard_arrow_right, color: Colors.black)
         ]),
         Divider(
             height: 0.03 * size.height,
@@ -166,15 +174,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
             indent: 48,
             endIndent: 48),
         Row(children: [
-          Icon(Icons.logout, color: Colors.black),
-          SizedBox(width: 24),
+          const Icon(Icons.logout, color: Colors.black),
+          const SizedBox(width: 24),
           Text('Esci',
               style: Theme.of(context)
                   .textTheme
                   .bodyText1
                   ?.copyWith(color: Colors.black)),
-          Expanded(child: SizedBox(width: 10)),
-          Icon(Icons.keyboard_arrow_right, color: Colors.black)
+          const Expanded(child: const SizedBox(width: 10)),
+          const Icon(Icons.keyboard_arrow_right, color: Colors.black)
         ]),
         Divider(
             height: 0.03 * size.height,
@@ -209,7 +217,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(children: [
                   Image.asset('assets/images/avatar_man1.png',
                       width: size.width * 0.3),
-                  Expanded(child: SizedBox(width: 10)),
+                  const Expanded(child: SizedBox(width: 10)),
                   Column(
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -218,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             alignment: Alignment.centerRight,
                             child: Text(_user!.fullname,
                                 style: Theme.of(context).textTheme.headline3)),
-                        SizedBox(height: 5),
+                        const SizedBox(height: 5),
                         Align(
                             alignment: Alignment.centerRight,
                             child: Text(_user!.email,
@@ -241,12 +249,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: Theme.of(context).textTheme.subtitle2),
                   ])),
                   Expanded(
-                      child: Column(children: [
-                    Text(_threads!.length.toString(),
-                        style: Theme.of(context).textTheme.headline2),
-                    Text('thread',
-                        style: Theme.of(context).textTheme.subtitle2),
-                  ]))
+                      child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context)
+                                .push(MaterialPageRoute(
+                                    fullscreenDialog: true,
+                                    builder: (context) {
+                                      return const UserThreadsScreen();
+                                    }))
+                                .then((_) => setState(() {}));
+                          },
+                          child: Column(children: [
+                            Text(_threads!.length.toString(),
+                                style: Theme.of(context).textTheme.headline2),
+                            Text('thread',
+                                style: Theme.of(context).textTheme.subtitle2),
+                          ])))
                 ]),
                 SizedBox(height: 0.05 * size.height),
                 GestureDetector(
@@ -260,15 +278,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           .then((_) => setState(() {}));
                     },
                     child: Row(children: [
-                      Icon(Icons.edit, color: Colors.black),
-                      SizedBox(width: 24),
+                      const Icon(Icons.edit, color: Colors.black),
+                      const SizedBox(width: 24),
                       Text('Modifica profilo',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1
                               ?.copyWith(color: Colors.black)),
-                      Expanded(child: SizedBox(width: 10)),
-                      Icon(Icons.keyboard_arrow_right, color: Colors.black),
+                      const Expanded(child: SizedBox(width: 10)),
+                      const Icon(Icons.keyboard_arrow_right,
+                          color: Colors.black),
                     ])),
                 Divider(
                     height: 0.03 * size.height,
@@ -287,15 +306,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           .then((_) => setState(() {}));
                     },
                     child: Row(children: [
-                      Icon(Icons.lock, color: Colors.black),
-                      SizedBox(width: 24),
+                      const Icon(Icons.lock, color: Colors.black),
+                      const SizedBox(width: 24),
                       Text('Cambia password',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1
                               ?.copyWith(color: Colors.black)),
-                      Expanded(child: SizedBox(width: 10)),
-                      Icon(Icons.keyboard_arrow_right, color: Colors.black),
+                      const Expanded(child: SizedBox(width: 10)),
+                      const Icon(Icons.keyboard_arrow_right,
+                          color: Colors.black),
                     ])),
                 Divider(
                     height: 0.03 * size.height,
@@ -314,15 +334,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           .then((_) => setState(() {}));
                     },
                     child: Row(children: [
-                      Icon(Icons.notifications, color: Colors.black),
-                      SizedBox(width: 24),
+                      const Icon(Icons.notifications, color: Colors.black),
+                      const SizedBox(width: 24),
                       Text('Notifiche',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1
                               ?.copyWith(color: Colors.black)),
-                      Expanded(child: SizedBox(width: 10)),
-                      Icon(Icons.keyboard_arrow_right, color: Colors.black),
+                      const Expanded(child: SizedBox(width: 10)),
+                      const Icon(Icons.keyboard_arrow_right,
+                          color: Colors.black),
                     ])),
                 Divider(
                     height: 0.03 * size.height,
@@ -352,15 +373,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           cancelText: 'Annulla');
                     },
                     child: Row(children: [
-                      Icon(Icons.flag, color: Colors.black),
-                      SizedBox(width: 24),
+                      const Icon(Icons.flag, color: Colors.black),
+                      const SizedBox(width: 24),
                       Text('Pianifica obiettivi',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1
                               ?.copyWith(color: Colors.black)),
-                      Expanded(child: SizedBox(width: 10)),
-                      Icon(Icons.keyboard_arrow_right, color: Colors.black)
+                      const Expanded(child: SizedBox(width: 10)),
+                      const Icon(Icons.keyboard_arrow_right,
+                          color: Colors.black)
                     ])),
                 Divider(
                     height: 0.03 * size.height,
@@ -391,15 +413,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           cancelText: 'Annulla');
                     },
                     child: Row(children: [
-                      Icon(Icons.logout, color: Colors.black),
-                      SizedBox(width: 24),
+                      const Icon(Icons.logout, color: Colors.black),
+                      const SizedBox(width: 24),
                       Text('Esci',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1
                               ?.copyWith(color: Colors.black)),
-                      Expanded(child: SizedBox(width: 10)),
-                      Icon(Icons.keyboard_arrow_right, color: Colors.black)
+                      const Expanded(child: SizedBox(width: 10)),
+                      const Icon(Icons.keyboard_arrow_right,
+                          color: Colors.black)
                     ])),
                 Divider(
                     height: 0.03 * size.height,
