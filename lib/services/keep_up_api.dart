@@ -1054,19 +1054,19 @@ class KeepUp {
 
   _addThreadView(String threadId, String userId) async {
     // costruisce la query per verificare l'unicità della entry
-    final query = QueryBuilder.name(KeepUpThreadViewerDataModel.className)
-      ..whereEqualTo(KeepUpThreadViewerDataModel.threadId,
+    final query = QueryBuilder.name(KeepUpThreadViewDataModel.className)
+      ..whereEqualTo(KeepUpThreadViewDataModel.threadId,
           KeepUpThreadDataModel.pointerTo(threadId))
-      ..whereEqualTo(KeepUpThreadViewerDataModel.userId,
+      ..whereEqualTo(KeepUpThreadViewDataModel.userId,
           KeepUpUserDataModel.pointerTo(userId));
     // ottiene la risposta
     final response = await query.count();
     // se non presente, allora la aggiunge
     if (response.count == 0) {
-      final object = ParseObject(KeepUpThreadViewerDataModel.className)
-        ..set(KeepUpThreadViewerDataModel.threadId,
+      final object = ParseObject(KeepUpThreadViewDataModel.className)
+        ..set(KeepUpThreadViewDataModel.threadId,
             KeepUpThreadDataModel.pointerTo(threadId))
-        ..set(KeepUpThreadViewerDataModel.userId,
+        ..set(KeepUpThreadViewDataModel.userId,
             KeepUpUserDataModel.pointerTo(userId));
       // lo salva
       await object.save();
@@ -1075,8 +1075,8 @@ class KeepUp {
 
   Future<int> _getThreadViewsCount(String threadId) async {
     // costruisce la query per verificare l'unicità della entry
-    final query = QueryBuilder.name(KeepUpThreadViewerDataModel.className)
-      ..whereEqualTo(KeepUpThreadViewerDataModel.threadId,
+    final query = QueryBuilder.name(KeepUpThreadViewDataModel.className)
+      ..whereEqualTo(KeepUpThreadViewDataModel.threadId,
           KeepUpThreadDataModel.pointerTo(threadId));
     // ottiene la risposta
     final response = await query.count();
@@ -1155,8 +1155,6 @@ class KeepUp {
           KeepUpUserDataModel.pointerTo(currentUser.objectId!));
     // salva il thread per ottenere il suo id
     var response = await threadObject.save();
-    // aggiunge la visualizzazione
-    _addThreadView(threadObject.objectId!, currentUser.objectId!);
 
     if (!response.success) {
       return KeepUpResponse.error(
@@ -1290,7 +1288,8 @@ class KeepUp {
         .toList();
     // costruisce la query per scaricare tali thread
     final threadsQuery = QueryBuilder.name(KeepUpThreadDataModel.className)
-      ..whereContainedIn(KeepUpThreadDataModel.id, userThreadsIds);
+      ..whereContainedIn(KeepUpThreadDataModel.id, userThreadsIds)
+      ..orderByDescending(KeepUpThreadDataModel.creationDate);
     // se specifica i thread creati da lui, allora filtra la query
     if (asCreator) {
       threadsQuery.whereEqualTo(KeepUpThreadDataModel.creatorId,
@@ -1298,12 +1297,10 @@ class KeepUp {
     }
     // effettua la query
     parseResults = await threadsQuery.find();
-    // costruisce i thread ordinati per data di creazione
+    // costruisce i thread ordinati per data di creazione decrescente
     // e ottiene il numero di messaggi associati
-    final threads = parseResults
-        .map((object) => KeepUpThread.fromJson(object))
-        .toList()
-      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+    final threads =
+        parseResults.map((object) => KeepUpThread.fromJson(object)).toList();
     // ottiene le informazioni sui vari thread
     for (final t in threads) {
       // query per il numero di messaggi
@@ -1336,13 +1333,15 @@ class KeepUp {
       }
       // ottiene il nome dell'autore
       if (authorResponse != null) {
+        // se il thread è dell'utente loggato allora viene mostrato 'Tu'
+        if (t.creatorId! == currentUser.objectId!) {
+          t.authorName = 'Tu';
+        }
         // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
-        if (t.question != null &&
-            t.question!.senderId != currentUser.objectId &&
-            t.question!.anonymous) {
+        else if (t.question!.anonymous) {
           t.authorName = 'Anonimo';
         }
-        // il nome può essere mostrato
+        // altrimenti è mostrato il nome
         else {
           t.authorName = authorResponse;
         }
@@ -1376,36 +1375,39 @@ class KeepUp {
           KeepUpThreadDataModel.pointerTo(threadId));
     // effettua la query
     parseResults = await query.find();
-    // la lista dei messaggi è ordinati per data
+    // la lista dei messaggi è ordinati per data decrescente
     final messages = parseResults
         .map((object) => KeepUpThreadMessage.fromJson(object))
-        .toList()
-      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+        .toList();
     // i nome degli autori dei messaggi sono tenuti in cache
     final usersNames = <String, String>{};
     // per ogni messaggio
     for (final message in messages) {
       // ottiene il nome dell'autore
-      if (!usersNames.containsKey(message.senderId)) {
-        final name = await _getUserName(message.senderId!);
-        // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
-        if (message.senderId != currentUser.objectId && message.anonymous) {
-          usersNames.putIfAbsent(message.senderId!, () => 'Anonimo');
-        }
-        // il nome può essere mostrato
-        else {
-          usersNames.putIfAbsent(message.senderId!, () => name ?? 'Anonimo');
-        }
-        // setta la visualizzazione o meno sul messaggio
-        message.isRead = lastMessageReadDate == null
-            ? null
-            : lastMessageReadDate.compareTo(message.creationDate) >= 0;
+      // se il messaggio è dell'utente loggato allora viene mostrato 'Tu'
+      if (message.senderId == currentUser.objectId) {
+        message.senderName = 'Tu';
       }
-      // setta il valore
-      message.senderName = usersNames[message.senderId]!;
+      // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
+      else if (message.anonymous) {
+        message.senderName = 'Anonimo';
+      }
+      // se il nome è in cache
+      else if (usersNames.containsKey(message.senderId!)) {
+        message.senderName = usersNames[message.senderId]!;
+      }
+      // altrimenti è mostrato il nome
+      else {
+        final name = await _getUserName(message.senderId!);
+        message.senderName = name!;
+        usersNames.putIfAbsent(message.senderId!, () => name);
+      }
+      // setta la visualizzazione o meno sul messaggio
+      message.isRead = lastMessageReadDate == null
+          ? null
+          : lastMessageReadDate.compareTo(message.creationDate) >= 0;
       // ottiene il numero di likes
       message.likes = await _getThreadMessageLikesCount(message.id!);
-      log('likes = ${message.likes}');
       // ottiene se l'utente loggato ha messo o meno like al messaggio
       message.isLiked =
           await _userLikesThreadMessage(message.id!, currentUser.objectId!);
@@ -1432,17 +1434,15 @@ class KeepUp {
       threadsQuery.whereContains(KeepUpThreadDataModel.title, filter);
     }
     // li ordina dal più recente al meno
-    threadsQuery.orderByDescending(KeepUpThreadDataModel.className);
+    threadsQuery.orderByDescending(KeepUpThreadDataModel.creationDate);
     // limita il numero
     threadsQuery.setLimit(limit);
     // effettua la query
     final parseResults = await threadsQuery.find();
-    // costruisce i thread ordinati per data di creazione
-    // e ottiene il numero di messaggi associati
-    final threads = parseResults
-        .map((object) => KeepUpThread.fromJson(object))
-        .toList()
-      ..sort((a, b) => a.creationDate.compareTo(b.creationDate));
+    // costruisce i thread ordinati per data di creazione decrescente
+    // e ottiene il numero di messaggi associati in ordine
+    final threads =
+        parseResults.map((object) => KeepUpThread.fromJson(object)).toList();
     // ottiene le informazioni sui vari thread
     for (final t in threads) {
       final messagesQuery =
@@ -1474,13 +1474,15 @@ class KeepUp {
       }
       // ottiene il nome dell'autore
       if (authorResponse != null) {
+        // se il thread è dell'utente loggato allora viene mostrato 'Tu'
+        if (t.creatorId! == currentUser.objectId!) {
+          t.authorName = 'Tu';
+        }
         // se l'utente è un altro ed è anonimo allora il suo nome non è mostrato
-        if (t.question != null &&
-            t.question!.senderId != currentUser.objectId &&
-            t.question!.anonymous) {
+        else if (t.question!.anonymous) {
           t.authorName = 'Anonimo';
         }
-        // il nome può essere mostrato
+        // altrimenti è mostrato il nome
         else {
           t.authorName = authorResponse;
         }
@@ -2073,8 +2075,8 @@ abstract class KeepUpThreadPartecipantDataModel {
   }
 }
 
-abstract class KeepUpThreadViewerDataModel {
-  static const className = 'ThreadViewer';
+abstract class KeepUpThreadViewDataModel {
+  static const className = 'ThreadView';
   static const id = 'objectId';
   static const userId = 'userId';
   static const threadId = 'threadId';

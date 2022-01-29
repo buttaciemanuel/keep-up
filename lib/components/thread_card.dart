@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:keep_up/components/elevated_card.dart';
 import 'package:keep_up/style.dart';
 
 class AppThreadCard extends StatelessWidget {
@@ -27,7 +28,6 @@ class AppThreadCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,
@@ -60,79 +60,70 @@ class AppThreadCard extends StatelessWidget {
       elapsedTimeString = '${elapsedTime.inSeconds} secondi fa';
     }
 
-    return Center(
-        child: GestureDetector(
-            onTap: onTap,
-            child: Card(
-                color: AppColors.fieldBackgroundColor,
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: Column(
-                    children: [
-                      Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              softWrap: false,
-                              style: titleStyle)),
-                      const SizedBox(height: 15),
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.person, color: withOpacity, size: 20),
-                            const SizedBox(width: 5),
-                            Text(author, style: subtitleStyle),
-                            const SizedBox(width: 20),
-                            Icon(Icons.access_time,
-                                color: withOpacity, size: 20),
-                            const SizedBox(width: 5),
-                            Text(elapsedTimeString, style: subtitleStyle)
-                          ]),
-                      const SizedBox(height: 15),
-                      if (wrap!) ...[
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(question,
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: textStyle)),
-                        const SizedBox(height: 15)
-                      ] else ...[
-                        Text(question, style: textStyle),
-                        const SizedBox(height: 15)
-                      ],
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(children: [
-                              Icon(Icons.visibility,
-                                  color: withOpacity, size: 20),
-                              const SizedBox(width: 5),
-                              Text(
-                                  '$viewsCount ${viewsCount == 1 ? 'visita' : 'visite'}',
-                                  style: subtitleStyle)
-                            ]),
-                            Row(children: [
-                              Icon(Icons.question_answer,
-                                  color: withOpacity, size: 20),
-                              const SizedBox(width: 5),
-                              Text(
-                                  '${messagesCount - 1} ${messagesCount == 2 ? 'riposta' : 'risposte'}',
-                                  style: subtitleStyle)
-                            ]),
-                            Row(children: [
-                              Icon(Icons.people, color: withOpacity, size: 20),
-                              const SizedBox(width: 5),
-                              Text(
-                                  '$partecipantsCount ${partecipantsCount == 1 ? 'persona' : 'persone'}',
-                                  style: subtitleStyle)
-                            ])
-                          ]),
-                    ],
-                  ),
-                ))));
+    return AppElevatedCard(
+      onTap: onTap,
+      children: [
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text(title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false,
+                style: titleStyle)),
+        const Divider(
+            height: 30,
+            color: Colors.black,
+            thickness: 0.1,
+            indent: 0,
+            endIndent: 0),
+        Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+          const Icon(Icons.person, color: AppColors.primaryColor, size: 20),
+          const SizedBox(width: 5),
+          Text(author,
+              style: subtitleStyle.copyWith(color: AppColors.primaryColor)),
+          const SizedBox(width: 20),
+          Icon(Icons.access_time, color: withOpacity, size: 20),
+          const SizedBox(width: 5),
+          Text(elapsedTimeString, style: subtitleStyle)
+        ]),
+        const SizedBox(height: 15),
+        if (wrap!) ...[
+          Align(
+              alignment: Alignment.centerLeft,
+              child: Text(question,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: textStyle)),
+          const SizedBox(height: 15)
+        ] else ...[
+          Text(question, style: textStyle),
+          const SizedBox(height: 15)
+        ],
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Row(children: [
+            Icon(Icons.visibility, color: withOpacity, size: 20),
+            const SizedBox(width: 5),
+            Text('$viewsCount ${viewsCount == 1 ? 'visita' : 'visite'}',
+                style: subtitleStyle)
+          ]),
+          Row(children: [
+            Icon(Icons.question_answer, color: withOpacity, size: 20),
+            const SizedBox(width: 5),
+            Text(
+                '${messagesCount - 1} ${messagesCount == 2 ? 'riposta' : 'risposte'}',
+                style: subtitleStyle)
+          ]),
+          Row(children: [
+            Icon(Icons.people, color: withOpacity, size: 20),
+            const SizedBox(width: 5),
+            Text(
+                '$partecipantsCount ${partecipantsCount == 1 ? 'persona' : 'persone'}',
+                style: subtitleStyle)
+          ])
+        ]),
+      ],
+    );
   }
 }
 
@@ -160,7 +151,6 @@ class AppThreadReplyCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final Size size = MediaQuery.of(context).size;
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,
@@ -193,59 +183,51 @@ class AppThreadReplyCard extends StatelessWidget {
       elapsedTimeString = '${elapsedTime.inSeconds} secondi fa';
     }
 
-    return Center(
-        child: GestureDetector(
-            onTap: onTap,
-            child: Card(
-                color: AppColors.fieldBackgroundColor,
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: Column(
-                    children: [
-                      if (title != null) ...[
-                        Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(title!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: titleStyle)),
-                        const SizedBox(height: 15)
-                      ],
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            Icon(Icons.person, color: withOpacity, size: 20),
-                            const SizedBox(width: 5),
-                            Text(sender, style: subtitleStyle),
-                            const SizedBox(width: 20),
-                            Icon(Icons.access_time,
-                                color: withOpacity, size: 20),
-                            const SizedBox(width: 5),
-                            Text(elapsedTimeString, style: subtitleStyle)
-                          ]),
-                      const SizedBox(height: 15),
-                      Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(reply, style: textStyle)),
-                      const SizedBox(height: 15),
-                      Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(children: [
-                              GestureDetector(
-                                  child: Icon(Icons.thumb_up,
-                                      color:
-                                          isLiked! ? Colors.green : withOpacity,
-                                      size: 20),
-                                  onTap: onTapLike),
-                              const SizedBox(width: 5),
-                              Text('$likes ${likes == 1 ? 'punto' : 'punti'}',
-                                  style: subtitleStyle)
-                            ])
-                          ]),
-                    ],
-                  ),
-                ))));
+    return AppElevatedCard(
+      onTap: onTap,
+      children: [
+        if (title != null) ...[
+          Align(
+              alignment: Alignment.centerLeft,
+              child: Text(title!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  softWrap: false,
+                  style: titleStyle)),
+          const Divider(
+              height: 30,
+              color: Colors.black,
+              thickness: 0.1,
+              indent: 0,
+              endIndent: 0),
+        ],
+        Row(mainAxisAlignment: MainAxisAlignment.start, children: [
+          const Icon(Icons.person, color: AppColors.primaryColor, size: 20),
+          const SizedBox(width: 5),
+          Text(sender,
+              style: subtitleStyle.copyWith(color: AppColors.primaryColor)),
+          const SizedBox(width: 20),
+          Icon(Icons.access_time, color: withOpacity, size: 20),
+          const SizedBox(width: 5),
+          Text(elapsedTimeString, style: subtitleStyle)
+        ]),
+        const SizedBox(height: 15),
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text(reply, style: textStyle)),
+        const SizedBox(height: 15),
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          Row(children: [
+            GestureDetector(
+                child: Icon(Icons.thumb_up,
+                    color: isLiked! ? Colors.green : withOpacity, size: 20),
+                onTap: onTapLike),
+            const SizedBox(width: 5),
+            Text('$likes ${likes == 1 ? 'punto' : 'punti'}',
+                style: subtitleStyle)
+          ])
+        ]),
+      ],
+    );
   }
 }

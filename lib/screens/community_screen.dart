@@ -99,7 +99,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
         hint: 'Cerca',
         controller: _searchTextController,
       ),
-      SizedBox(height: 0.05 * size.height),
+      SizedBox(height: 0.03 * size.height),
       Align(
           alignment: Alignment.centerLeft,
           child:
