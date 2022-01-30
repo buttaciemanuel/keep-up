@@ -1,6 +1,5 @@
-import 'dart:math';
-
 import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:keep_up/components/progress_bar.dart';
 import 'package:keep_up/constant.dart';
@@ -8,17 +7,17 @@ import 'package:keep_up/screens/define_goal_screen.dart';
 import 'package:keep_up/style.dart';
 
 class AppTaskCard extends StatelessWidget {
-  String title;
-  TimeOfDay time;
-  TimeOfDay? endTime;
-  Color? color;
-  int? completedTasksCount;
-  int? totalTaskCount;
-  bool? active;
-  Function(BuildContext?)? onCancelTask;
-  Function(bool?)? onCheckTask;
+  final String title;
+  final TimeOfDay time;
+  final TimeOfDay? endTime;
+  final Color? color;
+  final int? completedTasksCount;
+  final int? totalTaskCount;
+  final bool? active;
+  final Function(BuildContext?)? onCancelTask;
+  final Function(bool?)? onCheckTask;
 
-  AppTaskCard(
+  const AppTaskCard(
       {Key? key,
       required this.title,
       required this.time,
@@ -73,7 +72,11 @@ class AppTaskCard extends StatelessWidget {
                         Expanded(
                             child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: Text(title, style: titleStyle))),
+                                child: Text(title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style: titleStyle))),
                         if (active != null) ...[
                           const SizedBox(width: 10),
                           SizedBox(
@@ -118,20 +121,22 @@ class AppTaskCard extends StatelessWidget {
 }
 
 class AppGoalCard extends StatelessWidget {
-  String title;
-  Color? color;
-  bool? active;
-  DateTime? finishDate;
-  Function(BuildContext?)? onDeleteGoal;
-  Function(bool?)? onChecked;
+  final String title;
+  final Color? color;
+  final bool? active;
+  final DateTime? finishDate;
+  final DateTime? completionDate;
+  final Function(BuildContext?)? onDeleteGoal;
+  final Function(bool?)? onChecked;
 
-  AppGoalCard(
+  const AppGoalCard(
       {Key? key,
       required this.title,
       this.color,
       this.active,
       this.onChecked,
       this.finishDate,
+      this.completionDate,
       this.onDeleteGoal})
       : super(key: key);
 
@@ -141,7 +146,8 @@ class AppGoalCard extends StatelessWidget {
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,
-        color: Colors.white);
+        color: Colors.white,
+        decoration: completionDate != null ? TextDecoration.lineThrough : null);
     final subtitleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.bodyText1?.fontSize,
         fontWeight: FontWeight.normal,
@@ -177,7 +183,11 @@ class AppGoalCard extends StatelessWidget {
                         Expanded(
                             child: Align(
                                 alignment: Alignment.centerLeft,
-                                child: Text(title, style: titleStyle))),
+                                child: Text(title,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style: titleStyle))),
                         if (active != null) ...[
                           const SizedBox(width: 10),
                           SizedBox(

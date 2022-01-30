@@ -5,6 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/screens/daily_survey_screen.dart';
+import 'package:keep_up/screens/goal_success_screen.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/services/notification_service.dart';
@@ -47,6 +48,14 @@ void onNotificationTapped(String? payload) {
         .pushReplacement(MaterialPageRoute(builder: (context) {
       return const DailySurveyScreen();
     }));
+  } else if (payload!
+      .startsWith(NotificationServiceConstant.goalCompletionPayload)) {
+    navigatorKey.currentState!
+        .pushReplacement(MaterialPageRoute(builder: (context) {
+      return GoalSuccessScreen(
+          goalMetadataId:
+              NotificationServiceConstant.extractGoalFromPayload(payload));
+    }));
   }
 }
 
@@ -87,9 +96,16 @@ class _MyAppState extends State<MyApp> {
             screenFunction: () async {
               final currentUser = await KeepUp.instance.getUser();
               if (currentUser != null) {
-                if (widget.payload ==
+                if (widget.payload == null) {
+                  return const AppNavigator();
+                } else if (widget.payload ==
                     NotificationServiceConstant.surveyPayload) {
                   return const DailySurveyScreen();
+                } else if (widget.payload!.startsWith(
+                    NotificationServiceConstant.goalCompletionPayload)) {
+                  return GoalSuccessScreen(
+                      goalMetadataId: NotificationServiceConstant
+                          .extractGoalMetadataIdFromPayload(widget.payload!));
                 } else {
                   return const AppNavigator();
                 }

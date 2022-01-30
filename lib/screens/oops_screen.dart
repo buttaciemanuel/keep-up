@@ -8,6 +8,7 @@ class OopsScreen extends StatelessWidget {
 
   const OopsScreen({Key? key, this.actionText, this.action}) : super(key: key);
 
+  @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
     return AppLayout(children: [

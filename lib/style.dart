@@ -103,6 +103,7 @@ class AppLayout extends StatelessWidget {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
         backgroundColor: backgroundColor ?? Colors.white,
         body: SafeArea(
+          bottom: false,
           child: LayoutBuilder(builder: (context, constraint) {
             return SingleChildScrollView(
               child: ConstrainedBox(

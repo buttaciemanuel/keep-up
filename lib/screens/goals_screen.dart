@@ -116,6 +116,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                   color: goals[index].color,
                                   title: goals[index].title,
                                   finishDate: goals[index].endDate,
+                                  completionDate: goals[index].completionDate,
                                   onDeleteGoal: (context) {
                                     KeepUp.instance
                                         .deleteEvent(eventId: goals[index].id!)
@@ -130,7 +131,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                           itemCount: 3,
                           physics: const BouncingScrollPhysics(),
                           itemBuilder: (context, index) {
-                            return SkeletonLoader(
+                            return const SkeletonLoader(
                                 child: AppGoalCard(title: ''));
                           }));
                 }

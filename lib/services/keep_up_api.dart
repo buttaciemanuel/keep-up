@@ -246,6 +246,29 @@ class KeepUp {
     }
   }
 
+  Future enableGoalsCompletionNotification() async {
+    final response = await getAllGoals();
+
+    if (response.error) return response;
+    // la notifica di raggiungimento di un obiettivo è settata alle 20:00
+    for (final goal in response.result!) {
+      if (goal.endDate != null) {
+        final scheduleTime = goal.endDate!.getDateOnly();
+        NotificationService().scheduleDayNotification(
+            id: goal.metadataId.hashCode + 7,
+            hour: 22,
+            minute: 48,
+            date: scheduleTime.toLocal(),
+            title: goal.title,
+            body: 'Hai completato il tuo obiettivo ${goal.title}!',
+            payload: NotificationServiceConstant.composeGoalCompletionPayload(
+                goal.metadataId!));
+      }
+    }
+
+    return KeepUpResponse();
+  }
+
   Future _cancelTasksNotification() async {
     final query = QueryBuilder.name(KeepUpRecurrenceDataModel.className);
     final recurrences = await query.find();
@@ -601,7 +624,8 @@ class KeepUp {
       ..set(KeepUpGoalDataModel.daysPerWeek, goal.daysPerWeek)
       ..set(KeepUpGoalDataModel.hoursPerDay, goal.hoursPerDay)
       ..set(KeepUpGoalDataModel.rating, goal.rating)
-      ..set(KeepUpGoalDataModel.ratingsCount, goal.ratingsCount);
+      ..set(KeepUpGoalDataModel.ratingsCount, goal.ratingsCount)
+      ..set(KeepUpGoalDataModel.completionDate, null);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -629,7 +653,8 @@ class KeepUp {
       ..set(KeepUpGoalDataModel.daysPerWeek, goal.daysPerWeek)
       ..set(KeepUpGoalDataModel.hoursPerDay, goal.hoursPerDay)
       ..set(KeepUpGoalDataModel.rating, goal.rating)
-      ..set(KeepUpGoalDataModel.ratingsCount, goal.ratingsCount);
+      ..set(KeepUpGoalDataModel.ratingsCount, goal.ratingsCount)
+      ..set(KeepUpGoalDataModel.completionDate, goal.completionDate);
 
     // salva i metadati
     final parseResponse = await goalMetadata.save();
@@ -638,6 +663,28 @@ class KeepUp {
       return KeepUpResponse.error(
           'KeepUp: goal update failure: ${parseResponse.error!.message}');
     }
+
+    return KeepUpResponse();
+  }
+
+  /// setta la data di completamento del goal
+  Future<KeepUpResponse> setGoalCompletion(
+      {required String goalMetadataId, required DateTime date}) async {
+    // aggiorna i metadati
+    final goalMetadata = ParseObject(KeepUpGoalDataModel.className)
+      ..objectId = goalMetadataId
+      ..set(KeepUpGoalDataModel.completionDate, date);
+
+    // salva i metadati
+    final parseResponse = await goalMetadata.save();
+
+    if (!parseResponse.success) {
+      return KeepUpResponse.error(
+          'KeepUp: goal update failure: ${parseResponse.error!.message}');
+    }
+
+    // elimina la notifica
+    NotificationService().cancelNotification(id: goalMetadataId.hashCode + 7);
 
     return KeepUpResponse();
   }
@@ -699,11 +746,21 @@ class KeepUp {
             hoursPerDay: goalObjects[i][KeepUpGoalDataModel.hoursPerDay],
             rating: goalObjects[i][KeepUpGoalDataModel.rating],
             ratingsCount: goalObjects[i][KeepUpGoalDataModel.ratingsCount],
+            completionDate: goalObjects[i][KeepUpGoalDataModel.completionDate],
             metadataId: goalObjects[i][KeepUpGoalDataModel.id]));
         result.last.recurrences = event.recurrences;
         ++i;
       }
     }
+
+    result.sort((a, b) {
+      if (a.completionDate == null && b.completionDate != null) return -1;
+      if (a.completionDate != null && b.completionDate == null) return 1;
+      if (a.completionDate != null && b.completionDate != null) {
+        return a.completionDate!.compareTo(b.completionDate!);
+      }
+      return a.endDate!.compareTo(b.endDate!);
+    });
 
     return KeepUpResponse.result(result);
   }
@@ -755,6 +812,7 @@ class KeepUp {
         hoursPerDay: goalObjects.first[KeepUpGoalDataModel.hoursPerDay],
         rating: goalObjects.first[KeepUpGoalDataModel.rating],
         ratingsCount: goalObjects.first[KeepUpGoalDataModel.ratingsCount],
+        completionDate: goalObjects.first[KeepUpGoalDataModel.completionDate],
         metadataId: goalObjects.first[KeepUpGoalDataModel.id]);
 
     result.recurrences = response.result!.recurrences;
@@ -1658,6 +1716,7 @@ class KeepUpGoal extends KeepUpEvent {
   String? metadataId;
   int? ratingsCount;
   num? rating;
+  DateTime? completionDate;
 
   KeepUpGoal(
       {String? id,
@@ -1671,7 +1730,8 @@ class KeepUpGoal extends KeepUpEvent {
       this.hoursPerDay = 1,
       this.metadataId,
       this.ratingsCount = 0,
-      this.rating = 0})
+      this.rating = 0,
+      this.completionDate})
       : super(
             id: id,
             title: title,
@@ -2030,6 +2090,7 @@ abstract class KeepUpGoalDataModel {
   static const hoursPerDay = 'hoursPerDay';
   static const ratingsCount = 'ratingsCount';
   static const rating = 'rating';
+  static const completionDate = 'completionDate';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': className, 'objectId': objectId};

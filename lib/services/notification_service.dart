@@ -1,8 +1,4 @@
-import 'dart:developer';
-
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:intl/intl.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
@@ -134,4 +130,11 @@ abstract class NotificationServiceConstant {
   //static const dailySurveyIds = [0, 1, 2, 3, 4, 5, 6];
   static const surveyPayload = 'daily-survey-payload';
   static const taskPayload = 'task-payload';
+  static const goalCompletionPayload = 'goal-completion';
+  static String composeGoalCompletionPayload(String goalMetadataId) =>
+      'goal-completion-$goalMetadataId';
+  static String extractGoalMetadataIdFromPayload(String payload) =>
+      payload.substring(payload.lastIndexOf('-') + 1);
+
+  static extractGoalFromPayload(String payload) {}
 }

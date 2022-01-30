@@ -119,7 +119,7 @@ class _StudentGoalChoiceScreenState extends State<StudentGoalChoiceScreen> {
                                 itemCount: 3,
                                 physics: const BouncingScrollPhysics(),
                                 itemBuilder: (context, index) {
-                                  return SkeletonLoader(
+                                  return const SkeletonLoader(
                                       child: AppGoalCard(title: ''));
                                 }));
                       }
@@ -267,7 +267,7 @@ class _GoalChoiceScreenState extends State<GoalChoiceScreen> {
                           itemCount: 3,
                           physics: const BouncingScrollPhysics(),
                           itemBuilder: (context, index) {
-                            return SkeletonLoader(
+                            return const SkeletonLoader(
                                 child: AppGoalCard(title: ''));
                           }));
                 }

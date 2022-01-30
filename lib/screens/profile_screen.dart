@@ -231,7 +231,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(children: [
                   Expanded(
                       child: Column(children: [
-                    Text('0', style: Theme.of(context).textTheme.headline2),
+                    Text(
+                        _goals!
+                            .where((g) => g.completionDate != null)
+                            .length
+                            .toString(),
+                        style: Theme.of(context).textTheme.headline2),
                     Text('traguardi',
                         style: Theme.of(context).textTheme.subtitle2),
                   ])),

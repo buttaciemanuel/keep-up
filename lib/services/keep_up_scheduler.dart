@@ -101,6 +101,8 @@ class KeepUpScheduler {
         log('${goal.title} updated with ${goal.recurrences.length} recurrences');
       }
     }
+    // aggiunge le notifiche circa la data di completamento
+    KeepUp.instance.enableGoalsCompletionNotification();
   }
 
   // pianifica i task dei goal nelle varie settimane e restituisce tutti i task

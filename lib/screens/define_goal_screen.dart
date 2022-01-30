@@ -119,6 +119,9 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
   static const _formErrorSnackbar = SnackBar(
       padding: EdgeInsets.all(20),
       content: Text('Scegli almeno una categoria di obiettivo'));
+  static const _formFinishErrorSnackbar = SnackBar(
+      padding: EdgeInsets.all(20),
+      content: Text('Scegli almeno una data di completamento'));
 
   final _formKey = GlobalKey<FormState>();
   final _goalNameController = TextEditingController();
@@ -360,6 +363,9 @@ class _DefineGoalScreenState extends State<DefineGoalScreen> {
                   if (_category == null) {
                     ScaffoldMessenger.of(context)
                         .showSnackBar(_formErrorSnackbar);
+                  } else if (_finishDate == null) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(_formFinishErrorSnackbar);
                   } else if (widget.fromGoal == null) {
                     final newGoal = KeepUpGoal(
                         title: _goalNameController.text,

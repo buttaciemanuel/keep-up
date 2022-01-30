@@ -17,6 +17,9 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
+  static const _searchErrorSnackbar = SnackBar(
+      padding: EdgeInsets.all(20), content: Text('La ricerca non è valida'));
+
   final _searchTextController = TextEditingController();
   var _selectedTag = KeepUpThreadTags.values.first;
 
@@ -34,10 +37,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   static Future<List<KeepUpThread>> _fetchSearchTagThreads(
       {required String tag, required String filter}) async {
+    // elimina caratteri non validi
+    filter = filter.replaceAll(RegExp(r'[\\\*\|\.\?]'), '');
+
     final response =
         await KeepUp.instance.getThreadsByTags(tags: [tag], filter: filter);
 
-    if (response.error) throw Future.error('');
+    if (response.error) return Future.error('');
 
     return response.result!;
   }
