@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/category_selector.dart';
@@ -17,7 +19,7 @@ class PersonalGrowthScreen extends StatefulWidget {
 class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
   static const _diplayModeLabels = ['Giorni', 'Settimane', 'Mesi'];
   final _currentDate = DateTime.now().getDateOnly();
-  late final _fromDate = _currentDate.subtract(const Duration(days: 30));
+  late final _fromDate = _currentDate.subtract(const Duration(days: 90));
   int _chartDisplayMode = AppChartDisplayMode.daily;
   List<List<AppChartDataSet>>? _dataSets;
   final _memoizer = AsyncMemoizer();
@@ -198,6 +200,7 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
                         style: Theme.of(context).textTheme.subtitle2)
                   ]);
             } else {
+              log('n.points = ${_dataSets![_chartDisplayMode][0].length}');
               return Column(children: [
                 AppChart(
                     displayMode: _chartDisplayMode,

@@ -256,8 +256,8 @@ class KeepUp {
         final scheduleTime = goal.endDate!.getDateOnly();
         NotificationService().scheduleDayNotification(
             id: goal.metadataId.hashCode + 7,
-            hour: 22,
-            minute: 48,
+            hour: 20,
+            minute: 10,
             date: scheduleTime.toLocal(),
             title: goal.title,
             body: 'Hai completato il tuo obiettivo ${goal.title}!',
@@ -1047,7 +1047,8 @@ class KeepUp {
       ..whereEqualTo(KeepUpDailyTraceDataModel.userId,
           KeepUpUserDataModel.pointerTo(currentUser!.objectId!))
       ..whereLessThanOrEqualTo(
-          KeepUpDailyTraceDataModel.date, until.getDateOnly());
+          KeepUpDailyTraceDataModel.date, until.getDateOnly())
+      ..orderByAscending(KeepUpDailyTraceDataModel.date);
 
     if (from != null) {
       query.whereGreaterThanOrEqualsTo(
@@ -1061,8 +1062,7 @@ class KeepUp {
     }
 
     return KeepUpResponse.result(
-        objects.map((object) => KeepUpDailyTrace.fromJson(object)).toList()
-          ..sort((a, b) => a.date.compareTo(b.date)));
+        objects.map((object) => KeepUpDailyTrace.fromJson(object)).toList());
   }
 
   /// ottiene la daily trace nel determinato giorno

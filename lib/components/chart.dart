@@ -1,9 +1,7 @@
-import 'dart:developer';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:fl_chart/fl_chart.dart';
-import 'package:flutter/rendering.dart';
 import 'package:intl/intl.dart';
 import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/components/skeleton_loader.dart';

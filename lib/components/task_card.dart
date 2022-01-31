@@ -143,87 +143,109 @@ class AppGoalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    final textColor = completionDate == null
+        ? Colors.black
+        : AppColors.fieldTextColor.withOpacity(0.3);
     final titleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.subtitle1?.fontSize,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: textColor,
         decoration: completionDate != null ? TextDecoration.lineThrough : null);
     final subtitleStyle = TextStyle(
         fontSize: Theme.of(context).textTheme.bodyText1?.fontSize,
         fontWeight: FontWeight.normal,
-        color: Colors.white);
+        color: textColor);
     var cardColor = color ?? AppEventColors.fromEvent(title);
+
+    if (completionDate != null) cardColor = cardColor.withOpacity(0.3);
 
     if (active != null && !active!) cardColor = AppColors.notSelectedColor;
 
-    return Center(
+    return Container(
+        margin: const EdgeInsets.symmetric(vertical: 5),
+        decoration: const BoxDecoration(boxShadow: [
+          BoxShadow(
+            blurStyle: BlurStyle.normal,
+            color: Colors.black12,
+            blurRadius: 20.0,
+            spreadRadius: 0.0,
+            offset: Offset(0.0, 0.75),
+          )
+        ]),
         child: Card(
-            color: cardColor,
-            child: Slidable(
-                enabled: active == null,
-                startActionPane: ActionPane(
-                  motion: const BehindMotion(),
-                  dragDismissible: false,
-                  children: [
-                    SlidableAction(
-                      onPressed: onDeleteGoal,
-                      backgroundColor: Colors.red,
-                      foregroundColor: Colors.white,
-                      icon: Icons.delete_forever,
-                      label: 'Cancella',
-                    )
-                  ],
-                ),
-                endActionPane: null,
-                child: Padding(
-                  padding: const EdgeInsets.all(15),
-                  child: Column(
-                    children: [
-                      Row(children: [
-                        Expanded(
-                            child: Align(
-                                alignment: Alignment.centerLeft,
-                                child: Text(title,
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    softWrap: false,
-                                    style: titleStyle))),
-                        if (active != null) ...[
-                          const SizedBox(width: 10),
-                          SizedBox(
-                            height: 24.0,
-                            width: 24.0,
-                            child: Transform.scale(
-                                scale: 1.3,
-                                child: Checkbox(
-                                    fillColor: !active!
-                                        ? MaterialStateProperty.all(
-                                            Colors.white)
-                                        : null,
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(2),
+            child: ClipPath(
+                clipper: ShapeBorderClipper(
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10))),
+                child: Container(
+                    decoration: BoxDecoration(
+                        border: Border(
+                            left: BorderSide(color: cardColor, width: 15))),
+                    child: Slidable(
+                        enabled: active == null,
+                        startActionPane: ActionPane(
+                          motion: const BehindMotion(),
+                          dragDismissible: false,
+                          children: [
+                            SlidableAction(
+                              onPressed: onDeleteGoal,
+                              backgroundColor: Colors.red,
+                              foregroundColor: Colors.white,
+                              icon: Icons.delete_forever,
+                              label: 'Cancella',
+                            )
+                          ],
+                        ),
+                        endActionPane: null,
+                        child: Padding(
+                            padding: const EdgeInsets.all(15),
+                            child: Column(
+                              children: [
+                                Row(children: [
+                                  Expanded(
+                                      child: Align(
+                                          alignment: Alignment.centerLeft,
+                                          child: Text(title,
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                              softWrap: false,
+                                              style: titleStyle))),
+                                  if (active != null) ...[
+                                    const SizedBox(width: 10),
+                                    SizedBox(
+                                      height: 24.0,
+                                      width: 24.0,
+                                      child: Transform.scale(
+                                          scale: 1.3,
+                                          child: Checkbox(
+                                              fillColor: !active!
+                                                  ? MaterialStateProperty.all(
+                                                      Colors.white)
+                                                  : null,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(2),
+                                              ),
+                                              value: active,
+                                              onChanged: onChecked)),
                                     ),
-                                    value: active,
-                                    onChanged: onChecked)),
-                          ),
-                        ],
-                      ]),
-                      SizedBox(height: 0.005 * size.height),
-                      if (finishDate != null) ...[
-                        SizedBox(height: 0.005 * size.height),
-                        Row(children: [
-                          const Icon(Icons.flag, color: Colors.white),
-                          const SizedBox(width: 10),
-                          Align(
-                              alignment: Alignment.centerLeft,
-                              child: Text(
-                                  AppDateTextField.formatter
-                                      .format(finishDate!),
-                                  style: subtitleStyle))
-                        ])
-                      ]
-                    ],
-                  ),
-                ))));
+                                  ],
+                                ]),
+                                SizedBox(height: 0.005 * size.height),
+                                if (finishDate != null) ...[
+                                  SizedBox(height: 0.005 * size.height),
+                                  Row(children: [
+                                    Icon(Icons.flag, color: textColor),
+                                    const SizedBox(width: 10),
+                                    Align(
+                                        alignment: Alignment.centerLeft,
+                                        child: Text(
+                                            AppDateTextField.formatter
+                                                .format(finishDate!),
+                                            style: subtitleStyle))
+                                  ])
+                                ]
+                              ],
+                            )))))));
   }
 }
