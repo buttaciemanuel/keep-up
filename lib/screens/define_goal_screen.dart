@@ -12,7 +12,7 @@ import 'package:keep_up/style.dart';
 import 'package:keep_up/constant.dart';
 
 class AppDateTextField extends StatelessWidget {
-  static final formatter = DateFormat.yMMMM('it');
+  static final formatter = DateFormat.yMMMMd('it');
   final String? initialText;
   final String label;
   final String? hint;
@@ -42,6 +42,11 @@ class AppDateTextField extends StatelessWidget {
             initialValue: initialText,
             controller: controller,
             onTap: () async {
+              final initialDate = initialText != null
+                  ? formatter.parse(initialText!)
+                  : controller != null && controller!.text.isNotEmpty
+                      ? formatter.parse(controller!.text)
+                      : DateTime.now();
               final date = await showDatePicker(
                   context: context,
                   initialDatePickerMode: DatePickerMode.day,
@@ -52,9 +57,9 @@ class AppDateTextField extends StatelessWidget {
                   errorInvalidText: 'La data non è valida',
                   errorFormatText: 'La data non è valida',
                   helpText: label,
-                  initialDate: DateTime.now(),
+                  initialDate: initialDate,
                   firstDate: DateTime.now(),
-                  lastDate: DateTime.now().add(const Duration(days: 365 * 10)),
+                  lastDate: initialDate.add(const Duration(days: 365 * 10)),
                   builder: (context, child) {
                     return Theme(
                       data: Theme.of(context).copyWith(

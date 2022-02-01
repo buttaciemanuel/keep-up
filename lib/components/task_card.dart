@@ -1,9 +1,14 @@
+import 'dart:developer';
+
+import 'package:badges/badges.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_slidable/flutter_slidable.dart';
 import 'package:keep_up/components/progress_bar.dart';
 import 'package:keep_up/constant.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
+import 'package:keep_up/screens/goal_success_screen.dart';
+import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
 class AppTaskCard extends StatelessWidget {
@@ -128,6 +133,7 @@ class AppGoalCard extends StatelessWidget {
   final DateTime? completionDate;
   final Function(BuildContext?)? onDeleteGoal;
   final Function(bool?)? onChecked;
+  final Function()? onCompleteBadgeTap;
 
   const AppGoalCard(
       {Key? key,
@@ -137,7 +143,8 @@ class AppGoalCard extends StatelessWidget {
       this.onChecked,
       this.finishDate,
       this.completionDate,
-      this.onDeleteGoal})
+      this.onDeleteGoal,
+      this.onCompleteBadgeTap})
       : super(key: key);
 
   @override
@@ -172,80 +179,93 @@ class AppGoalCard extends StatelessWidget {
             offset: Offset(0.0, 0.75),
           )
         ]),
-        child: Card(
-            child: ClipPath(
-                clipper: ShapeBorderClipper(
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10))),
-                child: Container(
-                    decoration: BoxDecoration(
-                        border: Border(
-                            left: BorderSide(color: cardColor, width: 15))),
-                    child: Slidable(
-                        enabled: active == null,
-                        startActionPane: ActionPane(
-                          motion: const BehindMotion(),
-                          dragDismissible: false,
-                          children: [
-                            SlidableAction(
-                              onPressed: onDeleteGoal,
-                              backgroundColor: Colors.red,
-                              foregroundColor: Colors.white,
-                              icon: Icons.delete_forever,
-                              label: 'Cancella',
-                            )
-                          ],
-                        ),
-                        endActionPane: null,
-                        child: Padding(
-                            padding: const EdgeInsets.all(15),
-                            child: Column(
+        child: Badge(
+            badgeColor: cardColor,
+            showBadge: finishDate != null &&
+                completionDate == null &&
+                DateTime.now()
+                        .getDateOnly()
+                        .compareTo(finishDate!.getDateOnly()) >=
+                    0,
+            badgeContent: GestureDetector(
+                child: const Icon(Icons.flag, color: Colors.white, size: 24),
+                onTap: onCompleteBadgeTap),
+            child: Card(
+                child: ClipPath(
+                    clipper: ShapeBorderClipper(
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10))),
+                    child: Container(
+                        decoration: BoxDecoration(
+                            border: Border(
+                                left: BorderSide(color: cardColor, width: 15))),
+                        child: Slidable(
+                            enabled: active == null,
+                            startActionPane: ActionPane(
+                              motion: const BehindMotion(),
+                              dragDismissible: false,
                               children: [
-                                Row(children: [
-                                  Expanded(
-                                      child: Align(
-                                          alignment: Alignment.centerLeft,
-                                          child: Text(title,
-                                              maxLines: 1,
-                                              overflow: TextOverflow.ellipsis,
-                                              softWrap: false,
-                                              style: titleStyle))),
-                                  if (active != null) ...[
-                                    const SizedBox(width: 10),
-                                    SizedBox(
-                                      height: 24.0,
-                                      width: 24.0,
-                                      child: Transform.scale(
-                                          scale: 1.3,
-                                          child: Checkbox(
-                                              fillColor: !active!
-                                                  ? MaterialStateProperty.all(
-                                                      Colors.white)
-                                                  : null,
-                                              shape: RoundedRectangleBorder(
-                                                borderRadius:
-                                                    BorderRadius.circular(2),
-                                              ),
-                                              value: active,
-                                              onChanged: onChecked)),
-                                    ),
-                                  ],
-                                ]),
-                                SizedBox(height: 0.005 * size.height),
-                                if (finishDate != null) ...[
-                                  SizedBox(height: 0.005 * size.height),
-                                  Row(children: [
-                                    Icon(Icons.flag, color: textColor),
-                                    const SizedBox(width: 10),
-                                    Align(
-                                        alignment: Alignment.centerLeft,
-                                        child: Text(
-                                            AppDateTextField.formatter
-                                                .format(finishDate!),
-                                            style: subtitleStyle))
-                                  ])
-                                ]
+                                SlidableAction(
+                                  onPressed: onDeleteGoal,
+                                  backgroundColor: Colors.red,
+                                  foregroundColor: Colors.white,
+                                  icon: Icons.delete_forever,
+                                  label: 'Cancella',
+                                )
                               ],
-                            )))))));
+                            ),
+                            endActionPane: null,
+                            child: Padding(
+                                padding: const EdgeInsets.all(15),
+                                child: Column(
+                                  children: [
+                                    Row(children: [
+                                      Expanded(
+                                          child: Align(
+                                              alignment: Alignment.centerLeft,
+                                              child: Text(title,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  softWrap: false,
+                                                  style: titleStyle))),
+                                      if (active != null) ...[
+                                        const SizedBox(width: 10),
+                                        SizedBox(
+                                          height: 24.0,
+                                          width: 24.0,
+                                          child: Transform.scale(
+                                              scale: 1.3,
+                                              child: Checkbox(
+                                                  fillColor: !active!
+                                                      ? MaterialStateProperty
+                                                          .all(Colors.white)
+                                                      : null,
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            2),
+                                                  ),
+                                                  value: active,
+                                                  onChanged: onChecked)),
+                                        ),
+                                      ],
+                                    ]),
+                                    SizedBox(height: 0.005 * size.height),
+                                    if (finishDate != null) ...[
+                                      SizedBox(height: 0.005 * size.height),
+                                      Row(children: [
+                                        Icon(Icons.flag, color: textColor),
+                                        const SizedBox(width: 10),
+                                        Align(
+                                            alignment: Alignment.centerLeft,
+                                            child: Text(
+                                                AppDateTextField.formatter
+                                                    .format(finishDate!),
+                                                style: subtitleStyle))
+                                      ])
+                                    ]
+                                  ],
+                                ))))))));
   }
 }

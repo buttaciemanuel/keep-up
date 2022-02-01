@@ -47,26 +47,34 @@ class KeepUp {
     final user = ParseUser(email, password, email);
     final response = await user.login();
 
-    if (response.success) {
-      log('KeepUp: user login success');
-      return KeepUpResponse();
-    } else {
+    if (!response.success) {
       return KeepUpResponse.error(
           'KeepUp: user login failure: ${response.error!.message}');
     }
+
+    log('KeepUp: user login success');
+
+    // abilita tutte le notifiche al login
+    _enableAllNotifications();
+
+    return KeepUpResponse();
   }
 
   Future<KeepUpResponse> logout() async {
     final currentUser = await ParseUser.currentUser() as ParseUser?;
     final response = await currentUser!.logout();
 
-    if (response.success) {
-      log('KeepUp: user logout success');
-      return KeepUpResponse();
-    } else {
+    if (!response.success) {
       return KeepUpResponse.error(
           'KeepUp: user logout failure: ${response.error!.message}');
     }
+
+    log('KeepUp: user logout success');
+
+    // se l'utente non è loggato, rimuove tutte le notifiche
+    NotificationService().cancelAllNotifications();
+
+    return KeepUpResponse();
   }
 
   Future<KeepUpResponse> changePassword(
@@ -186,6 +194,23 @@ class KeepUp {
 
       return KeepUpResponse();
     }
+  }
+
+  Future _enableAllNotifications() async {
+    final currentUser = await getUser() as KeepUpUser;
+
+    // abilita le notifiche sui task quotidiani
+    if (currentUser.notifyTasks) {
+      await _enableTasksNotification();
+    }
+
+    // abilita le notifiche sul survey
+    if (currentUser.notifySurveyTime != null) {
+      await _enableSurveyNotification(time: currentUser.notifySurveyTime!);
+    }
+
+    // abilita le notifiche sul completamento dei goal
+    await enableGoalsCompletionNotification();
   }
 
   Future _enableSurveyNotification({required KeepUpDayTime time}) async {

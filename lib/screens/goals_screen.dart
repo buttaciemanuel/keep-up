@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
+import 'package:keep_up/screens/goal_success_screen.dart';
 import 'package:keep_up/screens/schedule_loading_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
@@ -121,6 +122,16 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                     KeepUp.instance
                                         .deleteEvent(eventId: goals[index].id!)
                                         .then((_) => setState(() {}));
+                                  },
+                                  onCompleteBadgeTap: () {
+                                    Navigator.of(context)
+                                        .push(MaterialPageRoute(
+                                            fullscreenDialog: true,
+                                            builder: (context) {
+                                              return GoalSuccessScreen(
+                                                  goalMetadataId:
+                                                      goals[index].metadataId!);
+                                            }));
                                   },
                                 ));
                           }));
