@@ -174,7 +174,7 @@ class AppGoalCard extends StatelessWidget {
           BoxShadow(
             blurStyle: BlurStyle.normal,
             color: Colors.black12,
-            blurRadius: 20.0,
+            blurRadius: 10.0,
             spreadRadius: 0.0,
             offset: Offset(0.0, 0.75),
           )

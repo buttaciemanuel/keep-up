@@ -16,9 +16,6 @@ class GoalsScreen extends StatefulWidget {
 }
 
 class _GoalsScreenState extends State<GoalsScreen> {
-  static const _downloadSnackbar = SnackBar(
-      padding: EdgeInsets.all(20),
-      content: Text('Ci sono dei problemi nello scaricare i dati'));
   late final _rescheduleSnackbar = SnackBar(
       action: SnackBarAction(
           label: 'Si',
@@ -70,84 +67,81 @@ class _GoalsScreenState extends State<GoalsScreen> {
             child: Text('Definisci i tuoi obiettivi.',
                 style: Theme.of(context).textTheme.subtitle1)),
         SizedBox(height: 0.03 * size.height),
-        Expanded(
-            child: SizedBox(
-          height: 0,
-          child: FutureBuilder<KeepUpResponse>(
-              future: KeepUp.instance.getAllGoals(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  final goals = snapshot.data!.result as List<KeepUpGoal>;
+        FutureBuilder<KeepUpResponse>(
+            future: KeepUp.instance.getAllGoals(),
+            builder: (context, snapshot) {
+              if (snapshot.hasData) {
+                final goals = snapshot.data!.result as List<KeepUpGoal>;
 
-                  if (goals.isEmpty) {
-                    return Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset('assets/images/no_goals.png',
-                              height: 0.25 * size.height,
-                              width: 0.7 * size.width),
-                          SizedBox(height: 0.05 * size.height),
-                          Text('Dipingi il tuo futuro!',
-                              style: Theme.of(context).textTheme.headline3),
-                          SizedBox(height: 0.02 * size.height),
-                          Text('Aggiungi qualche obiettivo in alto.',
-                              style: Theme.of(context).textTheme.subtitle2)
-                        ]);
-                  }
-
-                  return Scrollbar(
-                      child: ListView.builder(
-                          padding: const EdgeInsets.all(5),
-                          itemCount: goals.length,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            return GestureDetector(
-                                onTap: () {
-                                  Navigator.of(context)
-                                      .push(MaterialPageRoute(
-                                          fullscreenDialog: true,
-                                          builder: (context) {
-                                            return DefineGoalScreen(
-                                                fromGoal: goals[index]);
-                                          }))
-                                      .then((_) => setState(() {}));
-                                },
-                                child: AppGoalCard(
-                                  color: goals[index].color,
-                                  title: goals[index].title,
-                                  finishDate: goals[index].endDate,
-                                  completionDate: goals[index].completionDate,
-                                  onDeleteGoal: (context) {
-                                    KeepUp.instance
-                                        .deleteEvent(eventId: goals[index].id!)
-                                        .then((_) => setState(() {}));
-                                  },
-                                  onCompleteBadgeTap: () {
-                                    Navigator.of(context)
-                                        .push(MaterialPageRoute(
-                                            fullscreenDialog: true,
-                                            builder: (context) {
-                                              return GoalSuccessScreen(
-                                                  goalMetadataId:
-                                                      goals[index].metadataId!);
-                                            }));
-                                  },
-                                ));
-                          }));
-                } else {
-                  return Scrollbar(
-                      child: ListView.builder(
-                          padding: const EdgeInsets.all(5),
-                          itemCount: 3,
-                          physics: const BouncingScrollPhysics(),
-                          itemBuilder: (context, index) {
-                            return const SkeletonLoader(
-                                child: AppGoalCard(title: ''));
-                          }));
+                if (goals.isEmpty) {
+                  return Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Image.asset('assets/images/no_goals.png',
+                            height: 0.25 * size.height,
+                            width: 0.7 * size.width),
+                        SizedBox(height: 0.05 * size.height),
+                        Text('Dipingi il tuo futuro!',
+                            style: Theme.of(context).textTheme.headline3),
+                        SizedBox(height: 0.02 * size.height),
+                        Text('Aggiungi qualche obiettivo in alto.',
+                            style: Theme.of(context).textTheme.subtitle2)
+                      ]);
                 }
-              }),
-        )),
+
+                return SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    scrollDirection: Axis.vertical,
+                    child: Column(
+                        children: List.generate(goals.length, (index) {
+                      return GestureDetector(
+                          onTap: () {
+                            Navigator.of(context)
+                                .push(MaterialPageRoute(
+                                    fullscreenDialog: true,
+                                    builder: (context) {
+                                      return DefineGoalScreen(
+                                          fromGoal: goals[index]);
+                                    }))
+                                .then((_) => setState(() {}));
+                          },
+                          child: AppGoalCard(
+                            color: goals[index].color,
+                            title: goals[index].title,
+                            finishDate: goals[index].endDate,
+                            completionDate: goals[index].completionDate,
+                            onDeleteGoal: (context) {
+                              KeepUp.instance
+                                  .deleteEvent(eventId: goals[index].id!)
+                                  .then((_) => setState(() {}));
+                            },
+                            onCompleteBadgeTap: () {
+                              Navigator.of(context).push(MaterialPageRoute(
+                                  fullscreenDialog: true,
+                                  builder: (context) {
+                                    return GoalSuccessScreen(
+                                        goalMetadataId:
+                                            goals[index].metadataId!);
+                                  }));
+                            },
+                          ));
+                    })));
+              } else {
+                return SizedBox(
+                    height: 0,
+                    child: Scrollbar(
+                        child: ListView.builder(
+                            padding: const EdgeInsets.all(5),
+                            itemCount: 3,
+                            physics: const BouncingScrollPhysics(),
+                            itemBuilder: (context, index) {
+                              return const SkeletonLoader(
+                                  child: AppGoalCard(title: ''));
+                            })));
+              }
+            }),
+        SizedBox(height: 0.03 * size.height),
       ],
     );
   }

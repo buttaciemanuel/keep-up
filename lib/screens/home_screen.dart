@@ -47,9 +47,9 @@ class _HomeScreenState extends State<HomeScreen> {
         mainAxisSize: MainAxisSize.max,
         children: List.generate(
             3,
-            (index) => SkeletonLoader(
+            (index) => const SkeletonLoader(
                 child: AppTaskCard(
-                    title: '', time: const TimeOfDay(hour: 0, minute: 0)))));
+                    title: '', time: TimeOfDay(hour: 0, minute: 0)))));
   }
 
   @override
