@@ -47,6 +47,7 @@ class AppDateTextField extends StatelessWidget {
                   : controller != null && controller!.text.isNotEmpty
                       ? formatter.parse(controller!.text)
                       : DateTime.now();
+              var today = DateTime.now();
               final date = await showDatePicker(
                   context: context,
                   initialDatePickerMode: DatePickerMode.day,
@@ -58,7 +59,8 @@ class AppDateTextField extends StatelessWidget {
                   errorFormatText: 'La data non è valida',
                   helpText: label,
                   initialDate: initialDate,
-                  firstDate: DateTime.now(),
+                  firstDate:
+                      initialDate.compareTo(today) < 0 ? initialDate : today,
                   lastDate: initialDate.add(const Duration(days: 365 * 10)),
                   builder: (context, child) {
                     return Theme(
