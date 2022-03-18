@@ -1,34 +1,27 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
-import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/screens/daily_survey_screen.dart';
 import 'package:keep_up/screens/goal_success_screen.dart';
-import 'package:keep_up/screens/oops_screen.dart';
-import 'package:keep_up/screens/personal_growth_screen.dart';
 import 'package:keep_up/services/notification_service.dart';
-import 'package:keep_up/screens/goal_choice_screen.dart';
-import 'package:keep_up/screens/home_screen.dart';
 import 'package:keep_up/screens/login_screen.dart';
-import 'package:keep_up/screens/register_screen.dart';
-import 'package:keep_up/screens/schedule_loading_screen.dart';
-import 'package:keep_up/screens/timetable_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:animated_splash_screen/animated_splash_screen.dart';
 import 'package:page_transition/page_transition.dart';
 import 'package:keep_up/style.dart';
 import 'package:keep_up/services/keep_up_api.dart';
-import 'package:keep_up/services/polito_api.dart';
-import 'package:keep_up/screens/student_sync_screen.dart';
-import 'package:parse_server_sdk_flutter/parse_server_sdk.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.portraitUp,
+  ]);
 
   await KeepUp.instance.init();
 
