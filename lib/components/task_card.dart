@@ -239,7 +239,8 @@ class AppGoalCard extends StatelessWidget {
                                               child: Checkbox(
                                                   fillColor: !active!
                                                       ? MaterialStateProperty
-                                                          .all(Colors.white)
+                                                          .all(AppColors
+                                                              .notSelectedColor)
                                                       : null,
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:

@@ -78,6 +78,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.center,
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        SizedBox(height: 0.05 * size.height),
                         Image.asset('assets/images/no_goals.png',
                             height: 0.25 * size.height,
                             width: 0.7 * size.width),

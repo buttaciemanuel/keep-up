@@ -74,8 +74,8 @@ class _StudentSyncScreenState extends State<StudentSyncScreen> {
           return;
         }
         // scaricamento degli orari ordinati dall'account dell'università
-        response = await PolitoClient.instance
-            .getWeekSchedule(inDate: DateTime(2021, 12, 1));
+        response =
+            await PolitoClient.instance.getWeekSchedule(inDate: DateTime.now());
         // logout da account istituzionale
         await PolitoClient.instance.logoutUser();
         // controlla che non siano avvenuti errori

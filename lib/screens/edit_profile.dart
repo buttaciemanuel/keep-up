@@ -2,6 +2,7 @@ import 'package:email_validator/email_validator.dart';
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/text_field.dart';
+import 'package:keep_up/screens/delete_profile_screen.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
@@ -51,10 +52,20 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     final size = MediaQuery.of(context).size;
     return AppLayout(children: [
       SizedBox(height: 0.05 * size.height),
-      Align(
-          alignment: Alignment.centerLeft,
-          child: Text('Modifica profilo',
-              style: Theme.of(context).textTheme.headline2)),
+      Row(children: [
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Modifica profilo',
+                style: Theme.of(context).textTheme.headline2)),
+        const Expanded(child: SizedBox()),
+        IconButton(
+            iconSize: 32.0,
+            padding: EdgeInsets.zero,
+            tooltip: 'Cancella',
+            constraints: const BoxConstraints(),
+            onPressed: () {},
+            icon: const Icon(Icons.delete_forever, color: Colors.red))
+      ]),
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
@@ -116,10 +127,28 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return AppLayout(children: [
       SizedBox(height: 0.05 * size.height),
-      Align(
-          alignment: Alignment.centerLeft,
-          child: Text('Modifica profilo',
-              style: Theme.of(context).textTheme.headline2)),
+      Row(children: [
+        Align(
+            alignment: Alignment.centerLeft,
+            child: Text('Modifica profilo',
+                style: Theme.of(context).textTheme.headline2)),
+        const Expanded(child: SizedBox()),
+        IconButton(
+            iconSize: 32.0,
+            padding: EdgeInsets.zero,
+            tooltip: 'Cancella',
+            constraints: const BoxConstraints(),
+            onPressed: () {
+              Navigator.of(context)
+                  .push(MaterialPageRoute(
+                      fullscreenDialog: true,
+                      builder: (context) {
+                        return const DeleteProfileScreen();
+                      }))
+                  .then((_) => setState(() {}));
+            },
+            icon: const Icon(Icons.delete_sweep, color: Colors.red))
+      ]),
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,

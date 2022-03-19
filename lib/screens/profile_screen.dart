@@ -62,20 +62,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           SkeletonLoader(
               child: Image.asset('assets/images/avatar_man1.png',
                   width: size.width * 0.3)),
-          const Expanded(child: SizedBox(width: 10)),
-          Column(children: [
-            Align(
-                alignment: Alignment.centerRight,
-                child: SkeletonLoader(
-                    child: Text('',
-                        style: Theme.of(context).textTheme.headline3))),
-            const SizedBox(height: 5),
-            SkeletonLoader(
-                child: Align(
-                    alignment: Alignment.centerRight,
-                    child: Text('',
-                        style: Theme.of(context).textTheme.subtitle2))),
-          ])
+          const SizedBox(width: 32),
+          Expanded(
+              child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Column(
+                      mainAxisAlignment: MainAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SkeletonLoader(
+                            child: Text('',
+                                style: Theme.of(context).textTheme.headline3)),
+                        const SizedBox(height: 5),
+                        Text('', style: Theme.of(context).textTheme.subtitle2),
+                      ])))
         ]),
         SizedBox(height: 0.05 * size.height),
         Row(children: [
@@ -175,7 +175,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   .textTheme
                   .bodyText1
                   ?.copyWith(color: Colors.black)),
-          const Expanded(child: const SizedBox(width: 10)),
+          const Expanded(child: SizedBox(width: 10)),
           const Icon(Icons.keyboard_arrow_right, color: Colors.black)
         ]),
         Divider(
@@ -211,21 +211,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Row(children: [
                   Image.asset('assets/images/avatar_man1.png',
                       width: size.width * 0.3),
-                  const Expanded(child: SizedBox(width: 10)),
-                  Column(
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(_user!.fullname,
-                                style: Theme.of(context).textTheme.headline3)),
-                        const SizedBox(height: 5),
-                        Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(_user!.email,
-                                style: Theme.of(context).textTheme.subtitle2)),
-                      ])
+                  const SizedBox(width: 32),
+                  Expanded(
+                      child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Column(
+                              mainAxisAlignment: MainAxisAlignment.start,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(_user!.fullname,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style:
+                                        Theme.of(context).textTheme.headline3),
+                                const SizedBox(height: 5),
+                                Text(_user!.email,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    softWrap: false,
+                                    style:
+                                        Theme.of(context).textTheme.subtitle2),
+                              ])))
                 ]),
                 SizedBox(height: 0.05 * size.height),
                 Row(children: [
@@ -447,7 +454,8 @@ class AppBottomDialog {
       required String confirmText,
       required String cancelText,
       Function()? confirmPressed,
-      Function()? cancelPressed}) {
+      Function()? cancelPressed,
+      Color? confirmColor}) {
     final size = MediaQuery.of(context).size;
 
     defaultAction() {
@@ -521,9 +529,10 @@ class AppBottomDialog {
                       Expanded(
                           child: Container(
                         width: double.maxFinite,
-                        decoration: const BoxDecoration(
-                          color: AppColors.primaryColor,
-                          borderRadius: BorderRadius.all(Radius.circular(8)),
+                        decoration: BoxDecoration(
+                          color: confirmColor ?? AppColors.primaryColor,
+                          borderRadius:
+                              const BorderRadius.all(Radius.circular(8)),
                         ),
                         child: TextButton(
                           onPressed: confirmPressed ?? defaultAction,

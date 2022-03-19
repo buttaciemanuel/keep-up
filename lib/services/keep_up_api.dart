@@ -77,6 +77,101 @@ class KeepUp {
     return KeepUpResponse();
   }
 
+  Future<KeepUpResponse> deleteUser({required String reason}) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
+    // crea l'utente eliminato con informazioni
+    final deletedUserInfo = ParseObject(KeepUpDeletedUserDataModel.className)
+      ..set(KeepUpDeletedUserDataModel.email, currentUser.emailAddress!)
+      ..set(KeepUpDeletedUserDataModel.fullName,
+          currentUser.get(KeepUpUserDataModel.fullName))
+      ..set(KeepUpDeletedUserDataModel.id, currentUser.objectId)
+      ..set(KeepUpDeletedUserDataModel.reason, reason);
+    final events = await getAllEvents();
+    // elimina tutti gli eventi dell'utente e info annesse
+    for (final event in events.result!) {
+      deleteEvent(eventId: event.id!);
+    }
+    // query per cancellare il tracking di progressi
+    final deleteTracesQuery =
+        QueryBuilder.name(KeepUpDailyTraceDataModel.className)
+          ..whereEqualTo(KeepUpDailyTraceDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // query per cancellare i thread creati dall'utente
+    final deleteUserThreadsQuery =
+        QueryBuilder.name(KeepUpThreadDataModel.className)
+          ..whereEqualTo(KeepUpThreadDataModel.creatorId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // query per cancellare la partecipazione dell'utente
+    final deleteUserThreadPartecipantQuery =
+        QueryBuilder.name(KeepUpThreadPartecipantDataModel.className)
+          ..whereEqualTo(KeepUpThreadPartecipantDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // query per cancellare le visualizzazioni di thread dell'utente
+    final deleteUserThreadViewsQuery =
+        QueryBuilder.name(KeepUpThreadViewDataModel.className)
+          ..whereEqualTo(KeepUpThreadViewDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // query per cancellare i messaggi inviati dall'utente
+    final deleteUserMessagesQuery =
+        QueryBuilder.name(KeepUpThreadMessageDataModel.className)
+          ..whereEqualTo(KeepUpThreadMessageDataModel.senderId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // query per cancellare i like dell'utente
+    final deleteUserMessagesLikesQuery =
+        QueryBuilder.name(KeepUpThreadMessageLikeDataModel.className)
+          ..whereEqualTo(KeepUpThreadMessageLikeDataModel.userId,
+              KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // esegue tutte le query
+    deleteTracesQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    deleteUserThreadsQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    deleteUserThreadViewsQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    deleteUserMessagesQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    deleteUserMessagesLikesQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    deleteUserThreadPartecipantQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+    // elimina l'account
+    final response = await currentUser.delete();
+    // salva l'account eliminato nell'altra tabella
+    deletedUserInfo.save();
+
+    if (!response.success) {
+      return KeepUpResponse.error(
+          'KeepUp: user delete failure: ${response.error!.message}');
+    }
+
+    log('KeepUp: user delete success');
+
+    return KeepUpResponse();
+  }
+
   Future<KeepUpResponse> changePassword(
       String oldPassword, String newPassword) async {
     // Controlla che ci sia un utente salvato in cache
@@ -784,7 +879,10 @@ class KeepUp {
       if (a.completionDate != null && b.completionDate != null) {
         return a.completionDate!.compareTo(b.completionDate!);
       }
-      return a.endDate!.compareTo(b.endDate!);
+      if (a.endDate != null && b.endDate != null) {
+        return a.endDate!.compareTo(b.endDate!);
+      }
+      return -1;
     });
 
     return KeepUpResponse.result(result);
@@ -898,9 +996,23 @@ class KeepUp {
     final target = ParseObject(KeepUpEventDataModel.className)
       ..objectId = eventId;
 
-    await deleteRecurrencesQuery.query();
-    await deleteExceptionsQuery.query();
-    await deleteGoalQuery.query();
+    deleteRecurrencesQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    await deleteExceptionsQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
+
+    await deleteGoalQuery.find().then((objects) {
+      for (var object in objects) {
+        object.delete();
+      }
+    });
 
     final response = await target.delete();
 
@@ -2059,6 +2171,18 @@ abstract class KeepUpUserDataModel {
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': '_User', 'objectId': objectId};
+  }
+}
+
+abstract class KeepUpDeletedUserDataModel {
+  static const className = 'DeletedUser';
+  static const id = 'userId';
+  static const email = 'email';
+  static const fullName = 'fullName';
+  static const reason = 'reason';
+
+  static Map<String, dynamic> pointerTo(String objectId) {
+    return {'__type': 'Pointer', 'className': className, 'objectId': objectId};
   }
 }
 
