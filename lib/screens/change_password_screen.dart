@@ -113,12 +113,12 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
       SizedBox(height: 0.05 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Modifica profilo',
+          child: Text('Cambia password',
               style: Theme.of(context).textTheme.headline2)),
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Aggiorna i tuoi dati.',
+          child: Text('Scegli una nuova password.',
               style: Theme.of(context).textTheme.subtitle1)),
       SizedBox(height: 0.05 * size.height),
       Form(

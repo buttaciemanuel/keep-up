@@ -17,6 +17,7 @@ class GoalsScreen extends StatefulWidget {
 
 class _GoalsScreenState extends State<GoalsScreen> {
   late final _rescheduleSnackbar = SnackBar(
+      backgroundColor: AppColors.darkGrey,
       action: SnackBarAction(
           label: 'Si',
           onPressed: () {

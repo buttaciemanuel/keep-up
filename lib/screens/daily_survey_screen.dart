@@ -12,7 +12,11 @@ import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
 class DailySurveyScreen extends StatefulWidget {
-  const DailySurveyScreen({Key? key}) : super(key: key);
+  final int? fromNavigatorPage;
+  final DateTime? inDate;
+
+  const DailySurveyScreen({Key? key, this.fromNavigatorPage, this.inDate})
+      : super(key: key);
 
   @override
   _DailySurveyScreenState createState() => _DailySurveyScreenState();
@@ -23,7 +27,9 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
   static const _buttonTexts = ['Continua', 'Hai tempo?', 'Continua', 'Mostra'];
   var _currentStep = 0;
   var _previousStep = 0;
-  final _currentDate = DateTime.now().getDateOnly();
+  late final _currentDate = widget.inDate != null
+      ? widget.inDate!.getDateOnly()
+      : DateTime.now().getDateOnly();
   var _selectedMood = 2.0;
   List<KeepUpTask>? _todayTasks;
   KeepUpDailyTrace? _todayTrace;
@@ -78,6 +84,7 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
     await KeepUp.instance.updateDailyTrace(_todayTrace!);
     // aggiorna le valutazioni sugli obiettivi con media
     for (final goal in _ratedGoals!) {
+      if (!_taskRatings.containsKey(goal.id)) continue;
       final newCount = goal.ratingsCount! + 1;
       goal.rating =
           (goal.rating! * goal.ratingsCount! + _taskRatings[goal.id!]!) /
@@ -279,10 +286,16 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
             tooltip: 'Esci',
             constraints: const BoxConstraints(),
             onPressed: () async {
-              await _saveDataInBackground();
-              Navigator.of(context).pushReplacement(MaterialPageRoute(
-                  fullscreenDialog: true,
-                  builder: (context) => const AppNavigator()));
+              // it doesn't save data when exiting explicitly
+              // await _saveDataInBackground();
+              if (widget.fromNavigatorPage != null) {
+                Navigator.of(context).pop();
+              } else {
+                Navigator.of(context).pushReplacement(MaterialPageRoute(
+                    fullscreenDialog: true,
+                    builder: (context) =>
+                        AppNavigator(initialPage: widget.fromNavigatorPage)));
+              }
             },
             icon: const Icon(Icons.close, color: AppColors.grey))
       ]),
@@ -362,10 +375,14 @@ class _DailySurveyScreenState extends State<DailySurveyScreen> {
                 });
               } else {
                 await _saveDataInBackground();
-                Navigator.of(context).pushReplacement(MaterialPageRoute(
-                    fullscreenDialog: true,
-                    builder: (context) => const AppNavigator(
-                        initialPage: AppNavigator.personalGrowthPage)));
+                if (widget.fromNavigatorPage != null) {
+                  Navigator.of(context).pop();
+                } else {
+                  Navigator.of(context).pushReplacement(MaterialPageRoute(
+                      fullscreenDialog: true,
+                      builder: (context) => const AppNavigator(
+                          initialPage: AppNavigator.personalGrowthPage)));
+                }
               }
             },
             child: Text(_buttonTexts[_currentStep]),

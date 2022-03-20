@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 abstract class AppColors {
   static const primaryColor = Color(0xFFFF7F00);
+  static const darkGrey = Color(0xFF1C1C1C);
   static const grey = Color.fromRGBO(0, 0, 0, 0.5);
   static const lightGrey = Color.fromRGBO(0, 0, 0, 0.3);
   static const fieldBackgroundColor = Color(0xFFF5F4F4);

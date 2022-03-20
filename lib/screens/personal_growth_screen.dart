@@ -4,7 +4,9 @@ import 'package:async/async.dart';
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/category_selector.dart';
 import 'package:keep_up/components/chart.dart';
+import 'package:keep_up/components/navigator.dart';
 import 'package:keep_up/constant.dart';
+import 'package:keep_up/screens/daily_survey_screen.dart';
 import 'package:keep_up/screens/oops_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
@@ -114,15 +116,6 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
   @override
   void initState() {
     super.initState();
-
-    /*for (var current = _fromDate;
-        current.compareTo(_currentDate) < 0;
-        current = current.add(const Duration(days: 1))) {
-      KeepUp.instance.updateDailyTrace(KeepUpDailyTrace(
-          date: current,
-          mood: Random().nextInt(20),
-          completedTasks: List.generate(Random().nextInt(10), (index) => '_')));
-    }*/
   }
 
   Future<void> _fetchData() => _memoizer.runOnce(() async {
@@ -157,10 +150,21 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
     final size = MediaQuery.of(context).size;
     return AppNavigationPageLayout(children: [
       SizedBox(height: 0.05 * size.height),
-      Align(
-          alignment: Alignment.centerLeft,
-          child: Text('La tua crescita',
-              style: Theme.of(context).textTheme.headline1)),
+      Row(children: [
+        Expanded(
+          child: Align(
+              alignment: Alignment.centerLeft,
+              child: Text('La tua crescita',
+                  style: Theme.of(context).textTheme.headline1)),
+        ),
+        IconButton(
+            iconSize: 32.0,
+            padding: EdgeInsets.zero,
+            tooltip: 'Calendario',
+            constraints: const BoxConstraints(),
+            onPressed: () => _loadCalendarOfProgress(),
+            icon: const Icon(Icons.date_range, color: AppColors.primaryColor))
+      ]),
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
@@ -219,5 +223,47 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
             }
           })
     ]);
+  }
+
+  _loadCalendarOfProgress() async {
+    var today = DateTime.now();
+    final date = await showDatePicker(
+        context: context,
+        initialDatePickerMode: DatePickerMode.day,
+        fieldLabelText: 'Progresso',
+        cancelText: 'Annulla',
+        confirmText: 'Scegli',
+        fieldHintText: 'Data del progresso',
+        errorInvalidText: 'La data non è valida',
+        errorFormatText: 'La data non è valida',
+        helpText: 'Progresso',
+        initialDate: today.subtract(const Duration(days: 1)),
+        firstDate: today.subtract(const Duration(days: 90)),
+        lastDate: today.subtract(const Duration(days: 1)),
+        builder: (context, child) {
+          return Theme(
+            data: Theme.of(context).copyWith(
+              dialogTheme: const DialogTheme(
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.all(Radius.circular(10.0)))),
+              colorScheme: const ColorScheme.light(
+                primary: AppColors.primaryColor,
+                onPrimary: Colors.white,
+                onSurface: Colors.black,
+              ),
+            ),
+            child: child!,
+          );
+        });
+
+    if (date != null) {
+      Navigator.of(context)
+          .push(MaterialPageRoute(
+              fullscreenDialog: true,
+              builder: (context) => DailySurveyScreen(
+                  inDate: date,
+                  fromNavigatorPage: AppNavigator.personalGrowthPage)))
+          .then((_) => setState(() {}));
+    }
   }
 }
