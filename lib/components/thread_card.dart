@@ -66,9 +66,9 @@ class AppThreadCard extends StatelessWidget {
         Align(
             alignment: Alignment.centerLeft,
             child: Text(title,
-                maxLines: 1,
+                /*maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                softWrap: false,
+                softWrap: false,*/
                 style: titleStyle)),
         const Divider(
             height: 30,
@@ -189,11 +189,7 @@ class AppThreadReplyCard extends StatelessWidget {
         if (title != null) ...[
           Align(
               alignment: Alignment.centerLeft,
-              child: Text(title!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  softWrap: false,
-                  style: titleStyle)),
+              child: Text(title!, style: titleStyle)),
           const Divider(
               height: 30,
               color: Colors.black,

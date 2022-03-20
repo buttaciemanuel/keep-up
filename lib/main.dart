@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:keep_up/components/navigator.dart';
+import 'package:keep_up/constant.dart';
 import 'package:keep_up/screens/daily_survey_screen.dart';
 import 'package:keep_up/screens/goal_success_screen.dart';
+import 'package:keep_up/screens/on_boarding_screen.dart';
+import 'package:keep_up/screens/timetable_screen.dart';
 import 'package:keep_up/services/notification_service.dart';
 import 'package:keep_up/screens/login_screen.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -32,7 +36,11 @@ void main() async {
       .notificationsPlugin
       .getNotificationAppLaunchDetails();
 
-  runApp(MyApp(payload: launchDetails?.payload));
+  final preferences = await SharedPreferences.getInstance();
+
+  runApp(MyApp(
+      payload: launchDetails?.payload,
+      firstRun: preferences.getBool(isFirstRunKey)));
 }
 
 void onNotificationTapped(String? payload) {
@@ -54,7 +62,8 @@ void onNotificationTapped(String? payload) {
 
 class MyApp extends StatefulWidget {
   final String? payload;
-  const MyApp({Key? key, this.payload}) : super(key: key);
+  final bool? firstRun;
+  const MyApp({Key? key, this.payload, this.firstRun}) : super(key: key);
 
   @override
   State<MyApp> createState() => _MyAppState();
@@ -102,6 +111,8 @@ class _MyAppState extends State<MyApp> {
                 } else {
                   return const AppNavigator();
                 }
+              } else if (widget.firstRun ?? true) {
+                return const OnBoardinScreen();
               } else {
                 // home screen
                 return const LoginScreen();

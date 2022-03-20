@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+const isFirstRunKey = "isFirstRun";
+
 const weekDays = [
   'Lunedì',
   'Martedì',

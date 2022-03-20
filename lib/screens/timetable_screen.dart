@@ -1,5 +1,3 @@
-import 'dart:developer';
-
 import 'package:flutter/material.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
@@ -122,32 +120,30 @@ class _TimetableScreenState extends State<TimetableScreen> {
                           itemCount: 3,
                           physics: const BouncingScrollPhysics(),
                           itemBuilder: (context, index) {
-                            return SkeletonLoader(
+                            return const SkeletonLoader(
                                 child: AppTaskCard(
                                     title: '',
-                                    time: const TimeOfDay(hour: 0, minute: 0)));
+                                    time: TimeOfDay(hour: 0, minute: 0)));
                           }));
                 }
               }),
         )),
         SizedBox(height: 0.03 * size.height),
-        DotsIndicator(
-            dotsCount: weekDays.length,
-            position: _currentPageIndex.toDouble(),
-            decorator: const DotsDecorator(
-              size: Size.fromRadius(7),
-              activeSize: Size.fromRadius(7),
-              spacing: EdgeInsets.all(7),
-              color: AppColors.lightGrey, // Inactive color
-              activeColor: AppColors.primaryColor,
-            ),
-            onTap: (position) {
-              setState(() => _currentPageIndex = position.toInt());
-            }),
-        SizedBox(height: 0.03 * size.height),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          DotsIndicator(
+              dotsCount: weekDays.length,
+              position: _currentPageIndex.toDouble(),
+              decorator: const DotsDecorator(
+                size: Size.fromRadius(5),
+                activeSize: Size.fromRadius(7),
+                spacing: EdgeInsets.all(7),
+                color: AppColors.lightGrey, // Inactive color
+                activeColor: AppColors.primaryColor,
+              ),
+              onTap: (position) {
+                setState(() => _currentPageIndex = position.toInt());
+              }),
+          TextButton(
             onPressed: () {
               Navigator.of(context)
                   .pushReplacement(MaterialPageRoute(builder: (context) {
@@ -157,8 +153,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
             },
             child: const Text('Continua'),
             style: TextButton.styleFrom(primary: AppColors.primaryColor),
-          ),
-        ),
+          )
+        ]),
         SizedBox(height: 0.05 * size.height),
       ],
     );
