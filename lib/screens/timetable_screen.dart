@@ -25,8 +25,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
   void initState() {
     super.initState();
     _weekStartDate = DateTime.now().getDateOnly();
-    _weekStartDate =
-        _weekStartDate.subtract(Duration(days: _weekStartDate.weekday - 1));
+    _weekStartDate = _weekStartDate
+        .subtract(Duration(days: _weekStartDate.weekday - 1))
+        .add(const Duration(days: 7));
   }
 
   @override

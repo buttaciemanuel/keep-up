@@ -10,7 +10,8 @@ class KeepUp {
   static const _keyApplicationId = '7lriFNc0muHJqnpBYmDJjkCdBP4ptEXEYaSiIZKR';
   static const _keyClientKey = 'Hboaa5QGH79mvRQQfEXCUcjXnZlrXSlZk0axzQri';
   static const _keyParseServerUrl = 'https://parseapi.back4app.com';
-  static const _keyParseLocalServerUrl = 'http://192.168.1.227:1337/parse/';
+  static const _keyParseLocalServerUrl =
+      'http://localhost:1337/parse/'; //'http://192.168.1.227:1337/parse/';
 
   static final KeepUp _instance = KeepUp._();
 
@@ -121,6 +122,9 @@ class KeepUp {
         QueryBuilder.name(KeepUpThreadMessageLikeDataModel.className)
           ..whereEqualTo(KeepUpThreadMessageLikeDataModel.userId,
               KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+    // elimina tutte le notifiche
+    NotificationService().cancelAllNotifications();
+
     // esegue tutte le query
     deleteTracesQuery.find().then((objects) {
       for (var object in objects) {
@@ -405,9 +409,15 @@ class KeepUp {
   }
 
   Future<bool> _eventAlreadyExists(String eventName) async {
+    final currentUser = await ParseUser.currentUser() as ParseUser;
     final query = QueryBuilder.name(KeepUpEventDataModel.className);
+
     query.whereEqualTo(KeepUpEventDataModel.title, eventName);
+    query.whereEqualTo(KeepUpEventDataModel.creatorId,
+        KeepUpUserDataModel.pointerTo(currentUser.objectId!));
+
     final response = await query.count();
+
     return response.count > 0;
   }
 
