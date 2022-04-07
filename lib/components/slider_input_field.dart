@@ -32,7 +32,7 @@ class SliderInputField extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 5),
             child: Row(children: [
               SizedBox(
-                  width: size.width * 0.5,
+                  width: size.width * 0.4,
                   child: Align(
                       alignment: Alignment.centerLeft,
                       child: Text(label,
@@ -45,7 +45,7 @@ class SliderInputField extends StatelessWidget {
                               fontSize: 16)))),
               const Expanded(child: SizedBox()),
               SizedBox(
-                  width: size.width * 0.2,
+                  width: size.width * 0.3,
                   child: Align(
                       alignment: Alignment.centerRight,
                       child: Text(
@@ -53,7 +53,7 @@ class SliderInputField extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           softWrap: false,
-                          style: Theme.of(context).textTheme.bodyText1))),
+                          style: Theme.of(context).textTheme.bodyText1)))
             ])),
         SizedBox(height: 0.01 * size.height),
         Slider(

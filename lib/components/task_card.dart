@@ -224,10 +224,10 @@ class AppGoalCard extends StatelessWidget {
                                           child: Align(
                                               alignment: Alignment.centerLeft,
                                               child: Text(title,
-                                                  maxLines: 1,
+                                                  /*maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
-                                                  softWrap: false,
+                                                  softWrap: false,*/
                                                   style: titleStyle))),
                                       if (active != null) ...[
                                         const SizedBox(width: 10),

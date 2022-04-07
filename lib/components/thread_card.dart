@@ -84,7 +84,11 @@ class AppThreadCard extends StatelessWidget {
           const SizedBox(width: 20),
           Icon(Icons.access_time, color: withOpacity, size: 20),
           const SizedBox(width: 5),
-          Text(elapsedTimeString, style: subtitleStyle)
+          Text(elapsedTimeString,
+              style: subtitleStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              softWrap: false)
         ]),
         const SizedBox(height: 15),
         if (wrap!) ...[
@@ -119,7 +123,10 @@ class AppThreadCard extends StatelessWidget {
             const SizedBox(width: 5),
             Text(
                 '$partecipantsCount ${partecipantsCount == 1 ? 'persona' : 'persone'}',
-                style: subtitleStyle)
+                style: subtitleStyle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                softWrap: false)
           ])
         ]),
       ],

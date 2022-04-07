@@ -11,7 +11,7 @@ class KeepUp {
   static const _keyClientKey = 'Hboaa5QGH79mvRQQfEXCUcjXnZlrXSlZk0axzQri';
   static const _keyParseServerUrl = 'https://parseapi.back4app.com';
   static const _keyParseLocalServerUrl =
-      'http://localhost:1337/parse/'; //'http://192.168.1.227:1337/parse/';
+      'http://localhost:1337/parse/'; /*'http://192.168.1.227:1337/parse/';*/
 
   static final KeepUp _instance = KeepUp._();
 
