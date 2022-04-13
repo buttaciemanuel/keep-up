@@ -46,10 +46,15 @@ class AppScrollCategorySelector extends StatelessWidget {
 
 class AppCategorySelector extends StatelessWidget {
   final List<String> categories;
+  final Set<String>? disabledCategories;
   final String? value;
   final Function(String) onClicked;
   const AppCategorySelector(
-      {Key? key, required this.categories, this.value, required this.onClicked})
+      {Key? key,
+      required this.categories,
+      this.value,
+      required this.onClicked,
+      this.disabledCategories})
       : super(key: key);
 
   @override
@@ -83,9 +88,12 @@ class AppCategorySelector extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         child: Text(category,
                             style: TextStyle(
-                                color: category == value
-                                    ? Colors.white
-                                    : AppColors.fieldTextColor,
+                                color: disabledCategories != null &&
+                                        disabledCategories!.contains(category)
+                                    ? AppColors.fieldTextColor.withOpacity(.2)
+                                    : category == value
+                                        ? Colors.white
+                                        : AppColors.fieldTextColor,
                                 fontSize: 14,
                                 fontWeight: FontWeight.w600))))));
       }).toList()),

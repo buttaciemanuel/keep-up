@@ -53,7 +53,6 @@ class _AppChartState extends State<AppChart> {
   late final _monthYearFormatter =
       DateFormat.yMMMM(Localizations.localeOf(context).toLanguageTag());
   late final List<Color> _gradientColors = [widget.backgroundColor!];
-  static const _weekOrdinal = ['I', 'II', 'III', 'IV', 'V'];
   final _controller = ScrollController();
   late DateTime _currentDate = widget.points.last.x;
 

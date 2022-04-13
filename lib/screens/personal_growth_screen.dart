@@ -20,6 +20,7 @@ class PersonalGrowthScreen extends StatefulWidget {
 
 class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
   static const _diplayModeLabels = ['Giorni', 'Settimane', 'Mesi'];
+  final _disabledLabels = <String>{};
   final _currentDate = DateTime.now().getDateOnly();
   late final _fromDate = _currentDate.subtract(const Duration(days: 90));
   int _chartDisplayMode = AppChartDisplayMode.daily;
@@ -108,7 +109,9 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
       current = nextMonth;
     }
 
-    for (final w in weeklySets[0]) print('[week] ${w.x.toString()}');
+    for (final w in weeklySets[0]) {
+      print('[week] ${w.x.toString()}');
+    }
 
     return [dailySets, weeklySets, monthlySets];
   }
@@ -125,6 +128,17 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
           return Future.error('');
         } else {
           _dataSets = _buildDataSets(response.result!, _fromDate, _currentDate);
+          // disabilita i label per cui non ci sono sufficienti dati
+          const minDataSetSize = 3;
+          if (_dataSets![0][0].length < minDataSetSize) {
+            _disabledLabels.add(_diplayModeLabels[0]);
+          }
+          if (_dataSets![1][0].length < minDataSetSize) {
+            _disabledLabels.add(_diplayModeLabels[1]);
+          }
+          if (_dataSets![2][0].length < minDataSetSize) {
+            _disabledLabels.add(_diplayModeLabels[2]);
+          }
         }
       });
 
@@ -171,12 +185,6 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
           child: Text('Dai uno sguardo ai tuoi progressi.',
               style: Theme.of(context).textTheme.subtitle1)),
       SizedBox(height: 0.03 * size.height),
-      AppCategorySelector(
-          value: _diplayModeLabels[_chartDisplayMode],
-          categories: _diplayModeLabels,
-          onClicked: (mode) => setState(
-              () => _chartDisplayMode = _diplayModeLabels.indexOf(mode))),
-      SizedBox(height: 0.03 * size.height),
       FutureBuilder<void>(
           future: _fetchData(),
           builder: (context, snapshot) {
@@ -204,8 +212,17 @@ class _PersonalGrowthScreenState extends State<PersonalGrowthScreen> {
                         style: Theme.of(context).textTheme.subtitle2)
                   ]);
             } else {
-              log('n.points = ${_dataSets![_chartDisplayMode][0].length}');
               return Column(children: [
+                AppCategorySelector(
+                    value: _diplayModeLabels[_chartDisplayMode],
+                    categories: _diplayModeLabels,
+                    disabledCategories: _disabledLabels,
+                    onClicked: (mode) => setState(() {
+                          if (!_disabledLabels.contains(mode)) {
+                            _chartDisplayMode = _diplayModeLabels.indexOf(mode);
+                          }
+                        })),
+                SizedBox(height: 0.03 * size.height),
                 AppChart(
                     displayMode: _chartDisplayMode,
                     title: 'Performance',

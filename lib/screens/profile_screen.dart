@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/screens/change_password_screen.dart';
-import 'package:keep_up/screens/edit_profile.dart';
+import 'package:keep_up/screens/edit_profile_screen.dart';
 import 'package:keep_up/screens/login_screen.dart';
 import 'package:keep_up/screens/notification_settings.dart';
 import 'package:keep_up/screens/oops_screen.dart';
+import 'package:keep_up/screens/preferences_screen.dart';
 import 'package:keep_up/screens/schedule_loading_screen.dart';
 import 'package:keep_up/screens/user_threads_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
@@ -120,6 +121,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
           const Icon(Icons.lock, color: Colors.black),
           const SizedBox(width: 24),
           Text('Cambia password',
+              style: Theme.of(context)
+                  .textTheme
+                  .bodyText1
+                  ?.copyWith(color: Colors.black)),
+          const Expanded(child: SizedBox(width: 10)),
+          const Icon(Icons.keyboard_arrow_right, color: Colors.black),
+        ]),
+        Divider(
+            height: 0.03 * size.height,
+            color: Colors.black,
+            thickness: 0.1,
+            indent: 48,
+            endIndent: 48),
+        Row(children: [
+          const Icon(Icons.settings, color: Colors.black),
+          const SizedBox(width: 24),
+          Text('Preferenze',
               style: Theme.of(context)
                   .textTheme
                   .bodyText1
@@ -315,6 +333,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const Icon(Icons.lock, color: Colors.black),
                       const SizedBox(width: 24),
                       Text('Cambia password',
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyText1
+                              ?.copyWith(color: Colors.black)),
+                      const Expanded(child: SizedBox(width: 10)),
+                      const Icon(Icons.keyboard_arrow_right,
+                          color: Colors.black),
+                    ])),
+                Divider(
+                    height: 0.03 * size.height,
+                    color: Colors.black,
+                    thickness: 0.1,
+                    indent: 48,
+                    endIndent: 48),
+                GestureDetector(
+                    onTap: () {
+                      Navigator.of(context)
+                          .push(MaterialPageRoute(
+                              fullscreenDialog: true,
+                              builder: (context) {
+                                return const PreferencesSettingsScreen();
+                              }))
+                          .then((_) => setState(() {}));
+                    },
+                    child: Row(children: [
+                      const Icon(Icons.settings, color: Colors.black),
+                      const SizedBox(width: 24),
+                      Text('Preferenze',
                           style: Theme.of(context)
                               .textTheme
                               .bodyText1

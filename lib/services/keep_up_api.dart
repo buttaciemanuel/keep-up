@@ -32,6 +32,12 @@ class KeepUp {
     user.set(KeepUpUserDataModel.fullName, fullName);
     user.set(KeepUpUserDataModel.notifySurveyTime, null);
     user.set(KeepUpUserDataModel.notifyTasks, false);
+    user.set(
+        KeepUpUserDataModel.sleepStartTime, KeepUpDayTime(hour: 21, minute: 0));
+    user.set(
+        KeepUpUserDataModel.sleepEndTime, KeepUpDayTime(hour: 7, minute: 0));
+    user.set(KeepUpUserDataModel.studyDayPart, 0);
+    user.set(KeepUpUserDataModel.sportDayPart, 0);
 
     final response = await user.signUp();
 
@@ -243,6 +249,16 @@ class KeepUp {
                 currentUser.get(KeepUpUserDataModel.notifySurveyTime))
             : null,
         currentUser.get(KeepUpUserDataModel.notifyTasks),
+        currentUser.get(KeepUpUserDataModel.sleepStartTime) != null
+            ? KeepUpDayTime.fromJson(
+                currentUser.get(KeepUpUserDataModel.sleepStartTime))
+            : null,
+        currentUser.get(KeepUpUserDataModel.sleepEndTime) != null
+            ? KeepUpDayTime.fromJson(
+                currentUser.get(KeepUpUserDataModel.sleepEndTime))
+            : null,
+        currentUser.get(KeepUpUserDataModel.studyDayPart),
+        currentUser.get(KeepUpUserDataModel.sportDayPart),
       );
     }
   }
@@ -260,14 +276,19 @@ class KeepUp {
       await currentUser.logout();
       return KeepUpResponse.error('no user logged in');
     } else {
-      final oldNotifySurveyTime =
-          currentUser.get(KeepUpUserDataModel.notifySurveyTime);
-      final oldNotifyTasks = currentUser.get(KeepUpUserDataModel.notifyTasks);
       // setta i nuovi valori
       currentUser.set(KeepUpUserDataModel.fullName, updatedUser.fullname);
       currentUser.set(
           KeepUpUserDataModel.notifySurveyTime, updatedUser.notifySurveyTime);
       currentUser.set(KeepUpUserDataModel.notifyTasks, updatedUser.notifyTasks);
+      currentUser.set(
+          KeepUpUserDataModel.sleepStartTime, updatedUser.sleepStartTime);
+      currentUser.set(
+          KeepUpUserDataModel.sleepEndTime, updatedUser.sleepEndTime);
+      currentUser.set(
+          KeepUpUserDataModel.studyDayPart, updatedUser.studyDayPart);
+      currentUser.set(
+          KeepUpUserDataModel.sportDayPart, updatedUser.sportDayPart);
       // salva l'utente
       final response = await currentUser.save();
       if (!response.success) {
@@ -1728,9 +1749,19 @@ class KeepUpUser {
   String sessionToken;
   KeepUpDayTime? notifySurveyTime;
   bool notifyTasks;
+  KeepUpDayTime? sleepStartTime, sleepEndTime;
+  int? studyDayPart, sportDayPart;
 
-  KeepUpUser(this.fullname, this.email, this.sessionToken,
-      this.notifySurveyTime, this.notifyTasks);
+  KeepUpUser(
+      this.fullname,
+      this.email,
+      this.sessionToken,
+      this.notifySurveyTime,
+      this.notifyTasks,
+      this.sleepStartTime,
+      this.sleepEndTime,
+      this.studyDayPart,
+      this.sportDayPart);
 }
 
 class KeepUpEvent {
@@ -2178,6 +2209,10 @@ abstract class KeepUpUserDataModel {
   static const fullName = 'fullName';
   static const notifySurveyTime = 'notifySurveyTime';
   static const notifyTasks = 'notifyTasks';
+  static const sleepStartTime = 'sleepStartTime';
+  static const sleepEndTime = 'sleepEndTime';
+  static const studyDayPart = 'studyDayPart';
+  static const sportDayPart = 'sportDayPart';
 
   static Map<String, dynamic> pointerTo(String objectId) {
     return {'__type': 'Pointer', 'className': '_User', 'objectId': objectId};
