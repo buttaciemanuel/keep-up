@@ -12,7 +12,9 @@ import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/style.dart';
 
 class PreferencesSettingsScreen extends StatefulWidget {
-  const PreferencesSettingsScreen({Key? key}) : super(key: key);
+  final Function()? onScheduleScreen;
+  const PreferencesSettingsScreen({Key? key, this.onScheduleScreen})
+      : super(key: key);
 
   @override
   _PreferencesSettingsScreenState createState() =>
@@ -51,7 +53,7 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Decidi quando sei occupato o libero.',
+          child: Text('Crea le tue abitudini da zero.',
               style: Theme.of(context).textTheme.subtitle1)),
       SizedBox(height: 0.05 * size.height),
       Form(
@@ -125,7 +127,7 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
       SizedBox(height: 0.02 * size.height),
       Align(
           alignment: Alignment.centerLeft,
-          child: Text('Decidi quando sei occupato o libero.',
+          child: Text('Crea le tue abitudini da zero.',
               style: Theme.of(context).textTheme.subtitle1)),
       SizedBox(height: 0.05 * size.height),
       Form(
@@ -240,19 +242,32 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
                     })),
           ])),
       Expanded(child: SizedBox(height: size.height * 0.03)),
-      Row(children: [
-        Expanded(
-            child: Align(
-          alignment: Alignment.centerLeft,
-          child: TextButton(
+      if (widget.onScheduleScreen != null) ...[
+        Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              onPressed: () async {
+                if (_formKey.currentState!.validate()) {
+                  final response = await KeepUp.instance.updateUser(_user!);
+                  if (response.error) {
+                    ScaffoldMessenger.of(context)
+                        .showSnackBar(_updateErrorSnackbar);
+                  } else {
+                    widget.onScheduleScreen!();
+                  }
+                }
+              },
+              child: const Text('Pianifica'),
+              style: TextButton.styleFrom(primary: AppColors.primaryColor),
+            ))
+      ] else ...[
+        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
+          TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: const Text('Annulla'),
             style: TextButton.styleFrom(primary: AppColors.grey),
           ),
-        )),
-        Align(
-          alignment: Alignment.centerRight,
-          child: TextButton(
+          TextButton(
             onPressed: () async {
               if (_formKey.currentState!.validate()) {
                 final response = await KeepUp.instance.updateUser(_user!);
@@ -267,8 +282,8 @@ class _PreferencesSettingsScreenState extends State<PreferencesSettingsScreen> {
             child: const Text('Salva'),
             style: TextButton.styleFrom(primary: AppColors.primaryColor),
           ),
-        ),
-      ]),
+        ])
+      ],
       SizedBox(height: 0.05 * size.height),
     ]);
   }

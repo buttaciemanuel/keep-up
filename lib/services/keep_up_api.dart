@@ -316,6 +316,22 @@ class KeepUp {
     }
   }
 
+  Future _resetAllNotifications() async {
+    final currentUser = await getUser() as KeepUpUser;
+    // cancella tutte le notifica
+    NotificationService().cancelAllNotifications();
+    // abilita le notifiche sui task quotidiani
+    if (currentUser.notifyTasks) {
+      await _enableTasksNotification();
+    }
+    // abilita le notifiche sul survey
+    if (currentUser.notifySurveyTime != null) {
+      await _enableSurveyNotification(time: currentUser.notifySurveyTime!);
+    }
+    // abilita le notifiche sul completamento dei goal
+    await enableGoalsCompletionNotification();
+  }
+
   Future _enableAllNotifications() async {
     final currentUser = await getUser() as KeepUpUser;
 
@@ -569,7 +585,7 @@ class KeepUp {
 
     if (!response.success) {
       return KeepUpResponse.error(
-          'KeepUp: event updaye failure: ${response.error!.message}');
+          'KeepUp: event update failure: ${response.error!.message}');
     }
 
     log('KeepUp: event update success ${eventObject.objectId}');
@@ -645,6 +661,9 @@ class KeepUp {
         }
       }
     }
+
+    // resetta le notifiche se sono state effettuate modifiche
+    _resetAllNotifications();
 
     return KeepUpResponse();
   }

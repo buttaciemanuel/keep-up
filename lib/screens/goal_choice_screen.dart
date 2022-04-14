@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:keep_up/components/skeleton_loader.dart';
 import 'package:keep_up/components/task_card.dart';
 import 'package:keep_up/screens/define_goal_screen.dart';
+import 'package:keep_up/screens/preferences_screen.dart';
+import 'package:keep_up/screens/profile_screen.dart';
 import 'package:keep_up/screens/schedule_loading_screen.dart';
 import 'package:keep_up/services/keep_up_api.dart';
 import 'package:keep_up/services/keep_up_scheduler.dart';
@@ -280,8 +282,20 @@ class _GoalChoiceScreenState extends State<GoalChoiceScreen> {
             onPressed: () async {
               Navigator.of(context)
                   .pushReplacement(MaterialPageRoute(builder: (context) {
-                return const ScheduleLoadingScreen();
+                return PreferencesSettingsScreen(
+                  onScheduleScreen: () {
+                    Navigator.of(context)
+                        .pushReplacement(MaterialPageRoute(builder: (context) {
+                      return const ScheduleLoadingScreen();
+                    }));
+                  },
+                );
               }));
+
+              /*Navigator.of(context)
+                  .pushReplacement(MaterialPageRoute(builder: (context) {
+                return const ScheduleLoadingScreen();
+              }));*/
             },
             child: const Text('Continua'),
             style: TextButton.styleFrom(primary: AppColors.primaryColor),
